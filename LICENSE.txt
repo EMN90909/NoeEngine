@@ -1,0 +1,25 @@
+NOEENGINE — PROPRIETARY ADDITIONS AND DISTRIBUTION NOTICE
+
+Copyright (c) 2026 NoeEngine contributors, solely for original contributions
+for which those contributors hold the relevant copyrights.
+All rights reserved in such independently owned proprietary additions.
+
+Unless separately authorized in writing, no license is granted to copy,
+modify, distribute, sublicense, or commercialize original NoeEngine additions
+that are expressly identified as proprietary.
+
+IMPORTANT UPSTREAM LICENSE EXCEPTION
+
+NoeEngine is derived from Godot Engine. The upstream Godot Engine code remains
+MIT-licensed, including the right to use, modify, distribute and sublicense
+that code under its original license. This proprietary notice does NOT replace,
+revoke, or restrict the MIT rights of any recipient in the upstream code.
+
+The full original upstream copyright and MIT permission notice is retained in
+UPSTREAM-MIT-LICENSE.txt, which must accompany copies or substantial portions
+of the affected code. More component-specific licensing requirements are in
+COPYRIGHT.txt and relevant third-party directories.
+
+A file is NOT proprietary solely because it appears in this repository, uses
+the NoeEngine name, or bears this repository-level notice. Copyright
+ownership and the file's applicable notices determine its actual license.

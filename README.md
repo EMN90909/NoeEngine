@@ -12,7 +12,7 @@ The engine uses SCons. Consult the platform build instructions retained in the r
 
 NoeEngine is intended to be offered as a proprietary product. **The underlying Godot Engine source code is MIT-licensed and remains subject to its existing license.** Original proprietary additions, if any, are governed by their respective notices and agreements; this does not remove or restrict the MIT grant covering the upstream code.
 
-- [Original Godot MIT license](LICENSE.txt)
+- [Original Godot MIT license](UPSTREAM-MIT-LICENSE.txt)
 - [Upstream and third-party copyright notices](COPYRIGHT.txt)
 - [NoeEngine licensing policy](NOEENGINE-LICENSING.md)
 - [Logo licensing](LOGO_LICENSE.md)
