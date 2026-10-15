@@ -12,7 +12,7 @@ from pathlib import Path
 import re
 import subprocess
 
-REPLACEMENTS = re.compile(r"godotengine|godot", flags=re.IGNORECASE)
+REPLACEMENTS = re.compile(r"godot[ ]+engine|godotengine|godot", flags=re.IGNORECASE)
 UPSTREAM_FILES = {
     "COPYRIGHT.txt", "AUTHORS.md", "DONORS.md", "LOGO_LICENSE.md",
     "UPSTREAM-MIT-LICENSE.txt", "LICENSE.txt", ".mailmap",
@@ -50,7 +50,8 @@ def tracked_paths():
 
 
 def rewrite_text(path):
-    if path.name in UPSTREAM_FILES or path.suffix.lower() in BINARY_SUFFIXES:
+    if ((path.parent == Path(".") and path.name in UPSTREAM_FILES)
+            or path.name.lower().startswith(("license", "copying"))\n            or path.suffix.lower() in BINARY_SUFFIXES):
         return None
     raw = path.read_bytes()
     if b"\0" in raw:
@@ -100,6 +101,9 @@ def main():
     for old, new in sorted(moves, key=lambda item: len(item[0].parts), reverse=True):
         new.parent.mkdir(parents=True, exist_ok=True)
         subprocess.run(["git", "mv", "--", str(old), str(new)], check=True)
+    remaining = [p for p in tracked_paths() if REPLACEMENTS.search(str(p))]
+    if remaining:
+        raise RuntimeError(f"Renamed path check failed: {len(remaining)} remaining")
     print("Rebrand applied. Review 'git diff', license notices, platform builds,")
     print("assembly names, package identities, icon artwork, and project migrations.")
 
