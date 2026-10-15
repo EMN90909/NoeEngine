@@ -1,8 +1,8 @@
 #define MyAppName "NoeEngine"
 #define MyAppVersion "4.0.5"
-#define MyAppPublisher "Godot Engine contributors"
+#define MyAppPublisher "NoeEngine Engine contributors"
 #define MyAppURL "https://godotengine.org/"
-#define MyAppExeName "godot.exe"
+#define MyAppExeName "noeengine.exe"
 
 [Setup]
 AppId={{60D07AAA-400E-40F5-B073-A796C34D9D78}
@@ -22,9 +22,9 @@ DefaultGroupName=NoeEngine
 AllowNoIcons=yes
 UninstallDisplayIcon={app}\{#MyAppExeName}
 #ifdef App32Bit
-  OutputBaseFilename=godot-setup-x86
+  OutputBaseFilename=noeengine-setup-x86
 #else
-  OutputBaseFilename=godot-setup-x86_64
+  OutputBaseFilename=noeengine-setup-x86_64
   ArchitecturesAllowed=x64
   ArchitecturesInstallIn64BitMode=x64
 #endif
