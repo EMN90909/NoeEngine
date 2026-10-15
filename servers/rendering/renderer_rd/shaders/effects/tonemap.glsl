@@ -336,7 +336,8 @@ vec3 apply_glow(vec3 color, vec3 glow) { // apply glow using the selected blendi
 vec3 apply_bcs(vec3 color, vec3 bcs) {
 	color = mix(vec3(0.0f), color, bcs.x);
 	color = mix(vec3(0.5f), color, bcs.y);
-	color = mix(vec3(dot(vec3(1.0f), color) * 0.33333f), color, bcs.z);
+	// NoeShader: Rec.709 luminance retains perceived brightness under saturation adjustments.
+	color = mix(vec3(dot(color, vec3(0.2126f, 0.7152f, 0.0722f))), color, bcs.z);
 
 	return color;
 }
