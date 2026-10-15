@@ -7,10 +7,12 @@ uniform vec4 impact_color : source_color = vec4(1.0, 0.65, 0.2, 1.0);
 void start() {
     vec3 direction = vec3(rand_from_seed(RANDOM_SEED) * 2.0 - 1.0, rand_from_seed(RANDOM_SEED) * 2.0 - 1.0 + upward_bias, rand_from_seed(RANDOM_SEED) * 2.0 - 1.0);
     VELOCITY = normalize(direction + vec3(0.001)) * radial_speed;
+    CUSTOM.y = 0.0;
     COLOR = impact_color;
 }
 void process() {
     VELOCITY.y -= gravity * DELTA;
+    CUSTOM.y += DELTA;
     float life = clamp(CUSTOM.y / max(LIFETIME, 0.001), 0.0, 1.0);
     COLOR = vec4(impact_color.rgb, impact_color.a * (1.0 - life));
     TRANSFORM[3].xyz += VELOCITY * DELTA;
