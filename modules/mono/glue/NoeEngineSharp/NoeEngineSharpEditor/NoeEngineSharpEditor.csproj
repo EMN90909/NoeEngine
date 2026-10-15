@@ -3,7 +3,7 @@
     <ProjectGuid>{8FBEC238-D944-4074-8548-B3B524305905}</ProjectGuid>
     <OutputPath>bin/$(Configuration)</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <RootNamespace>Godot</RootNamespace>
+    <RootNamespace>NoeEngine</RootNamespace>
     <TargetFramework>net6.0</TargetFramework>
     <DocumentationFile>$(OutputPath)/$(AssemblyName).xml</DocumentationFile>
     <EnableDefaultItems>false</EnableDefaultItems>
@@ -11,13 +11,13 @@
     <LangVersion>10</LangVersion>
   </PropertyGroup>
   <PropertyGroup>
-    <Description>Godot C# Editor API.</Description>
-    <Authors>Godot Engine contributors</Authors>
+    <Description>NoeEngine C# Editor API.</Description>
+    <Authors>NoeEngine Engine contributors</Authors>
 
-    <PackageId>GodotSharpEditor</PackageId>
+    <PackageId>NoeEngineSharpEditor</PackageId>
     <Version>4.0.5</Version>
-    <PackageVersion>$(PackageVersion_GodotSharp)</PackageVersion>
-    <RepositoryUrl>https://github.com/godotengine/godot/tree/master/modules/mono/glue/GodotSharp/GodotSharpEditor</RepositoryUrl>
+    <PackageVersion>$(PackageVersion_NoeEngineSharp)</PackageVersion>
+    <RepositoryUrl>https://github.com/noeengineengine/noeengine/tree/master/modules/mono/glue/NoeEngineSharp/NoeEngineSharpEditor</RepositoryUrl>
     <PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
 
@@ -27,10 +27,10 @@
   </PropertyGroup>
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);GODOT</DefineConstants>
-    <DefineConstants Condition=" '$(GodotFloat64)' == 'true' ">REAL_T_IS_DOUBLE;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition=" '$(NoeEngineFloat64)' == 'true' ">REAL_T_IS_DOUBLE;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\GodotSharp\GodotSharp.csproj">
+    <ProjectReference Include="..\NoeEngineSharp\NoeEngineSharp.csproj">
       <Private>false</Private>
     </ProjectReference>
   </ItemGroup>

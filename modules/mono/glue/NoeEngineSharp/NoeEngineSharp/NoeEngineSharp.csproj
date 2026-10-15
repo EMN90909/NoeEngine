@@ -3,7 +3,7 @@
     <ProjectGuid>{AEBF0036-DA76-4341-B651-A3F2856AB2FA}</ProjectGuid>
     <OutputPath>bin/$(Configuration)</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <RootNamespace>Godot</RootNamespace>
+    <RootNamespace>NoeEngine</RootNamespace>
     <TargetFramework>net6.0</TargetFramework>
     <DocumentationFile>$(OutputPath)/$(AssemblyName).xml</DocumentationFile>
     <EnableDefaultItems>false</EnableDefaultItems>
@@ -16,13 +16,13 @@
     <NoWarn>CS1591</NoWarn>
   </PropertyGroup>
   <PropertyGroup>
-    <Description>Godot C# Core API.</Description>
-    <Authors>Godot Engine contributors</Authors>
+    <Description>NoeEngine C# Core API.</Description>
+    <Authors>NoeEngine Engine contributors</Authors>
 
-    <PackageId>GodotSharp</PackageId>
+    <PackageId>NoeEngineSharp</PackageId>
     <Version>4.0.5</Version>
-    <PackageVersion>$(PackageVersion_GodotSharp)</PackageVersion>
-    <RepositoryUrl>https://github.com/godotengine/godot/tree/master/modules/mono/glue/GodotSharp/GodotSharp</RepositoryUrl>
+    <PackageVersion>$(PackageVersion_NoeEngineSharp)</PackageVersion>
+    <RepositoryUrl>https://github.com/noeengineengine/noeengine/tree/master/modules/mono/glue/NoeEngineSharp/NoeEngineSharp</RepositoryUrl>
     <PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
 
@@ -32,25 +32,25 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- SdkPackageVersions.props for easy access -->
-    <None Include="$(GodotSdkPackageVersionsFilePath)">
+    <None Include="$(NoeEngineSdkPackageVersionsFilePath)">
       <Link>SdkPackageVersions.props</Link>
     </None>
   </ItemGroup>
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);GODOT</DefineConstants>
-    <DefineConstants Condition=" '$(GodotFloat64)' == 'true' ">REAL_T_IS_DOUBLE;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition=" '$(NoeEngineFloat64)' == 'true' ">REAL_T_IS_DOUBLE;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="ReflectionAnalyzers" Version="0.1.22-dev" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers" />
     <!--PackageReference Include="IDisposableAnalyzers" Version="3.4.13" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers" /-->
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Godot.SourceGenerators.Internal\Godot.SourceGenerators.Internal.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\NoeEngine.SourceGenerators.Internal\NoeEngine.SourceGenerators.Internal.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
   <!-- Sources -->
   <ItemGroup>
     <Compile Include="Core\Aabb.cs" />
-    <Compile Include="Core\Bridge\GodotSerializationInfo.cs" />
+    <Compile Include="Core\Bridge\NoeEngineSerializationInfo.cs" />
     <Compile Include="Core\Bridge\MethodInfo.cs" />
     <Compile Include="Core\Callable.generics.cs" />
     <Compile Include="Core\CustomGCHandle.cs" />
@@ -60,7 +60,7 @@
     <Compile Include="Core\Attributes\ExportCategoryAttribute.cs" />
     <Compile Include="Core\Attributes\ExportGroupAttribute.cs" />
     <Compile Include="Core\Attributes\ExportSubgroupAttribute.cs" />
-    <Compile Include="Core\Attributes\GodotClassNameAttribute.cs" />
+    <Compile Include="Core\Attributes\NoeEngineClassNameAttribute.cs" />
     <Compile Include="Core\Attributes\MustBeVariantAttribute.cs" />
     <Compile Include="Core\Attributes\RpcAttribute.cs" />
     <Compile Include="Core\Attributes\ScriptPathAttribute.cs" />
@@ -81,17 +81,17 @@
     <Compile Include="Core\DelegateUtils.cs" />
     <Compile Include="Core\Dictionary.cs" />
     <Compile Include="Core\Dispatcher.cs" />
-    <Compile Include="Core\Extensions\GodotObjectExtensions.cs" />
+    <Compile Include="Core\Extensions\NoeEngineObjectExtensions.cs" />
     <Compile Include="Core\Extensions\NodeExtensions.cs" />
     <Compile Include="Core\Extensions\PackedSceneExtensions.cs" />
     <Compile Include="Core\Extensions\ResourceLoaderExtensions.cs" />
     <Compile Include="Core\GD.cs" />
-    <Compile Include="Core\GodotObject.base.cs" />
-    <Compile Include="Core\GodotObject.exceptions.cs" />
-    <Compile Include="Core\GodotSynchronizationContext.cs" />
-    <Compile Include="Core\GodotTaskScheduler.cs" />
-    <Compile Include="Core\GodotTraceListener.cs" />
-    <Compile Include="Core\GodotUnhandledExceptionEvent.cs" />
+    <Compile Include="Core\NoeEngineObject.base.cs" />
+    <Compile Include="Core\NoeEngineObject.exceptions.cs" />
+    <Compile Include="Core\NoeEngineSynchronizationContext.cs" />
+    <Compile Include="Core\NoeEngineTaskScheduler.cs" />
+    <Compile Include="Core\NoeEngineTraceListener.cs" />
+    <Compile Include="Core\NoeEngineUnhandledExceptionEvent.cs" />
     <Compile Include="Core\DisposablesTracker.cs" />
     <Compile Include="Core\Interfaces\IAwaitable.cs" />
     <Compile Include="Core\Interfaces\IAwaiter.cs" />
@@ -100,7 +100,7 @@
     <Compile Include="Core\MathfEx.cs" />
     <Compile Include="Core\NativeInterop\CustomUnsafe.cs" />
     <Compile Include="Core\NativeInterop\ExceptionUtils.cs" />
-    <Compile Include="Core\NativeInterop\GodotDllImportResolver.cs" />
+    <Compile Include="Core\NativeInterop\NoeEngineDllImportResolver.cs" />
     <Compile Include="Core\NativeInterop\InteropUtils.cs" />
     <Compile Include="Core\NativeInterop\NativeFuncs.extended.cs" />
     <Compile Include="Core\NativeInterop\NativeVariantPtrArgs.cs" />
