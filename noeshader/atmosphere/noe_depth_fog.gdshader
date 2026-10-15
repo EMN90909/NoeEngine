@@ -10,9 +10,6 @@ void vertex() { POSITION = vec4(VERTEX.xy, 1.0, 1.0); }
 void fragment() {
     float depth = texture(depth_texture, SCREEN_UV).r;
     vec3 ndc = vec3(SCREEN_UV * 2.0 - 1.0, depth);
-#if CURRENT_RENDERER == RENDERER_COMPATIBILITY
-    ndc.z = depth * 2.0 - 1.0;
-#endif
     vec4 view = INV_PROJECTION_MATRIX * vec4(ndc, 1.0);
     view.xyz /= max(abs(view.w), 0.00001);
     float dist = max(length(view.xyz) - start_distance, 0.0);
