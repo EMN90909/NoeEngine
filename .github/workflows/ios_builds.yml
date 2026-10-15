@@ -5,7 +5,7 @@ on:
 # Global Settings
 env:
   # Used for the cache key. Add version suffix to force clean build.
-  GODOT_BASE_BRANCH: "4.0"
+  NOEENGINE_BASE_BRANCH: "4.0"
   SCONSFLAGS: verbose=yes warnings=extra werror=yes debug_symbols=no module_text_server_fb_enabled=yes
 
 jobs:
@@ -25,23 +25,23 @@ jobs:
       - name: Select Xcode 26
         run: sudo xcode-select -s /Applications/Xcode_26.0.1.app
 
-      - name: Restore Godot build cache
-        uses: ./.github/actions/godot-cache-restore
+      - name: Restore NoeEngine build cache
+        uses: ./.github/actions/noeengine-cache-restore
         continue-on-error: true
 
       - name: Setup Python and SCons
-        uses: ./.github/actions/godot-deps
+        uses: ./.github/actions/noeengine-deps
 
       - name: Compilation (arm64)
-        uses: ./.github/actions/godot-build
+        uses: ./.github/actions/noeengine-build
         with:
           sconsflags: ${{ env.SCONSFLAGS }}
           platform: ios
           target: template_release
           tests: false
 
-      - name: Save Godot build cache
-        uses: ./.github/actions/godot-cache-save
+      - name: Save NoeEngine build cache
+        uses: ./.github/actions/noeengine-cache-save
         continue-on-error: true
 
       - name: Upload artifact

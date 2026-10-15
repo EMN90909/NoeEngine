@@ -5,7 +5,7 @@ on:
 # Global Settings
 env:
   # Used for the cache key. Add version suffix to force clean build.
-  GODOT_BASE_BRANCH: "4.0"
+  NOEENGINE_BASE_BRANCH: "4.0"
   SCONSFLAGS: verbose=yes warnings=extra werror=yes debug_symbols=no
   EM_VERSION: 3.1.18
 
@@ -41,25 +41,25 @@ jobs:
         run: |
           emcc -v
 
-      - name: Restore Godot build cache
-        uses: ./.github/actions/godot-cache-restore
+      - name: Restore NoeEngine build cache
+        uses: ./.github/actions/noeengine-cache-restore
         with:
           cache-name: ${{ matrix.cache-name }}
         continue-on-error: true
 
       - name: Setup Python and SCons
-        uses: ./.github/actions/godot-deps
+        uses: ./.github/actions/noeengine-deps
 
       - name: Compilation
-        uses: ./.github/actions/godot-build
+        uses: ./.github/actions/noeengine-build
         with:
           sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
           platform: web
           target: ${{ matrix.target }}
           tests: ${{ matrix.tests }}
 
-      - name: Save Godot build cache
-        uses: ./.github/actions/godot-cache-save
+      - name: Save NoeEngine build cache
+        uses: ./.github/actions/noeengine-cache-save
         with:
           cache-name: ${{ matrix.cache-name }}
         continue-on-error: true

@@ -93,8 +93,8 @@ def get_version_info(module_version_string="", silent=False):
 
     # For dev snapshots (alpha, beta, RC, etc.) we do not commit status change to Git,
     # so this define provides a way to override it without having to modify the source.
-    if os.getenv("GODOT_VERSION_STATUS") != None:
-        version_info["status"] = str(os.getenv("GODOT_VERSION_STATUS"))
+    if os.getenv("NOEENGINE_VERSION_STATUS") != None:
+        version_info["status"] = str(os.getenv("NOEENGINE_VERSION_STATUS"))
         if not silent:
             print(f"Using version status '{version_info['status']}', overriding the original '{version.status}'.")
 
@@ -247,11 +247,11 @@ def detect_modules(search_path, recursive=False):
 
     def is_engine(path):
         # Prevent recursively detecting modules in self and other
-        # Godot sources when using `custom_modules` build option.
+        # NoeEngine sources when using `custom_modules` build option.
         version_path = os.path.join(path, "version.py")
         if os.path.exists(version_path):
             with open(version_path) as f:
-                if 'short_name = "godot"' in f.read():
+                if 'short_name = "noeengine"' in f.read():
                     return True
         return False
 
@@ -578,7 +578,7 @@ def detect_visual_c_compiler_version(tools_env):
     # "x86"           Native 32 bit compiler
     # "x86_amd64"     32 bit Cross Compiler for 64 bit
 
-    # There are other architectures, but Godot does not support them currently, so this function does not detect arm/amd64_arm
+    # There are other architectures, but NoeEngine does not support them currently, so this function does not detect arm/amd64_arm
     # and similar architectures/compilers
 
     # Set chosen compiler to "not detected"
@@ -728,7 +728,7 @@ def add_to_vs_project(env, sources):
                 env.vs_srcs += [basename + ".cpp"]
 
 
-def generate_vs_project(env, num_jobs, project_name="godot"):
+def generate_vs_project(env, num_jobs, project_name="noeengine"):
     batch_file = find_visual_c_batch_file(env)
     if batch_file:
 
@@ -774,7 +774,7 @@ def generate_vs_project(env, num_jobs, project_name="godot"):
                     for platform in ModuleConfigs.PLATFORMS
                 ]
                 self.arg_dict["runfile"] += [
-                    f'bin\\godot.windows.{config}{ModuleConfigs.DEV_SUFFIX}{".double" if env["precision"] == "double" else ""}.{plat_id}{f".{name}" if name else ""}.exe'
+                    f'bin\\noeengine.windows.{config}{ModuleConfigs.DEV_SUFFIX}{".double" if env["precision"] == "double" else ""}.{plat_id}{f".{name}" if name else ""}.exe'
                     for config in ModuleConfigs.CONFIGURATIONS
                     for plat_id in ModuleConfigs.PLATFORM_IDS
                 ]

@@ -5,8 +5,8 @@ on:
 # Global Settings
 env:
   # Used for the cache key. Add version suffix to force clean build.
-  GODOT_BASE_BRANCH: "4.0"
-  GODOT_CPP_BRANCH: "4.0"
+  NOEENGINE_BASE_BRANCH: "4.0"
+  NOEENGINE_CPP_BRANCH: "4.0"
   SCONSFLAGS: verbose=yes warnings=extra werror=yes module_text_server_fb_enabled=yes
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
@@ -25,21 +25,21 @@ jobs:
             cache-name: linux-editor-mono
             target: editor
             sconsflags: module_mono_enabled=yes
-            bin: ./bin/godot.linuxbsd.editor.x86_64.mono
+            bin: ./bin/noeengine.linuxbsd.editor.x86_64.mono
             build-mono: true
             tests: false # Disabled due freeze caused by mix Mono build and CI
             doc-test: true
             proj-conv: true
             artifact: true
-            # Validate godot-cpp compatibility on one arbitrary editor build.
-            godot-cpp: true
+            # Validate noeengine-cpp compatibility on one arbitrary editor build.
+            noeengine-cpp: true
 
           - name: Editor with doubles and GCC sanitizers (target=editor, tests=yes, dev_build=yes, scu_build=yes, precision=double, use_asan=yes, use_ubsan=yes, linker=gold)
             cache-name: linux-editor-double-sanitizers
             target: editor
             # Debug symbols disabled as they're huge on this build and we hit the 14 GB limit for runners.
             sconsflags: dev_build=yes scu_build=yes debug_symbols=no precision=double use_asan=yes use_ubsan=yes linker=gold
-            bin: ./bin/godot.linuxbsd.editor.dev.double.x86_64.san
+            bin: ./bin/noeengine.linuxbsd.editor.dev.double.x86_64.san
             build-mono: false
             tests: true
             proj-test: true
@@ -50,7 +50,7 @@ jobs:
             cache-name: linux-editor-llvm-sanitizers
             target: editor
             sconsflags: dev_build=yes use_asan=yes use_ubsan=yes use_llvm=yes linker=lld
-            bin: ./bin/godot.linuxbsd.editor.dev.x86_64.llvm.san
+            bin: ./bin/noeengine.linuxbsd.editor.dev.x86_64.llvm.san
             build-mono: false
             tests: true
             # Skip 2GiB artifact speeding up action.
@@ -65,7 +65,7 @@ jobs:
             cache-name: linux-template-mono
             target: template_release
             sconsflags: module_mono_enabled=yes
-            bin: ./bin/godot.linuxbsd.template_release.x86_64.mono
+            bin: ./bin/noeengine.linuxbsd.template_release.x86_64.mono
             build-mono: false
             tests: false
             artifact: true
@@ -74,7 +74,7 @@ jobs:
             cache-name: linux-template-mono-debug
             target: template_debug
             sconsflags: module_mono_enabled=yes
-            bin: ./bin/godot.linuxbsd.template_debug.x86_64.mono
+            bin: ./bin/noeengine.linuxbsd.template_debug.x86_64.mono
             build-mono: false
             tests: false
             artifact: true
@@ -83,7 +83,7 @@ jobs:
             cache-name: linux-template-minimal
             target: template_release
             sconsflags: modules_enabled_by_default=no disable_3d=yes disable_advanced_gui=yes deprecated=no minizip=no
-            bin: ./bin/godot.linuxbsd.template_release.x86_64
+            bin: ./bin/noeengine.linuxbsd.template_release.x86_64
             tests: false
             artifact: true
 
@@ -108,19 +108,19 @@ jobs:
           sudo rm -rf /usr/local/lib/android
           echo "Disk usage after:" && df -h
 
-      - name: Restore Godot build cache
-        uses: ./.github/actions/godot-cache-restore
+      - name: Restore NoeEngine build cache
+        uses: ./.github/actions/noeengine-cache-restore
         with:
           cache-name: ${{ matrix.cache-name }}
         continue-on-error: true
 
       - name: Setup Python and SCons
         if: "!matrix.legacy-scons"
-        uses: ./.github/actions/godot-deps
+        uses: ./.github/actions/noeengine-deps
 
       - name: Setup Python and SCons (legacy versions)
         if: matrix.legacy-scons
-        uses: ./.github/actions/godot-deps
+        uses: ./.github/actions/noeengine-deps
         with:
           # Sync with Ensure*Version in SConstruct.
           python-version: 3.8  # No Python < 3.8 available for Ubuntu 22.04.
@@ -142,23 +142,23 @@ jobs:
         uses: ammaraskar/gcc-problem-matcher@master
 
       - name: Compilation
-        uses: ./.github/actions/godot-build
+        uses: ./.github/actions/noeengine-build
         with:
           sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
           platform: linuxbsd
           target: ${{ matrix.target }}
           tests: ${{ matrix.tests }}
 
-      - name: Compilation (godot-cpp)
-        uses: ./.github/actions/godot-cpp-build
-        if: matrix.godot-cpp
+      - name: Compilation (noeengine-cpp)
+        uses: ./.github/actions/noeengine-cpp-build
+        if: matrix.noeengine-cpp
         with:
           bin: ${{ matrix.bin }}
           scons-flags: target=template_debug dev_build=yes verbose=yes
-          godot-cpp-branch: ${{ env.GODOT_CPP_BRANCH }}
+          noeengine-cpp-branch: ${{ env.NOEENGINE_CPP_BRANCH }}
 
-      - name: Save Godot build cache
-        uses: ./.github/actions/godot-cache-save
+      - name: Save NoeEngine build cache
+        uses: ./.github/actions/noeengine-cache-save
         with:
           cache-name: ${{ matrix.cache-name }}
         continue-on-error: true
@@ -172,13 +172,13 @@ jobs:
         if: matrix.build-mono
         run: |
           dotnet --info
-          ./modules/mono/build_scripts/build_assemblies.py --godot-output-dir=./bin --godot-platform=linuxbsd
+          ./modules/mono/build_scripts/build_assemblies.py --noeengine-output-dir=./bin --noeengine-platform=linuxbsd
 
       - name: Prepare artifact
         if: matrix.artifact
         run: |
-          strip bin/godot.*
-          chmod +x bin/godot.*
+          strip bin/noeengine.*
+          chmod +x bin/noeengine.*
 
       - name: Upload artifact
         uses: ./.github/actions/upload-artifact
@@ -203,15 +203,15 @@ jobs:
           git diff --color --exit-code && ! git ls-files --others --exclude-standard | sed -e 's/^/New doc file missing in PR: /' | grep 'xml$'
 
       # Download and run the test project
-      - name: Test Godot project
-        uses: ./.github/actions/godot-project-test
+      - name: Test NoeEngine project
+        uses: ./.github/actions/noeengine-project-test
         if: matrix.proj-test
         with:
           bin: ${{ matrix.bin }}
 
       # Test the project converter
       - name: Test project converter
-        uses: ./.github/actions/godot-converter-test
+        uses: ./.github/actions/noeengine-converter-test
         if: matrix.proj-conv
         with:
           bin: ${{ matrix.bin }}
