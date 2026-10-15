@@ -9,7 +9,7 @@ permissions:
   pull-requests: read
 
 jobs:
-  migrate-main:
+  migrate-default:
     if: >-
       ${{ github.repository == 'EMN90909/noe' &&
           github.event.issue.number == 2 &&
@@ -18,45 +18,67 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      - name: Checkout main
+      - name: Checkout default branch 4.0
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: '4.0'
           fetch-depth: 1
 
-      - name: Verify migration source
+      - name: Verify migration tool and baseline
         shell: bash
         run: |
           set -euo pipefail
-          python3 -c 'import ast,pathlib; ast.parse(pathlib.Path("tools/rebrand_to_noeengine.py").read_text())'
+          python3 - <<'PY'
+          import ast, pathlib, re, subprocess
+          ast.parse(pathlib.Path('tools/rebrand_to_noeengine.py').read_text())
+          raw = subprocess.check_output(['git', 'ls-files', '-z'])
+          paths = [p.decode() for p in raw.split(b'\0') if p]
+          old = [p for p in paths if re.search('godot', p, re.I)]
+          print(f'Before migration: {len(paths)} tracked files; {len(old)} Godot-named file paths')
+          if len(old) not in (0, 518):
+              raise SystemExit('Unexpected baseline; stop rather than applying an unreviewed partial migration')
+          pathlib.Path('/tmp/noeengine-baseline-count').write_text(str(len(paths)))
+          PY
           python3 tools/rebrand_to_noeengine.py --dry-run > /tmp/noeengine-migration-plan.txt
           head -n 2 /tmp/noeengine-migration-plan.txt
 
-      - name: Apply full text and tracked-path rebrand
+      - name: Apply content and file path migration
         shell: bash
         run: |
           set -euo pipefail
           python3 tools/rebrand_to_noeengine.py --apply
+
+      - name: Verify all path renames and preserved license
+        shell: bash
+        run: |
+          set -euo pipefail
           python3 - <<'PY'
-          import re, subprocess
-          paths = [x.decode() for x in subprocess.check_output(["git", "ls-files", "-z"]).split(b"\0") if x]
-          remaining = [p for p in paths if re.search(r"godot", p, re.I)]
-          assert not remaining, f"Old Godot paths remain: {remaining[:20]}"
-          print(f"Verified {len(paths)} tracked paths; 0 Godot-named paths")
+          import ast, pathlib, re, subprocess
+          raw = subprocess.check_output(['git', 'ls-files', '-z'])
+          paths = [p.decode() for p in raw.split(b'\0') if p]
+          expected = int(pathlib.Path('/tmp/noeengine-baseline-count').read_text())
+          assert len(paths) == expected, f'Tracked file count changed from {expected} to {len(paths)}'
+          leftover = [p for p in paths if re.search('godot', p, re.I)]
+          assert not leftover, f'Old Godot-named file paths remain: {leftover[:20]}'
+          lic = pathlib.Path('UPSTREAM-MIT-LICENSE.txt').read_text()
+          assert 'Permission is hereby granted' in lic and 'Godot Engine contributors' in lic, 'Upstream MIT notice missing'
+          assert 'PROPRIETARY ADDITIONS' in pathlib.Path('LICENSE.txt').read_text()
+          ast.parse(pathlib.Path('tools/rebrand_to_noeengine.py').read_text())
+          print(f'PASS: {len(paths)} tracked files; 0 Godot-named paths; MIT provenance intact; migration script parses.')
           PY
           git add -A
           git diff --cached --check
 
-      - name: Commit migration to main
+      - name: Commit migration directly to default branch 4.0
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "NoeEngine Migration"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if git diff --cached --quiet; then
-            echo "No file changes."
+            echo 'No file changes.'
           else
             git diff --cached --shortstat
-            git commit -m "refactor: migrate Godot source and path references to NoeEngine [skip ci]"
-            git push origin HEAD:main
+            git commit -m 'refactor: migrate Godot references and 518 paths to NoeEngine'
+            git push origin HEAD:4.0
           fi
