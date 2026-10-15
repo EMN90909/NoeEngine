@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode blend_mix, depth_draw_never, cull_disabled, unshaded, depth_prepass_alpha;
+render_mode blend_mix, depth_draw_never, cull_disabled, unshaded;
 uniform sampler2D smoke_texture : source_color, filter_linear_mipmap;
 uniform sampler2D noise_texture : repeat_enable, filter_linear_mipmap;
 uniform vec4 smoke_tint : source_color = vec4(0.38, 0.40, 0.43, 0.55);
