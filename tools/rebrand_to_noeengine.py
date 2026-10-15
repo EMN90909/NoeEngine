@@ -53,7 +53,8 @@ def rewrite_text(path):
     if path == Path("tools/rebrand_to_noeengine.py"):
         return None
     if ((path.parent == Path(".") and path.name in UPSTREAM_FILES)
-            or path.name.lower().startswith(("license", "copying"))\n            or path.suffix.lower() in BINARY_SUFFIXES):
+            or path.name.lower().startswith(("license", "copying"))
+            or path.suffix.lower() in BINARY_SUFFIXES):
         return None
     raw = path.read_bytes()
     if b"\0" in raw:
