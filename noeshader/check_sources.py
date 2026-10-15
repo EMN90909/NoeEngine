@@ -37,5 +37,17 @@ def run():
     print("NoeShader: 7 source structure checks passed; native shader interfaces still present.")
     print("WARNING: This does not check shader compilation, renderer performance, or visual output.")
 
+
+
+def check_native_grade():
+    """Confirm native and material shaders use the same Rec.709 luma weights."""
+    native = (ROOT / "servers/rendering/renderer_rd/shaders/effects/tonemap.glsl").read_text(encoding="utf-8")
+    grade = (ROOT / "noeshader/post/noe_color_grade.gdshader").read_text(encoding="utf-8")
+    weights = "0.2126"
+    assert weights in native and "0.7152" in native and "0.0722" in native
+    assert weights in grade and "0.7152" in grade and "0.0722" in grade
+
 if __name__ == "__main__":
     run()
+    check_native_grade()
+    print("Native RD tonemap Rec.709 luminance check passed.")
