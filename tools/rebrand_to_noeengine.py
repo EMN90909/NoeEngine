@@ -16,6 +16,9 @@ REPLACEMENTS = re.compile(r"godotengine|godot", flags=re.IGNORECASE)
 UPSTREAM_FILES = {
     "COPYRIGHT.txt", "AUTHORS.md", "DONORS.md", "LOGO_LICENSE.md",
     "UPSTREAM-MIT-LICENSE.txt", "LICENSE.txt", ".mailmap",
+    "README.md", "CHANGELOG.md", "CONTRIBUTING.md",
+    "NOEENGINE-LICENSING.md", "NOEENGINE-MIGRATION-AUDIT.md",
+    "NOEENGINE-REBRANDING.md",
 }
 BINARY_SUFFIXES = {
     ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".ico",
