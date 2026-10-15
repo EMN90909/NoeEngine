@@ -5,13 +5,13 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>
-    <Description>Core C# source generator for Godot projects.</Description>
-    <Authors>Godot Engine contributors</Authors>
+    <Description>Core C# source generator for NoeEngine projects.</Description>
+    <Authors>NoeEngine Engine contributors</Authors>
 
-    <PackageId>Godot.SourceGenerators</PackageId>
+    <PackageId>NoeEngine.SourceGenerators</PackageId>
     <Version>4.0.5</Version>
-    <PackageVersion>$(PackageVersion_Godot_SourceGenerators)</PackageVersion>
-    <RepositoryUrl>https://github.com/godotengine/godot/tree/master/modules/mono/editor/Godot.NET.Sdk/Godot.SourceGenerators</RepositoryUrl>
+    <PackageVersion>$(PackageVersion_NoeEngine_SourceGenerators)</PackageVersion>
+    <RepositoryUrl>https://github.com/noeengineengine/noeengine/tree/master/modules/mono/editor/NoeEngine.NET.Sdk/NoeEngine.SourceGenerators</RepositoryUrl>
     <PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
 
@@ -28,6 +28,6 @@
     <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
 
     <!-- Package the props file -->
-    <None Include="Godot.SourceGenerators.props" Pack="true" PackagePath="build" Visible="true" />
+    <None Include="NoeEngine.SourceGenerators.props" Pack="true" PackagePath="build" Visible="true" />
   </ItemGroup>
 </Project>

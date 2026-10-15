@@ -4,25 +4,25 @@
     <TargetFramework>net6.0</TargetFramework>
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <LangVersion>10</LangVersion>
-    <!-- The Godot editor uses the Debug Godot API assemblies -->
-    <GodotApiConfiguration>Debug</GodotApiConfiguration>
-    <GodotSourceRootPath>$(SolutionDir)/../../../../</GodotSourceRootPath>
-    <GodotOutputDataDir>$(GodotSourceRootPath)/bin/GodotSharp</GodotOutputDataDir>
-    <GodotApiAssembliesDir>$(GodotOutputDataDir)/Api/$(GodotApiConfiguration)</GodotApiAssembliesDir>
+    <!-- The NoeEngine editor uses the Debug NoeEngine API assemblies -->
+    <NoeEngineApiConfiguration>Debug</NoeEngineApiConfiguration>
+    <NoeEngineSourceRootPath>$(SolutionDir)/../../../../</NoeEngineSourceRootPath>
+    <NoeEngineOutputDataDir>$(NoeEngineSourceRootPath)/bin/NoeEngineSharp</NoeEngineOutputDataDir>
+    <NoeEngineApiAssembliesDir>$(NoeEngineOutputDataDir)/Api/$(NoeEngineApiConfiguration)</NoeEngineApiAssembliesDir>
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <!-- Needed for our source generators to work despite this not being a Godot game project -->
+  <!-- Needed for our source generators to work despite this not being a NoeEngine game project -->
   <PropertyGroup>
-    <IsGodotToolsProject>true</IsGodotToolsProject>
+    <IsNoeEngineToolsProject>true</IsNoeEngineToolsProject>
   </PropertyGroup>
   <ItemGroup>
-    <CompilerVisibleProperty Include="IsGodotToolsProject" />
+    <CompilerVisibleProperty Include="IsNoeEngineToolsProject" />
   </ItemGroup>
-  <PropertyGroup Condition=" Exists('$(GodotApiAssembliesDir)/GodotSharp.dll') ">
-    <!-- The project is part of the Godot source tree -->
-    <!-- Use the Godot source tree output folder instead of '$(ProjectDir)/bin' -->
-    <OutputPath>$(GodotOutputDataDir)/Tools</OutputPath>
+  <PropertyGroup Condition=" Exists('$(NoeEngineApiAssembliesDir)/NoeEngineSharp.dll') ">
+    <!-- The project is part of the NoeEngine source tree -->
+    <!-- Use the NoeEngine source tree output folder instead of '$(ProjectDir)/bin' -->
+    <OutputPath>$(NoeEngineOutputDataDir)/Tools</OutputPath>
     <!-- Must not append '$(TargetFramework)' to the output path in this case -->
     <AppendTargetFrameworkToOutputPath>False</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
@@ -32,25 +32,25 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <!-- For RiderPathLocator -->
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
-    <Reference Include="GodotSharp">
-      <HintPath>$(GodotApiAssembliesDir)/GodotSharp.dll</HintPath>
+    <Reference Include="NoeEngineSharp">
+      <HintPath>$(NoeEngineApiAssembliesDir)/NoeEngineSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="GodotSharpEditor">
-      <HintPath>$(GodotApiAssembliesDir)/GodotSharpEditor.dll</HintPath>
+    <Reference Include="NoeEngineSharpEditor">
+      <HintPath>$(NoeEngineApiAssembliesDir)/NoeEngineSharpEditor.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Godot.NET.Sdk\Godot.SourceGenerators\Godot.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="..\..\..\glue\GodotSharp\Godot.SourceGenerators.Internal\Godot.SourceGenerators.Internal.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\NoeEngine.NET.Sdk\NoeEngine.SourceGenerators\NoeEngine.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\..\glue\NoeEngineSharp\NoeEngine.SourceGenerators.Internal\NoeEngine.SourceGenerators.Internal.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\GodotTools.BuildLogger\GodotTools.BuildLogger.csproj" />
-    <ProjectReference Include="..\GodotTools.IdeMessaging\GodotTools.IdeMessaging.csproj" />
-    <ProjectReference Include="..\GodotTools.ProjectEditor\GodotTools.ProjectEditor.csproj" />
-    <ProjectReference Include="..\GodotTools.Core\GodotTools.Core.csproj" />
+    <ProjectReference Include="..\NoeEngineTools.BuildLogger\NoeEngineTools.BuildLogger.csproj" />
+    <ProjectReference Include="..\NoeEngineTools.IdeMessaging\NoeEngineTools.IdeMessaging.csproj" />
+    <ProjectReference Include="..\NoeEngineTools.ProjectEditor\NoeEngineTools.ProjectEditor.csproj" />
+    <ProjectReference Include="..\NoeEngineTools.Core\NoeEngineTools.Core.csproj" />
     <!-- Include it if this is an SCons build targeting Windows, or if it's not an SCons build but we're on Windows -->
-    <ProjectReference Include="..\GodotTools.OpenVisualStudio\GodotTools.OpenVisualStudio.csproj" Condition=" '$(GodotPlatform)' == 'windows' Or ( '$(GodotPlatform)' == '' And '$(OS)' == 'Windows_NT' ) " />
+    <ProjectReference Include="..\NoeEngineTools.OpenVisualStudio\NoeEngineTools.OpenVisualStudio.csproj" Condition=" '$(NoeEnginePlatform)' == 'windows' Or ( '$(NoeEnginePlatform)' == '' And '$(OS)' == 'Windows_NT' ) " />
   </ItemGroup>
 </Project>
