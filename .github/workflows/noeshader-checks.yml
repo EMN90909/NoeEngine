@@ -1,0 +1,22 @@
+name: NoeShader source checks
+on:
+  push:
+    paths:
+      - "noeshader/**"
+      - "servers/rendering/renderer_rd/shaders/effects/tonemap.glsl"
+      - ".github/workflows/noeshader-checks.yml"
+  pull_request:
+    paths:
+      - "noeshader/**"
+      - "servers/rendering/renderer_rd/shaders/effects/tonemap.glsl"
+      - ".github/workflows/noeshader-checks.yml"
+jobs:
+  source-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: NoeShader source compatibility
+        run: python3 noeshader/check_sources.py
