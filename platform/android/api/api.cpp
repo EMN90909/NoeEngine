@@ -2,7 +2,7 @@
 /*  api.cpp                                                               */
 /**************************************************************************/
 /*                         This file is part of:                          */
-/*                             GODOT ENGINE                               */
+/*                             NOEENGINE                               */
 /*                        https://godotengine.org                         */
 /**************************************************************************/
 /* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
@@ -42,7 +42,7 @@ void register_android_api() {
 #if !defined(ANDROID_ENABLED)
 	// On Android platforms, the `java_class_wrapper` instantiation and the
 	// `JNISingleton` registration occurs in
-	// `platform/android/java_godot_lib_jni.cpp#Java_org_godotengine_godot_GodotLib_setup`
+	// `platform/android/java_noeengine_lib_jni.cpp#Java_org_noeengine_noeengine_NoeEngineLib_setup`
 	java_class_wrapper = memnew(JavaClassWrapper); // Dummy
 	GDREGISTER_CLASS(JNISingleton);
 #endif

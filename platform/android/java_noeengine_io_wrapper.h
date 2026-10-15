@@ -1,8 +1,8 @@
 /**************************************************************************/
-/*  java_godot_io_wrapper.h                                               */
+/*  java_noeengine_io_wrapper.h                                               */
 /**************************************************************************/
 /*                         This file is part of:                          */
-/*                             GODOT ENGINE                               */
+/*                             NOEENGINE                               */
 /*                        https://godotengine.org                         */
 /**************************************************************************/
 /* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
@@ -28,8 +28,8 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef JAVA_GODOT_IO_WRAPPER_H
-#define JAVA_GODOT_IO_WRAPPER_H
+#ifndef JAVA_NOEENGINE_IO_WRAPPER_H
+#define JAVA_NOEENGINE_IO_WRAPPER_H
 
 #include <android/log.h>
 #include <jni.h>
@@ -38,10 +38,10 @@
 #include "core/variant/typed_array.h"
 #include "string_android.h"
 
-// Class that makes functions in java/src/org/godotengine/godot/GodotIO.java callable from C++
-class GodotIOJavaWrapper {
+// Class that makes functions in java/src/org/noeengine/noeengine/NoeEngineIO.java callable from C++
+class NoeEngineIOJavaWrapper {
 private:
-	jobject godot_io_instance;
+	jobject noeengine_io_instance;
 	jclass cls;
 
 	jmethodID _open_URI = 0;
@@ -62,8 +62,8 @@ private:
 	jmethodID _get_system_dir = 0;
 
 public:
-	GodotIOJavaWrapper(JNIEnv *p_env, jobject p_godot_io_instance);
-	~GodotIOJavaWrapper();
+	NoeEngineIOJavaWrapper(JNIEnv *p_env, jobject p_noeengine_io_instance);
+	~NoeEngineIOJavaWrapper();
 
 	jobject get_instance();
 
@@ -88,4 +88,4 @@ public:
 	String get_system_dir(int p_dir, bool p_shared_storage);
 };
 
-#endif // JAVA_GODOT_IO_WRAPPER_H
+#endif // JAVA_NOEENGINE_IO_WRAPPER_H

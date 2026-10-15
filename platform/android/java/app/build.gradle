@@ -1,4 +1,4 @@
-// Gradle build config for Godot Engine's Android port.
+// Gradle build config for NoeEngine's Android port.
 buildscript {
     apply from: 'config.gradle'
 
@@ -24,8 +24,8 @@ allprojects {
         google()
         mavenCentral()
 
-        // Godot user plugins custom maven repos
-        String[] mavenRepos = getGodotPluginsMavenRepos()
+        // NoeEngine user plugins custom maven repos
+        String[] mavenRepos = getNoeEnginePluginsMavenRepos()
         if (mavenRepos != null && mavenRepos.size() > 0) {
             for (String repoUrl : mavenRepos) {
                 maven {
@@ -47,26 +47,26 @@ dependencies {
 
     if (rootProject.findProject(":lib")) {
         implementation project(":lib")
-    } else if (rootProject.findProject(":godot:lib")) {
-        implementation project(":godot:lib")
+    } else if (rootProject.findProject(":noeengine:lib")) {
+        implementation project(":noeengine:lib")
     } else {
-        // Godot gradle build mode. In this scenario this project is the only one around and the Godot
-        // library is available through the pre-generated godot-lib.*.aar android archive files.
+        // NoeEngine gradle build mode. In this scenario this project is the only one around and the NoeEngine
+        // library is available through the pre-generated noeengine-lib.*.aar android archive files.
         debugImplementation fileTree(dir: 'libs/debug', include: ['*.jar', '*.aar'])
         devImplementation fileTree(dir: 'libs/dev', include: ['*.jar', '*.aar'])
         releaseImplementation fileTree(dir: 'libs/release', include: ['*.jar', '*.aar'])
     }
 
-    // Godot user plugins remote dependencies
-    String[] remoteDeps = getGodotPluginsRemoteBinaries()
+    // NoeEngine user plugins remote dependencies
+    String[] remoteDeps = getNoeEnginePluginsRemoteBinaries()
     if (remoteDeps != null && remoteDeps.size() > 0) {
         for (String dep : remoteDeps) {
             implementation dep
         }
     }
 
-    // Godot user plugins local dependencies
-    String[] pluginsBinaries = getGodotPluginsLocalBinaries()
+    // NoeEngine user plugins local dependencies
+    String[] pluginsBinaries = getNoeEnginePluginsLocalBinaries()
     if (pluginsBinaries != null && pluginsBinaries.size() > 0) {
         implementation files(pluginsBinaries)
     }
@@ -89,7 +89,7 @@ android {
     assetPacks = [":assetPacks:installTime"]
 
     defaultConfig {
-        // The default ignore pattern for the 'assets' directory includes hidden files and directories which are used by Godot projects.
+        // The default ignore pattern for the 'assets' directory includes hidden files and directories which are used by NoeEngine projects.
         aaptOptions {
             ignoreAssetsPattern "!.svn:!.git:!.gitignore:!.ds_store:!*.scc:<dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"
         }
@@ -99,7 +99,7 @@ android {
             abiFilters export_abi_list
         }
 
-        manifestPlaceholders = [godotEditorVersion: getGodotEditorVersion()]
+        manifestPlaceholders = [noeengineEditorVersion: getNoeEngineEditorVersion()]
 
         // Feel free to modify the application id to your own.
         applicationId getExportPackageName()
@@ -153,7 +153,7 @@ android {
 
         debug {
             // Signing and zip-aligning are skipped for prebuilt builds, but
-            // performed for Godot gradle builds.
+            // performed for NoeEngine gradle builds.
             zipAlignEnabled shouldZipAlign()
             if (shouldSign()) {
                 signingConfig signingConfigs.debug
@@ -165,7 +165,7 @@ android {
         dev {
             initWith debug
             // Signing and zip-aligning are skipped for prebuilt builds, but
-            // performed for Godot gradle builds.
+            // performed for NoeEngine gradle builds.
             zipAlignEnabled shouldZipAlign()
             if (shouldSign()) {
                 signingConfig signingConfigs.debug
@@ -176,7 +176,7 @@ android {
 
         release {
             // Signing and zip-aligning are skipped for prebuilt builds, but
-            // performed for Godot gradle builds.
+            // performed for NoeEngine gradle builds.
             zipAlignEnabled shouldZipAlign()
             if (shouldSign()) {
                 signingConfig signingConfigs.release

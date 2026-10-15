@@ -1,8 +1,8 @@
 /**************************************************************************/
-/*  godot_plugin_config.cpp                                               */
+/*  noeengine_plugin_config.cpp                                               */
 /**************************************************************************/
 /*                         This file is part of:                          */
-/*                             GODOT ENGINE                               */
+/*                             NOEENGINE                               */
 /*                        https://godotengine.org                         */
 /**************************************************************************/
 /* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
@@ -28,7 +28,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "godot_plugin_config.h"
+#include "noeengine_plugin_config.h"
 /*
  * Set of prebuilt plugins.
  * Currently unused, this is just for future reference:
@@ -36,9 +36,9 @@
 // static const PluginConfigAndroid MY_PREBUILT_PLUGIN = {
 //    /*.valid_config =*/true,
 //    /*.last_updated =*/0,
-//    /*.name =*/"GodotPayment",
+//    /*.name =*/"NoeEnginePayment",
 //    /*.binary_type =*/"local",
-//    /*.binary =*/"res://android/build/libs/plugins/GodotPayment.release.aar",
+//    /*.binary =*/"res://android/build/libs/plugins/NoeEnginePayment.release.aar",
 //    /*.local_dependencies =*/{},
 //     /*.remote_dependencies =*/String("com.android.billingclient:billing:2.2.1").split("|"),
 //     /*.custom_maven_repos =*/{}

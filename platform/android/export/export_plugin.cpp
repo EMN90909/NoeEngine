@@ -2,7 +2,7 @@
 /*  export_plugin.cpp                                                     */
 /**************************************************************************/
 /*                         This file is part of:                          */
-/*                             GODOT ENGINE                               */
+/*                             NOEENGINE                               */
 /*                        https://godotengine.org                         */
 /**************************************************************************/
 /* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
@@ -573,7 +573,7 @@ bool EditorExportPlatformAndroid::_should_compress_asset(const String &p_path, c
 		".rtttl", ".imy", ".xmf", ".mp4", ".m4a",
 		".m4v", ".3gp", ".3gpp", ".3g2", ".3gpp2",
 		".amr", ".awb", ".wma", ".wmv",
-		// Godot-specific:
+		// NoeEngine-specific:
 		".webp", // Same reasoning as .png
 		".cfb", // Don't let small config files slow-down startup
 		".scn", // Binary scenes are usually already compressed
@@ -1422,8 +1422,8 @@ void EditorExportPlatformAndroid::_fix_resources(const Ref<EditorExportPreset> &
 
 		String str = _parse_string(&r_manifest[offset], string_flags & UTF8_FLAG);
 
-		if (str.begins_with("godot-project-name")) {
-			if (str == "godot-project-name") {
+		if (str.begins_with("noeengine-project-name")) {
+			if (str == "noeengine-project-name") {
 				//project name
 				str = get_project_name(package_name);
 
@@ -1737,7 +1737,7 @@ void EditorExportPlatformAndroid::get_export_options(List<ExportOption> *r_optio
 	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "version/code", PROPERTY_HINT_RANGE, "1,4096,1,or_greater"), 1));
 	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "version/name"), "1.0"));
 
-	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "package/unique_name", PROPERTY_HINT_PLACEHOLDER_TEXT, "ext.domain.name"), "org.godotengine.$genname"));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "package/unique_name", PROPERTY_HINT_PLACEHOLDER_TEXT, "ext.domain.name"), "org.noeengine.$genname"));
 	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "package/name", PROPERTY_HINT_PLACEHOLDER_TEXT, "Game Name [default if blank]"), ""));
 	r_options->push_back(ExportOption(PropertyInfo(Variant::BOOL, "package/signed"), true));
 	r_options->push_back(ExportOption(PropertyInfo(Variant::INT, "package/app_category", PROPERTY_HINT_ENUM, "Accessibility,Audio,Game,Image,Maps,News,Productivity,Social,Video"), APP_CATEGORY_GAME));
@@ -1993,7 +1993,7 @@ Error EditorExportPlatformAndroid::run(const Ref<EditorExportPreset> &p_preset, 
 	args.push_back("-a");
 	args.push_back("android.intent.action.MAIN");
 	args.push_back("-n");
-	args.push_back(get_package_name(package_name) + "/com.godot.game.GodotApp");
+	args.push_back(get_package_name(package_name) + "/com.noeengine.game.NoeEngineApp");
 
 	output.clear();
 	err = OS::get_singleton()->execute(adb, args, &output, &rv, true);
@@ -2352,7 +2352,7 @@ bool EditorExportPlatformAndroid::has_valid_project_configuration(const Ref<Edit
 			min_sdk_int = min_sdk_str.to_int();
 			if (min_sdk_int < OPENGL_MIN_SDK_VERSION) {
 				valid = false;
-				err += vformat(TTR("\"Min SDK\" cannot be lower than %d, which is the version needed by the Godot library."), OPENGL_MIN_SDK_VERSION);
+				err += vformat(TTR("\"Min SDK\" cannot be lower than %d, which is the version needed by the NoeEngine library."), OPENGL_MIN_SDK_VERSION);
 				err += "\n";
 			}
 		}
@@ -2742,7 +2742,7 @@ Error EditorExportPlatformAndroid::export_project_helper(const Ref<EditorExportP
 			String version = f->get_line().strip_edges();
 			print_verbose("- build version: " + version);
 			if (version != VERSION_FULL_CONFIG) {
-				add_message(EXPORT_MESSAGE_ERROR, TTR("Export"), vformat(TTR("Android build version mismatch: Template installed: %s, Godot version: %s. Please reinstall Android build template from 'Project' menu."), version, VERSION_FULL_CONFIG));
+				add_message(EXPORT_MESSAGE_ERROR, TTR("Export"), vformat(TTR("Android build version mismatch: Template installed: %s, NoeEngine version: %s. Please reinstall Android build template from 'Project' menu."), version, VERSION_FULL_CONFIG));
 				return ERR_UNCONFIGURED;
 			}
 		}
@@ -2851,7 +2851,7 @@ Error EditorExportPlatformAndroid::export_project_helper(const Ref<EditorExportP
 		cmdline.push_back("-Pplugins_maven_repos=" + custom_maven_repos); // argument to specify the list of custom maven repos for the plugins dependencies.
 		cmdline.push_back("-Pperform_zipalign=" + zipalign_flag); // argument to specify whether the build should be zipaligned.
 		cmdline.push_back("-Pperform_signing=" + sign_flag); // argument to specify whether the build should be signed.
-		cmdline.push_back("-Pgodot_editor_version=" + String(VERSION_FULL_CONFIG));
+		cmdline.push_back("-Pnoeengine_editor_version=" + String(VERSION_FULL_CONFIG));
 
 		// NOTE: The release keystore is not included in the verbose logging
 		// to avoid accidentally leaking sensitive information when sharing verbose logs for troubleshooting.
@@ -2902,7 +2902,7 @@ Error EditorExportPlatformAndroid::export_project_helper(const Ref<EditorExportP
 
 		int result = EditorNode::get_singleton()->execute_and_show_output(TTR("Building Android Project (gradle)"), build_command, cmdline);
 		if (result != 0) {
-			add_message(EXPORT_MESSAGE_ERROR, TTR("Export"), TTR("Building of Android project failed, check output for the error. Alternatively visit docs.godotengine.org for Android build documentation."));
+			add_message(EXPORT_MESSAGE_ERROR, TTR("Export"), TTR("Building of Android project failed, check output for the error. Alternatively visit docs.noeengine.org for Android build documentation."));
 			return ERR_CANT_CREATE;
 		}
 

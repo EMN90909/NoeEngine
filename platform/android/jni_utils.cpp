@@ -2,7 +2,7 @@
 /*  jni_utils.cpp                                                         */
 /**************************************************************************/
 /*                         This file is part of:                          */
-/*                             GODOT ENGINE                               */
+/*                             NOEENGINE                               */
 /*                        https://godotengine.org                         */
 /**************************************************************************/
 /* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
@@ -100,7 +100,7 @@ jvalret _variant_to_jvalue(JNIEnv *env, Variant::Type p_type, const Variant *p_a
 
 		case Variant::DICTIONARY: {
 			Dictionary dict = *p_arg;
-			jclass dclass = env->FindClass("org/godotengine/godot/Dictionary");
+			jclass dclass = env->FindClass("org/noeengine/noeengine/Dictionary");
 			jmethodID ctor = env->GetMethodID(dclass, "<init>", "()V");
 			jobject jdict = env->NewObject(dclass, ctor);
 
@@ -336,7 +336,7 @@ Variant _jobject_to_variant(JNIEnv *env, jobject obj) {
 		return varr;
 	}
 
-	if (name == "java.util.HashMap" || name == "org.godotengine.godot.Dictionary") {
+	if (name == "java.util.HashMap" || name == "org.noeengine.noeengine.Dictionary") {
 		Dictionary ret;
 		jclass oclass = c;
 		jmethodID get_keys = env->GetMethodID(oclass, "get_keys", "()[Ljava/lang/String;");
@@ -381,7 +381,7 @@ Variant::Type get_jni_type(const String &p_type) {
 		{ "[F", Variant::PACKED_FLOAT32_ARRAY },
 		{ "[D", Variant::PACKED_FLOAT64_ARRAY },
 		{ "[Ljava.lang.String;", Variant::PACKED_STRING_ARRAY },
-		{ "org.godotengine.godot.Dictionary", Variant::DICTIONARY },
+		{ "org.noeengine.noeengine.Dictionary", Variant::DICTIONARY },
 		{ nullptr, Variant::NIL }
 	};
 
@@ -410,7 +410,7 @@ const char *get_jni_sig(const String &p_type) {
 		{ "float", "F" },
 		{ "double", "D" },
 		{ "java.lang.String", "Ljava/lang/String;" },
-		{ "org.godotengine.godot.Dictionary", "Lorg/godotengine/godot/Dictionary;" },
+		{ "org.noeengine.noeengine.Dictionary", "Lorg/noeengine/noeengine/Dictionary;" },
 		{ "[I", "[I" },
 		{ "[J", "[J" },
 		{ "[B", "[B" },

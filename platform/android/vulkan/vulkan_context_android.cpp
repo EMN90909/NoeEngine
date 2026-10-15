@@ -2,7 +2,7 @@
 /*  vulkan_context_android.cpp                                            */
 /**************************************************************************/
 /*                         This file is part of:                          */
-/*                             GODOT ENGINE                               */
+/*                             NOEENGINE                               */
 /*                        https://godotengine.org                         */
 /**************************************************************************/
 /* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
@@ -32,7 +32,7 @@
 
 #include "vulkan_context_android.h"
 
-#include "drivers/vulkan/godot_vulkan.h"
+#include "drivers/vulkan/noeengine_vulkan.h"
 
 const char *VulkanContextAndroid::_get_platform_surface_extension() const {
 	return VK_KHR_ANDROID_SURFACE_EXTENSION_NAME;

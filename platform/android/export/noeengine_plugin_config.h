@@ -1,8 +1,8 @@
 /**************************************************************************/
-/*  godot_plugin_config.h                                                 */
+/*  noeengine_plugin_config.h                                                 */
 /**************************************************************************/
 /*                         This file is part of:                          */
-/*                             GODOT ENGINE                               */
+/*                             NOEENGINE                               */
 /*                        https://godotengine.org                         */
 /**************************************************************************/
 /* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
@@ -28,8 +28,8 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef ANDROID_GODOT_PLUGIN_CONFIG_H
-#define ANDROID_GODOT_PLUGIN_CONFIG_H
+#ifndef ANDROID_NOEENGINE_PLUGIN_CONFIG_H
+#define ANDROID_NOEENGINE_PLUGIN_CONFIG_H
 
 #include "core/config/project_settings.h"
 #include "core/error/error_list.h"
@@ -42,7 +42,7 @@
 - **binary_type**: can be either `local` or `remote`. The type affects the **binary** field.
 - **binary**:
   - if **binary_type** is `local`, then this should be the filename of the plugin `aar` file in the `res://android/plugins` directory (e.g: `MyPlugin.aar`).
-  - if **binary_type** is `remote`, then this should be a declaration for a remote gradle binary (e.g: "org.godot.example:my-plugin:0.0.0").
+  - if **binary_type** is `remote`, then this should be a declaration for a remote gradle binary (e.g: "org.noeengine.example:my-plugin:0.0.0").
 
 The `dependencies` section and fields are optional and defined as follow:
 - **local**: contains a list of local `.aar` binary files the plugin depends on. The local binary dependencies must also be located in the `res://android/plugins` directory.
@@ -103,4 +103,4 @@ struct PluginConfigAndroid {
 	static String get_plugins_names(Vector<PluginConfigAndroid> plugins_configs);
 };
 
-#endif // ANDROID_GODOT_PLUGIN_CONFIG_H
+#endif // ANDROID_NOEENGINE_PLUGIN_CONFIG_H

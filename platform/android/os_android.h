@@ -2,7 +2,7 @@
 /*  os_android.h                                                          */
 /**************************************************************************/
 /*                         This file is part of:                          */
-/*                             GODOT ENGINE                               */
+/*                             NOEENGINE                               */
 /*                        https://godotengine.org                         */
 /**************************************************************************/
 /* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
@@ -36,8 +36,8 @@
 #include "drivers/unix/os_unix.h"
 #include "servers/audio_server.h"
 
-class GodotJavaWrapper;
-class GodotIOJavaWrapper;
+class NoeEngineJavaWrapper;
+class NoeEngineIOJavaWrapper;
 
 struct ANativeWindow;
 
@@ -78,8 +78,8 @@ private:
 	HashSet<String> font_names;
 	bool font_config_loaded = false;
 
-	GodotJavaWrapper *godot_java = nullptr;
-	GodotIOJavaWrapper *godot_io_java = nullptr;
+	NoeEngineJavaWrapper *noeengine_java = nullptr;
+	NoeEngineIOJavaWrapper *noeengine_io_java = nullptr;
 
 	void _load_system_font_config();
 	String get_system_property(const char *key) const;
@@ -102,8 +102,8 @@ public:
 	typedef int64_t ProcessID;
 
 	static OS_Android *get_singleton();
-	GodotJavaWrapper *get_godot_java();
-	GodotIOJavaWrapper *get_godot_io_java();
+	NoeEngineJavaWrapper *get_noeengine_java();
+	NoeEngineIOJavaWrapper *get_noeengine_io_java();
 
 	virtual bool request_permission(const String &p_name) override;
 	virtual bool request_permissions() override;
@@ -161,7 +161,7 @@ public:
 	virtual Error kill(const ProcessID &p_pid) override;
 
 	virtual bool _check_internal_feature_support(const String &p_feature) override;
-	OS_Android(GodotJavaWrapper *p_godot_java, GodotIOJavaWrapper *p_godot_io_java, bool p_use_apk_expansion);
+	OS_Android(NoeEngineJavaWrapper *p_noeengine_java, NoeEngineIOJavaWrapper *p_noeengine_io_java, bool p_use_apk_expansion);
 	~OS_Android();
 };
 

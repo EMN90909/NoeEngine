@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.godotengine.godot"
+    package="org.noeengine.noeengine"
     android:versionCode="1"
     android:versionName="1.0">
 
     <application>
 
-        <!-- Records the version of the Godot library -->
+        <!-- Records the version of the NoeEngine library -->
         <meta-data
-            android:name="org.godotengine.library.version"
-            android:value="${godotLibraryVersion}" />
+            android:name="org.noeengine.library.version"
+            android:value="${noeengineLibraryVersion}" />
 
-        <service android:name=".GodotDownloaderService" />
+        <service android:name=".NoeEngineDownloaderService" />
 
         <activity
             android:name=".utils.ProcessPhoenix"
@@ -27,7 +27,7 @@
             android:grantUriPermissions="true">
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/godot_provider_paths" />
+                android:resource="@xml/noeengine_provider_paths" />
         </provider>
 
     </application>

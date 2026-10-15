@@ -2,7 +2,7 @@
 /*  dir_access_jandroid.h                                                 */
 /**************************************************************************/
 /*                         This file is part of:                          */
-/*                             GODOT ENGINE                               */
+/*                             NOEENGINE                               */
 /*                        https://godotengine.org                         */
 /**************************************************************************/
 /* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
@@ -33,7 +33,7 @@
 
 #include "core/io/dir_access.h"
 #include "drivers/unix/dir_access_unix.h"
-#include "java_godot_lib_jni.h"
+#include "java_noeengine_lib_jni.h"
 #include <stdio.h>
 
 /// Android implementation of the DirAccess interface used to provide access to

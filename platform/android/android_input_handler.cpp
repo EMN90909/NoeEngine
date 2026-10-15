@@ -2,7 +2,7 @@
 /*  android_input_handler.cpp                                             */
 /**************************************************************************/
 /*                         This file is part of:                          */
-/*                             GODOT ENGINE                               */
+/*                             NOEENGINE                               */
 /*                        https://godotengine.org                         */
 /**************************************************************************/
 /* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
@@ -87,7 +87,7 @@ void AndroidInputHandler::process_key_event(int p_physical_keycode, int p_unicod
 	Ref<InputEventKey> ev;
 	ev.instantiate();
 
-	Key physical_keycode = godot_code_from_android_code(p_physical_keycode);
+	Key physical_keycode = noeengine_code_from_android_code(p_physical_keycode);
 	Key keycode = physical_keycode;
 	if (unicode == '\b') { // 0x08
 		keycode = Key::BACKSPACE;
@@ -294,7 +294,7 @@ void AndroidInputHandler::_release_mouse_event_info(bool p_source_mouse_relative
 }
 
 void AndroidInputHandler::process_mouse_event(int p_event_action, int p_event_android_buttons_mask, Point2 p_event_pos, Vector2 p_delta, bool p_double_click, bool p_source_mouse_relative) {
-	BitField<MouseButtonMask> event_buttons_mask = _android_button_mask_to_godot_button_mask(p_event_android_buttons_mask);
+	BitField<MouseButtonMask> event_buttons_mask = _android_button_mask_to_noeengine_button_mask(p_event_android_buttons_mask);
 	switch (p_event_action) {
 		case AMOTION_EVENT_ACTION_HOVER_MOVE: // hover move
 		case AMOTION_EVENT_ACTION_HOVER_ENTER: // hover enter
@@ -429,23 +429,23 @@ MouseButton AndroidInputHandler::_button_index_from_mask(BitField<MouseButtonMas
 	}
 }
 
-BitField<MouseButtonMask> AndroidInputHandler::_android_button_mask_to_godot_button_mask(int android_button_mask) {
-	BitField<MouseButtonMask> godot_button_mask;
+BitField<MouseButtonMask> AndroidInputHandler::_android_button_mask_to_noeengine_button_mask(int android_button_mask) {
+	BitField<MouseButtonMask> noeengine_button_mask;
 	if (android_button_mask & AMOTION_EVENT_BUTTON_PRIMARY) {
-		godot_button_mask.set_flag(MouseButtonMask::LEFT);
+		noeengine_button_mask.set_flag(MouseButtonMask::LEFT);
 	}
 	if (android_button_mask & AMOTION_EVENT_BUTTON_SECONDARY) {
-		godot_button_mask.set_flag(MouseButtonMask::RIGHT);
+		noeengine_button_mask.set_flag(MouseButtonMask::RIGHT);
 	}
 	if (android_button_mask & AMOTION_EVENT_BUTTON_TERTIARY) {
-		godot_button_mask.set_flag(MouseButtonMask::MIDDLE);
+		noeengine_button_mask.set_flag(MouseButtonMask::MIDDLE);
 	}
 	if (android_button_mask & AMOTION_EVENT_BUTTON_BACK) {
-		godot_button_mask.set_flag(MouseButtonMask::MB_XBUTTON1);
+		noeengine_button_mask.set_flag(MouseButtonMask::MB_XBUTTON1);
 	}
 	if (android_button_mask & AMOTION_EVENT_BUTTON_FORWARD) {
-		godot_button_mask.set_flag(MouseButtonMask::MB_XBUTTON2);
+		noeengine_button_mask.set_flag(MouseButtonMask::MB_XBUTTON2);
 	}
 
-	return godot_button_mask;
+	return noeengine_button_mask;
 }

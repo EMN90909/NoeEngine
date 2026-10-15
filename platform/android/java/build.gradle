@@ -21,7 +21,7 @@ apply from: 'app/config.gradle'
 apply from: 'scripts/publish-root.gradle'
 
 ext {
-    PUBLISH_VERSION = getGodotPublishVersion()
+    PUBLISH_VERSION = getNoeEnginePublishVersion()
 }
 
 group = ossrhGroupId
@@ -45,7 +45,7 @@ ext {
     // Used by gradle to specify which architecture to build for by default when running
     // `./gradlew build` (this command is usually used by Android Studio).
     // If building manually on the command line, it's recommended to use the
-    // `./gradlew generateGodotTemplates` build command instead after running the `scons` command(s).
+    // `./gradlew generateNoeEngineTemplates` build command instead after running the `scons` command(s).
     // The {selectedAbis} values must be from the {supportedAbis} values.
     selectedAbis = ["arm64"]
 }
@@ -55,11 +55,11 @@ def binDir = "$rootDir/bin/"
 def androidEditorBuildsDir = "$binDir/android_editor_builds/"
 
 def getSconsTaskName(String flavor, String buildType, String abi) {
-    return "compileGodotNativeLibs" + flavor.capitalize() + buildType.capitalize() + abi.capitalize()
+    return "compileNoeEngineNativeLibs" + flavor.capitalize() + buildType.capitalize() + abi.capitalize()
 }
 
 /**
- * Copy the generated 'android_debug.apk' binary template into the Godot bin directory.
+ * Copy the generated 'android_debug.apk' binary template into the NoeEngine bin directory.
  * Depends on the app build task to ensure the binary is generated prior to copying.
  */
 task copyDebugBinaryToBin(type: Copy) {
@@ -70,7 +70,7 @@ task copyDebugBinaryToBin(type: Copy) {
 }
 
 /**
- * Copy the generated 'android_dev.apk' binary template into the Godot bin directory.
+ * Copy the generated 'android_dev.apk' binary template into the NoeEngine bin directory.
  * Depends on the app build task to ensure the binary is generated prior to copying.
  */
 task copyDevBinaryToBin(type: Copy) {
@@ -81,7 +81,7 @@ task copyDevBinaryToBin(type: Copy) {
 }
 
 /**
- * Copy the generated 'android_release.apk' binary template into the Godot bin directory.
+ * Copy the generated 'android_release.apk' binary template into the NoeEngine bin directory.
  * Depends on the app build task to ensure the binary is generated prior to copying.
  */
 task copyReleaseBinaryToBin(type: Copy) {
@@ -92,80 +92,80 @@ task copyReleaseBinaryToBin(type: Copy) {
 }
 
 /**
- * Copy the Godot android library archive debug file into the app module debug libs directory.
+ * Copy the NoeEngine android library archive debug file into the app module debug libs directory.
  * Depends on the library build task to ensure the AAR file is generated prior to copying.
  */
 task copyDebugAARToAppModule(type: Copy) {
     dependsOn ':lib:assembleTemplateDebug'
     from('lib/build/outputs/aar')
     into('app/libs/debug')
-    include('godot-lib.template_debug.aar')
+    include('noeengine-lib.template_debug.aar')
 }
 
 /**
- * Copy the Godot android library archive debug file into the root bin directory.
+ * Copy the NoeEngine android library archive debug file into the root bin directory.
  * Depends on the library build task to ensure the AAR file is generated prior to copying.
  */
 task copyDebugAARToBin(type: Copy) {
     dependsOn ':lib:assembleTemplateDebug'
     from('lib/build/outputs/aar')
     into(binDir)
-    include('godot-lib.template_debug.aar')
+    include('noeengine-lib.template_debug.aar')
 }
 
 /**
- * Copy the Godot android library archive dev file into the app module dev libs directory.
+ * Copy the NoeEngine android library archive dev file into the app module dev libs directory.
  * Depends on the library build task to ensure the AAR file is generated prior to copying.
  */
 task copyDevAARToAppModule(type: Copy) {
     dependsOn ':lib:assembleTemplateDev'
     from('lib/build/outputs/aar')
     into('app/libs/dev')
-    include('godot-lib.template_debug.dev.aar')
+    include('noeengine-lib.template_debug.dev.aar')
 }
 
 /**
- * Copy the Godot android library archive dev file into the root bin directory.
+ * Copy the NoeEngine android library archive dev file into the root bin directory.
  * Depends on the library build task to ensure the AAR file is generated prior to copying.
  */
 task copyDevAARToBin(type: Copy) {
     dependsOn ':lib:assembleTemplateDev'
     from('lib/build/outputs/aar')
     into(binDir)
-    include('godot-lib.template_debug.dev.aar')
+    include('noeengine-lib.template_debug.dev.aar')
 }
 
 /**
- * Copy the Godot android library archive release file into the app module release libs directory.
+ * Copy the NoeEngine android library archive release file into the app module release libs directory.
  * Depends on the library build task to ensure the AAR file is generated prior to copying.
  */
 task copyReleaseAARToAppModule(type: Copy) {
     dependsOn ':lib:assembleTemplateRelease'
     from('lib/build/outputs/aar')
     into('app/libs/release')
-    include('godot-lib.template_release.aar')
+    include('noeengine-lib.template_release.aar')
 }
 
 /**
- * Copy the Godot android library archive release file into the root bin directory.
+ * Copy the NoeEngine android library archive release file into the root bin directory.
  * Depends on the library build task to ensure the AAR file is generated prior to copying.
  */
 task copyReleaseAARToBin(type: Copy) {
     dependsOn ':lib:assembleTemplateRelease'
     from('lib/build/outputs/aar')
     into(binDir)
-    include('godot-lib.template_release.aar')
+    include('noeengine-lib.template_release.aar')
 }
 
 /**
- * Generate Godot gradle build template by zipping the source files from the app directory, as well
+ * Generate NoeEngine gradle build template by zipping the source files from the app directory, as well
  * as the AAR files generated by 'copyDebugAAR', 'copyDevAAR' and 'copyReleaseAAR'.
- * The zip file also includes some gradle tools to enable gradle builds from the Godot Editor.
+ * The zip file also includes some gradle tools to enable gradle builds from the NoeEngine Editor.
  */
 task zipGradleBuild(type: Zip) {
-    onlyIf { generateGodotTemplates.state.executed || generateDevTemplate.state.executed }
+    onlyIf { generateNoeEngineTemplates.state.executed || generateDevTemplate.state.executed }
     doFirst {
-        logger.lifecycle("Generating Godot gradle build template")
+        logger.lifecycle("Generating NoeEngine gradle build template")
     }
     from(fileTree(dir: 'app', excludes: ['**/build/**', '**/.gradle/**', '**/*.iml']), fileTree(dir: '.', includes: ['gradlew', 'gradlew.bat', 'gradle/**']))
     include '**/*'
@@ -263,13 +263,13 @@ task copyEditorDevAabToBin(type: Copy) {
 }
 
 /**
- * Generate the Godot Editor Android apk.
+ * Generate the NoeEngine Editor Android apk.
  *
- * Note: The Godot 'tools' shared libraries must have been generated (via scons) prior to running
+ * Note: The NoeEngine 'tools' shared libraries must have been generated (via scons) prior to running
  * this gradle task. The task will only build the apk(s) for which the shared libraries is
  * available.
  */
-task generateGodotEditor {
+task generateNoeEngineEditor {
     gradle.startParameter.excludedTaskNames += templateExcludedBuildTask()
 
     def tasks = []
@@ -289,9 +289,9 @@ task generateGodotEditor {
 }
 
 /**
- * Master task used to coordinate the tasks defined above to generate the set of Godot templates.
+ * Master task used to coordinate the tasks defined above to generate the set of NoeEngine templates.
  */
-task generateGodotTemplates {
+task generateNoeEngineTemplates {
     gradle.startParameter.excludedTaskNames += templateExcludedBuildTask()
     dependsOn = templateBuildTasks()
 
@@ -299,7 +299,7 @@ task generateGodotTemplates {
 }
 
 /**
- * Generates the same output as generateGodotTemplates but with dev symbols
+ * Generates the same output as generateNoeEngineTemplates but with dev symbols
  */
 task generateDevTemplate {
     // add parameter to set symbols to true
@@ -312,14 +312,14 @@ task generateDevTemplate {
 }
 
 task clean(type: Delete) {
-    dependsOn 'cleanGodotEditor'
-    dependsOn 'cleanGodotTemplates'
+    dependsOn 'cleanNoeEngineEditor'
+    dependsOn 'cleanNoeEngineTemplates'
 }
 
 /**
  * Clean the generated editor artifacts.
  */
-task cleanGodotEditor(type: Delete) {
+task cleanNoeEngineEditor(type: Delete) {
     // Delete the generated native tools libs
     delete("lib/libs/tools")
 
@@ -332,14 +332,14 @@ task cleanGodotEditor(type: Delete) {
     // Delete the generated aab binaries
     delete("editor/build/outputs/bundle")
 
-    // Delete the Godot editor apks & aabs in the Godot bin directory
+    // Delete the NoeEngine editor apks & aabs in the NoeEngine bin directory
     delete(androidEditorBuildsDir)
 }
 
 /**
  * Clean the generated template artifacts.
  */
-task cleanGodotTemplates(type: Delete) {
+task cleanNoeEngineTemplates(type: Delete) {
     // Delete the generated native libs
     delete("lib/libs")
 
@@ -352,17 +352,17 @@ task cleanGodotTemplates(type: Delete) {
     // Delete the generated binary apks
     delete("app/build/outputs/apk")
 
-    // Delete the Godot templates in the Godot bin directory
+    // Delete the NoeEngine templates in the NoeEngine bin directory
     delete("$binDir/android_debug.apk")
     delete("$binDir/android_dev.apk")
     delete("$binDir/android_release.apk")
     delete("$binDir/android_source.zip")
-    delete("$binDir/godot-lib.template_debug.aar")
-    delete("$binDir/godot-lib.template_debug.dev.aar")
-    delete("$binDir/godot-lib.template_release.aar")
+    delete("$binDir/noeengine-lib.template_debug.aar")
+    delete("$binDir/noeengine-lib.template_debug.dev.aar")
+    delete("$binDir/noeengine-lib.template_release.aar")
 
     // Cover deletion for the libs using the previous naming scheme
-    delete("$binDir/godot-lib.debug.aar")
-    delete("$binDir/godot-lib.dev.aar")
-    delete("$binDir/godot-lib.release.aar")
+    delete("$binDir/noeengine-lib.debug.aar")
+    delete("$binDir/noeengine-lib.dev.aar")
+    delete("$binDir/noeengine-lib.release.aar")
 }

@@ -1,8 +1,8 @@
 /**************************************************************************/
-/*  java_godot_wrapper.h                                                  */
+/*  java_noeengine_wrapper.h                                                  */
 /**************************************************************************/
 /*                         This file is part of:                          */
-/*                             GODOT ENGINE                               */
+/*                             NOEENGINE                               */
 /*                        https://godotengine.org                         */
 /**************************************************************************/
 /* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
@@ -28,25 +28,25 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef JAVA_GODOT_WRAPPER_H
-#define JAVA_GODOT_WRAPPER_H
+#ifndef JAVA_NOEENGINE_WRAPPER_H
+#define JAVA_NOEENGINE_WRAPPER_H
 
 #include <android/log.h>
 #include <jni.h>
 
 #include "core/templates/list.h"
-#include "java_godot_view_wrapper.h"
+#include "java_noeengine_view_wrapper.h"
 #include "string_android.h"
 
-// Class that makes functions in java/src/org/godotengine/godot/Godot.java callable from C++
-class GodotJavaWrapper {
+// Class that makes functions in java/src/org/noeengine/noeengine/NoeEngine.java callable from C++
+class NoeEngineJavaWrapper {
 private:
-	jobject godot_instance;
+	jobject noeengine_instance;
 	jobject activity;
-	jclass godot_class;
+	jclass noeengine_class;
 	jclass activity_class;
 
-	GodotJavaViewWrapper *godot_view = nullptr;
+	NoeEngineJavaViewWrapper *noeengine_view = nullptr;
 
 	jmethodID _on_video_init = nullptr;
 	jmethodID _restart = nullptr;
@@ -65,25 +65,25 @@ private:
 	jmethodID _is_activity_resumed = nullptr;
 	jmethodID _vibrate = nullptr;
 	jmethodID _get_input_fallback_mapping = nullptr;
-	jmethodID _on_godot_setup_completed = nullptr;
-	jmethodID _on_godot_main_loop_started = nullptr;
+	jmethodID _on_noeengine_setup_completed = nullptr;
+	jmethodID _on_noeengine_main_loop_started = nullptr;
 	jmethodID _get_class_loader = nullptr;
-	jmethodID _create_new_godot_instance = nullptr;
+	jmethodID _create_new_noeengine_instance = nullptr;
 	jmethodID _get_render_view = nullptr;
 
 public:
-	GodotJavaWrapper(JNIEnv *p_env, jobject p_activity, jobject p_godot_instance);
-	~GodotJavaWrapper();
+	NoeEngineJavaWrapper(JNIEnv *p_env, jobject p_activity, jobject p_noeengine_instance);
+	~NoeEngineJavaWrapper();
 
 	jobject get_activity();
 	jobject get_member_object(const char *p_name, const char *p_class, JNIEnv *p_env = nullptr);
 
 	jobject get_class_loader();
-	GodotJavaViewWrapper *get_godot_view();
+	NoeEngineJavaViewWrapper *get_noeengine_view();
 
 	bool on_video_init(JNIEnv *p_env = nullptr);
-	void on_godot_setup_completed(JNIEnv *p_env = nullptr);
-	void on_godot_main_loop_started(JNIEnv *p_env = nullptr);
+	void on_noeengine_setup_completed(JNIEnv *p_env = nullptr);
+	void on_noeengine_main_loop_started(JNIEnv *p_env = nullptr);
 	void restart(JNIEnv *p_env = nullptr);
 	bool force_quit(JNIEnv *p_env = nullptr, int p_instance_id = 0);
 	void set_keep_screen_on(bool p_enabled);
@@ -103,7 +103,7 @@ public:
 	bool is_activity_resumed();
 	void vibrate(int p_duration_ms);
 	String get_input_fallback_mapping();
-	int create_new_godot_instance(List<String> args);
+	int create_new_noeengine_instance(List<String> args);
 };
 
-#endif // JAVA_GODOT_WRAPPER_H
+#endif // JAVA_NOEENGINE_WRAPPER_H

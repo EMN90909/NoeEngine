@@ -1,8 +1,8 @@
 /**************************************************************************/
-/*  GodotApp.java                                                         */
+/*  NoeEngineApp.java                                                         */
 /**************************************************************************/
 /*                         This file is part of:                          */
-/*                             GODOT ENGINE                               */
+/*                             NOEENGINE                               */
 /*                        https://godotengine.org                         */
 /**************************************************************************/
 /* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
@@ -28,20 +28,20 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package com.godot.game;
+package com.noeengine.game;
 
-import org.godotengine.godot.FullScreenGodotApp;
+import org.noeengine.noeengine.FullScreenNoeEngineApp;
 
 import android.os.Bundle;
 
 /**
- * Template activity for Godot Android builds.
+ * Template activity for NoeEngine Android builds.
  * Feel free to extend and modify this class for your custom logic.
  */
-public class GodotApp extends FullScreenGodotApp {
+public class NoeEngineApp extends FullScreenNoeEngineApp {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-		setTheme(R.style.GodotAppMainTheme);
+		setTheme(R.style.NoeEngineAppMainTheme);
 		super.onCreate(savedInstanceState);
 	}
 }

@@ -1,8 +1,8 @@
 /**************************************************************************/
-/*  java_godot_view_wrapper.h                                             */
+/*  java_noeengine_view_wrapper.h                                             */
 /**************************************************************************/
 /*                         This file is part of:                          */
-/*                             GODOT ENGINE                               */
+/*                             NOEENGINE                               */
 /*                        https://godotengine.org                         */
 /**************************************************************************/
 /* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
@@ -28,8 +28,8 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef JAVA_GODOT_VIEW_WRAPPER_H
-#define JAVA_GODOT_VIEW_WRAPPER_H
+#ifndef JAVA_NOEENGINE_VIEW_WRAPPER_H
+#define JAVA_NOEENGINE_VIEW_WRAPPER_H
 
 #include "core/math/vector2.h"
 #include <android/log.h>
@@ -37,12 +37,12 @@
 
 #include "string_android.h"
 
-// Class that makes functions in java/src/org/godotengine/godot/GodotView.java callable from C++
-class GodotJavaViewWrapper {
+// Class that makes functions in java/src/org/noeengine/noeengine/NoeEngineView.java callable from C++
+class NoeEngineJavaViewWrapper {
 private:
 	jclass _cls;
 
-	jobject _godot_view;
+	jobject _noeengine_view;
 
 	jmethodID _can_capture_pointer = 0;
 	jmethodID _request_pointer_capture = 0;
@@ -52,7 +52,7 @@ private:
 	jmethodID _set_pointer_icon = 0;
 
 public:
-	GodotJavaViewWrapper(jobject godot_view);
+	NoeEngineJavaViewWrapper(jobject noeengine_view);
 
 	bool can_update_pointer_icon() const;
 	bool can_capture_pointer() const;
@@ -63,7 +63,7 @@ public:
 	void configure_pointer_icon(int pointer_type, const String &image_path, const Vector2 &p_hotspot);
 	void set_pointer_icon(int pointer_type);
 
-	~GodotJavaViewWrapper();
+	~NoeEngineJavaViewWrapper();
 };
 
-#endif // JAVA_GODOT_VIEW_WRAPPER_H
+#endif // JAVA_NOEENGINE_VIEW_WRAPPER_H

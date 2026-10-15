@@ -2,7 +2,7 @@
 /*  gradle_export_util.h                                                  */
 /**************************************************************************/
 /*                         This file is part of:                          */
-/*                             GODOT ENGINE                               */
+/*                             NOEENGINE                               */
 /*                        https://godotengine.org                         */
 /**************************************************************************/
 /* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
@@ -37,10 +37,10 @@
 #include "core/os/os.h"
 #include "editor/export/editor_export.h"
 
-const String godot_project_name_xml_string = R"(<?xml version="1.0" encoding="utf-8"?>
+const String noeengine_project_name_xml_string = R"(<?xml version="1.0" encoding="utf-8"?>
 <!--WARNING: THIS FILE WILL BE OVERWRITTEN AT BUILD TIME-->
 <resources>
-	<string name="godot_project_name_string">%s</string>
+	<string name="noeengine_project_name_string">%s</string>
 </resources>
 )";
 
@@ -57,7 +57,7 @@ static const int APP_CATEGORY_SOCIAL = 7;
 static const int APP_CATEGORY_VIDEO = 8;
 
 // Supported XR modes.
-// This should match the entries in 'platform/android/java/lib/src/org/godotengine/godot/xr/XRMode.java'
+// This should match the entries in 'platform/android/java/lib/src/org/noeengine/noeengine/xr/XRMode.java'
 static const int XR_MODE_REGULAR = 0;
 static const int XR_MODE_OPENXR = 1;
 

@@ -1,8 +1,8 @@
 /**************************************************************************/
-/*  java_godot_view_wrapper.cpp                                           */
+/*  java_noeengine_view_wrapper.cpp                                           */
 /**************************************************************************/
 /*                         This file is part of:                          */
-/*                             GODOT ENGINE                               */
+/*                             NOEENGINE                               */
 /*                        https://godotengine.org                         */
 /**************************************************************************/
 /* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
@@ -28,17 +28,17 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "java_godot_view_wrapper.h"
+#include "java_noeengine_view_wrapper.h"
 
 #include "thread_jandroid.h"
 
-GodotJavaViewWrapper::GodotJavaViewWrapper(jobject godot_view) {
+NoeEngineJavaViewWrapper::NoeEngineJavaViewWrapper(jobject noeengine_view) {
 	JNIEnv *env = get_jni_env();
 	ERR_FAIL_NULL(env);
 
-	_godot_view = env->NewGlobalRef(godot_view);
+	_noeengine_view = env->NewGlobalRef(noeengine_view);
 
-	_cls = (jclass)env->NewGlobalRef(env->GetObjectClass(godot_view));
+	_cls = (jclass)env->NewGlobalRef(env->GetObjectClass(noeengine_view));
 
 	int android_device_api_level = android_get_device_api_level();
 	if (android_device_api_level >= __ANDROID_API_N__) {
@@ -53,64 +53,64 @@ GodotJavaViewWrapper::GodotJavaViewWrapper(jobject godot_view) {
 	_can_capture_pointer = env->GetMethodID(_cls, "canCapturePointer", "()Z");
 }
 
-bool GodotJavaViewWrapper::can_update_pointer_icon() const {
+bool NoeEngineJavaViewWrapper::can_update_pointer_icon() const {
 	return _configure_pointer_icon != nullptr && _set_pointer_icon != nullptr;
 }
 
-bool GodotJavaViewWrapper::can_capture_pointer() const {
+bool NoeEngineJavaViewWrapper::can_capture_pointer() const {
 	// We can capture the pointer if the other jni capture method ids are initialized,
-	// and GodotView#canCapturePointer() returns true.
+	// and NoeEngineView#canCapturePointer() returns true.
 	if (_request_pointer_capture != nullptr && _release_pointer_capture != nullptr && _can_capture_pointer != nullptr) {
 		JNIEnv *env = get_jni_env();
 		ERR_FAIL_NULL_V(env, false);
 
-		return env->CallBooleanMethod(_godot_view, _can_capture_pointer);
+		return env->CallBooleanMethod(_noeengine_view, _can_capture_pointer);
 	}
 
 	return false;
 }
 
-void GodotJavaViewWrapper::request_pointer_capture() {
+void NoeEngineJavaViewWrapper::request_pointer_capture() {
 	if (_request_pointer_capture != nullptr) {
 		JNIEnv *env = get_jni_env();
 		ERR_FAIL_NULL(env);
 
-		env->CallVoidMethod(_godot_view, _request_pointer_capture);
+		env->CallVoidMethod(_noeengine_view, _request_pointer_capture);
 	}
 }
 
-void GodotJavaViewWrapper::release_pointer_capture() {
+void NoeEngineJavaViewWrapper::release_pointer_capture() {
 	if (_release_pointer_capture != nullptr) {
 		JNIEnv *env = get_jni_env();
 		ERR_FAIL_NULL(env);
 
-		env->CallVoidMethod(_godot_view, _release_pointer_capture);
+		env->CallVoidMethod(_noeengine_view, _release_pointer_capture);
 	}
 }
 
-void GodotJavaViewWrapper::configure_pointer_icon(int pointer_type, const String &image_path, const Vector2 &p_hotspot) {
+void NoeEngineJavaViewWrapper::configure_pointer_icon(int pointer_type, const String &image_path, const Vector2 &p_hotspot) {
 	if (_configure_pointer_icon != nullptr) {
 		JNIEnv *env = get_jni_env();
 		ERR_FAIL_NULL(env);
 
 		jstring jImagePath = env->NewStringUTF(image_path.utf8().get_data());
-		env->CallVoidMethod(_godot_view, _configure_pointer_icon, pointer_type, jImagePath, p_hotspot.x, p_hotspot.y);
+		env->CallVoidMethod(_noeengine_view, _configure_pointer_icon, pointer_type, jImagePath, p_hotspot.x, p_hotspot.y);
 	}
 }
 
-void GodotJavaViewWrapper::set_pointer_icon(int pointer_type) {
+void NoeEngineJavaViewWrapper::set_pointer_icon(int pointer_type) {
 	if (_set_pointer_icon != nullptr) {
 		JNIEnv *env = get_jni_env();
 		ERR_FAIL_NULL(env);
 
-		env->CallVoidMethod(_godot_view, _set_pointer_icon, pointer_type);
+		env->CallVoidMethod(_noeengine_view, _set_pointer_icon, pointer_type);
 	}
 }
 
-GodotJavaViewWrapper::~GodotJavaViewWrapper() {
+NoeEngineJavaViewWrapper::~NoeEngineJavaViewWrapper() {
 	JNIEnv *env = get_jni_env();
 	ERR_FAIL_NULL(env);
 
-	env->DeleteGlobalRef(_godot_view);
+	env->DeleteGlobalRef(_noeengine_view);
 	env->DeleteGlobalRef(_cls);
 }
