@@ -1,8 +1,8 @@
 /**************************************************************************/
-/*  godot_vulkan.h                                                        */
+/*  noeengine_vulkan.h                                                        */
 /**************************************************************************/
 /*                         This file is part of:                          */
-/*                             GODOT ENGINE                               */
+/*                             NOEENGINE ENGINE                               */
 /*                        https://godotengine.org                         */
 /**************************************************************************/
 /* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
@@ -28,8 +28,8 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef GODOT_VULKAN_H
-#define GODOT_VULKAN_H
+#ifndef NOEENGINE_VULKAN_H
+#define NOEENGINE_VULKAN_H
 
 #ifdef USE_VOLK
 #include <volk.h>
@@ -39,4 +39,4 @@
 #include <vulkan/vulkan.h>
 #endif
 
-#endif // GODOT_VULKAN_H
+#endif // NOEENGINE_VULKAN_H

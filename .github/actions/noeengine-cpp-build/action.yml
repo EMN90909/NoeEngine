@@ -1,9 +1,9 @@
-name: Build godot-cpp
-description: Build godot-cpp with the provided options.
+name: Build noeengine-cpp
+description: Build noeengine-cpp with the provided options.
 
 inputs:
   bin:
-    description: Path to the Godot binary.
+    description: Path to the NoeEngine binary.
     required: true
     type: string
   scons-flags:
@@ -13,8 +13,8 @@ inputs:
     description: The SCons cache path.
     default: ${{ github.workspace }}/.scons_cache/
     type: string
-  godot-cpp-branch:
-    description: The godot-cpp branch.
+  noeengine-cpp-branch:
+    description: The noeengine-cpp branch.
     default: master
     type: string
 
@@ -25,9 +25,9 @@ runs:
       uses: actions/checkout@v4
       with:
         submodules: recursive
-        repository: godotengine/godot-cpp
-        ref: ${{ inputs.godot-cpp-branch }}
-        path: godot-cpp
+        repository: noeengineengine/noeengine-cpp
+        ref: ${{ inputs.noeengine-cpp-branch }}
+        path: noeengine-cpp
 
     - name: Extract API
       shell: sh
@@ -37,4 +37,4 @@ runs:
       shell: sh
       env:
         SCONS_CACHE: ${{ inputs.scons-cache }}
-      run: scons --directory=./godot-cpp/test "gdextension_dir=${{ github.workspace }}" ${{ inputs.scons-flags }}
+      run: scons --directory=./noeengine-cpp/test "gdextension_dir=${{ github.workspace }}" ${{ inputs.scons-flags }}
