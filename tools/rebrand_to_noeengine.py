@@ -50,6 +50,8 @@ def tracked_paths():
 
 
 def rewrite_text(path):
+    if path == Path("tools/rebrand_to_noeengine.py"):
+        return None
     if ((path.parent == Path(".") and path.name in UPSTREAM_FILES)
             or path.name.lower().startswith(("license", "copying"))\n            or path.suffix.lower() in BINARY_SUFFIXES):
         return None
