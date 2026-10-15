@@ -448,9 +448,9 @@ void Main::print_help(const char *p_binary) {
 	OS::get_singleton()->print("  --export-pack <preset> <path>     Export the project data only using the given preset and output path. The <path> extension determines whether it will be in PCK or ZIP format.\n");
 #ifndef DISABLE_DEPRECATED
 	OS::get_singleton()->print("  --convert-3to4 [<max_file_kb>] [<max_line_size>]\n");
-	OS::get_singleton()->print("                                    Converts project from Godot 3.x to Godot 4.x.\n");
+	OS::get_singleton()->print("                                    Converts projects from legacy Godot 3.x to the NoeEngine 4.x format.\n");
 	OS::get_singleton()->print("  --validate-conversion-3to4 [<max_file_kb>] [<max_line_size>]\n");
-	OS::get_singleton()->print("                                    Shows what elements will be renamed when converting project from Godot 3.x to Godot 4.x.\n");
+	OS::get_singleton()->print("                                    Shows elements renamed when upgrading a legacy Godot 3.x project to NoeEngine 4.x.\n");
 #endif // DISABLE_DEPRECATED
 	OS::get_singleton()->print("  --doctool [<path>]                Dump the engine API reference to the given <path> (defaults to current dir) in XML format, merging if existing files are found.\n");
 	OS::get_singleton()->print("  --no-docbase                      Disallow dumping the base types (used with --doctool).\n");

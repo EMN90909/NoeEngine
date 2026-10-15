@@ -1,5 +1,5 @@
 [Desktop Entry]
-Name=Godot Engine
+Name=NoeEngine
 GenericName=Libre game engine
 GenericName[el]=Ελεύθερη μηχανή παιχνιδιού
 GenericName[fr]=Moteur de jeu libre
@@ -15,4 +15,4 @@ PrefersNonDefaultGPU=true
 Type=Application
 MimeType=application/x-godot-project;
 Categories=Development;IDE;
-StartupWMClass=Godot
+StartupWMClass=NoeEngine

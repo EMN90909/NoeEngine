@@ -4,12 +4,12 @@
   <id>org.godotengine.Godot</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>MIT</project_license>
-  <name>Godot Engine</name>
+  <name>NoeEngine</name>
   <summary>Multi-platform 2D and 3D game engine with a feature-rich editor</summary>
   ​<launchable type="desktop-id">org.godotengine.Godot.desktop</launchable>
   <description>
     <p>
-      Godot is an advanced, feature-packed, multi-platform 2D and 3D game
+      NoeEngine is an advanced, feature-packed, multi-platform 2D and 3D game
       engine. It provides a huge set of common tools, so you can just focus on
       making your game without reinventing the wheel.
     </p>
@@ -21,7 +21,7 @@
   </description>
   <screenshots>
     <screenshot type="default" width="1330" height="720">
-      <caption>3D project loaded in the Godot Engine editor</caption>
+      <caption>3D project loaded in the NoeEngine editor</caption>
       <image>https://download.tuxfamily.org/godotengine/media/screenshots/editor_3d_fracteed-720p.jpg</image>
     </screenshot>
   </screenshots>
