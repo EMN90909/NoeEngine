@@ -1,12 +1,12 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GodotSharp", "GodotSharp\GodotSharp.csproj", "{AEBF0036-DA76-4341-B651-A3F2856AB2FA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NoeEngineSharp", "NoeEngineSharp\NoeEngineSharp.csproj", "{AEBF0036-DA76-4341-B651-A3F2856AB2FA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GodotSharpEditor", "GodotSharpEditor\GodotSharpEditor.csproj", "{8FBEC238-D944-4074-8548-B3B524305905}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NoeEngineSharpEditor", "NoeEngineSharpEditor\NoeEngineSharpEditor.csproj", "{8FBEC238-D944-4074-8548-B3B524305905}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GodotPlugins", "GodotPlugins\GodotPlugins.csproj", "{944B77DB-497B-47F5-A1E3-81C35E3E9D4E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NoeEnginePlugins", "NoeEnginePlugins\NoeEnginePlugins.csproj", "{944B77DB-497B-47F5-A1E3-81C35E3E9D4E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Godot.SourceGenerators.Internal", "Godot.SourceGenerators.Internal\Godot.SourceGenerators.Internal.csproj", "{7749662B-E30C-419A-B745-13852573360A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NoeEngine.SourceGenerators.Internal", "NoeEngine.SourceGenerators.Internal\NoeEngine.SourceGenerators.Internal.csproj", "{7749662B-E30C-419A-B745-13852573360A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

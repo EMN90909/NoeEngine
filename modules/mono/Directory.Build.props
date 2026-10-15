@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <GodotSdkPackageVersionsFilePath>$(MSBuildThisFileDirectory)\SdkPackageVersions.props</GodotSdkPackageVersionsFilePath>
+    <NoeEngineSdkPackageVersionsFilePath>$(MSBuildThisFileDirectory)\SdkPackageVersions.props</NoeEngineSdkPackageVersionsFilePath>
   </PropertyGroup>
-  <Import Project="$(GodotSdkPackageVersionsFilePath)" />
+  <Import Project="$(NoeEngineSdkPackageVersionsFilePath)" />
 </Project>

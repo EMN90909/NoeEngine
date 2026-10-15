@@ -1,12 +1,12 @@
 
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Godot.NET.Sdk", "Godot.NET.Sdk\Godot.NET.Sdk.csproj", "{31B00BFA-DEA1-42FA-A472-9E54A92A8A5F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NoeEngine.NET.Sdk", "NoeEngine.NET.Sdk\NoeEngine.NET.Sdk.csproj", "{31B00BFA-DEA1-42FA-A472-9E54A92A8A5F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Godot.SourceGenerators", "Godot.SourceGenerators\Godot.SourceGenerators.csproj", "{32D31B23-2A45-4099-B4F5-95B4C8FF7D9F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NoeEngine.SourceGenerators", "NoeEngine.SourceGenerators\NoeEngine.SourceGenerators.csproj", "{32D31B23-2A45-4099-B4F5-95B4C8FF7D9F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Godot.SourceGenerators.Sample", "Godot.SourceGenerators.Sample\Godot.SourceGenerators.Sample.csproj", "{7297A614-8DF5-43DE-9EAD-99671B26BD1F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NoeEngine.SourceGenerators.Sample", "NoeEngine.SourceGenerators.Sample\NoeEngine.SourceGenerators.Sample.csproj", "{7297A614-8DF5-43DE-9EAD-99671B26BD1F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GodotSharp", "..\..\glue\GodotSharp\GodotSharp\GodotSharp.csproj", "{AEBF0036-DA76-4341-B651-A3F2856AB2FA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NoeEngineSharp", "..\..\glue\NoeEngineSharp\NoeEngineSharp\NoeEngineSharp.csproj", "{AEBF0036-DA76-4341-B651-A3F2856AB2FA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
