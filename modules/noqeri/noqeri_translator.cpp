@@ -110,7 +110,7 @@ bool transform_statement(String &r_line, bool p_block_header, String &r_error, i
     return true;
 }
 
-bool emit_statement(const String &p_segment, int p_depth, bool p_block_header, String &r_output, String &r_error, int &r_statements, int &r_repeat_counter) {
+bool emit_statement(const String &p_segment, int p_depth, bool p_block_header, String &r_output, String &r_error, int &r_statements, int &r_repeat_counter, Vector<int> *r_line_map, int p_source_line) {
     String stmt = p_segment.strip_edges();
     if (stmt.is_empty()) {
         if (p_block_header) {
@@ -141,6 +141,9 @@ bool emit_statement(const String &p_segment, int p_depth, bool p_block_header, S
         r_output += "\t";
     }
     r_output += stmt + "\n";
+    if (r_line_map) {
+        r_line_map->push_back(p_source_line);
+    }
     if (!stmt.begins_with("#")) {
         ++r_statements;
     }
@@ -149,9 +152,12 @@ bool emit_statement(const String &p_segment, int p_depth, bool p_block_header, S
 
 } // namespace
 
-bool noqeri_translate_game_script(const String &p_source, String &r_compiled, String &r_error) {
+bool noqeri_translate_game_script(const String &p_source, String &r_compiled,
+        String &r_error, Vector<int> *r_line_map, int *r_error_line) {
     r_compiled = String();
     r_error = String();
+    if (r_line_map) { r_line_map->clear(); }
+    if (r_error_line) { *r_error_line = 1; }
     String native_base = "Node";
     const Vector<String> input_lines = p_source.split("\n");
     for (int i = 0; i < input_lines.size(); ++i) {
@@ -168,6 +174,7 @@ bool noqeri_translate_game_script(const String &p_source, String &r_compiled, St
     }
 
     r_compiled = "extends " + native_base + "\n";
+    if (r_line_map) { r_line_map->push_back(1); }
     String segment;
     int depth = 0;
     bool in_string = false;
@@ -175,6 +182,7 @@ bool noqeri_translate_game_script(const String &p_source, String &r_compiled, St
     bool in_comment = false;
     int statements = 0;
     int repeat_counter = 0;
+    int source_line = 1;
     int block_start_count[64] = {};
     for (int i = 0; i < p_source.length(); ++i) {
         const char32_t c = p_source[i];
@@ -184,10 +192,11 @@ bool noqeri_translate_game_script(const String &p_source, String &r_compiled, St
         if (in_comment) {
             if (c == '\n') {
                 in_comment = false;
-                if (!emit_statement(segment, depth, false, r_compiled, r_error, statements, repeat_counter)) {
+                if (!emit_statement(segment, depth, false, r_compiled, r_error, statements, repeat_counter, r_line_map, source_line)) {
                     return false;
                 }
                 segment = String();
+                ++source_line;
             } else {
                 segment += String::chr(c);
             }
@@ -224,14 +233,16 @@ bool noqeri_translate_game_script(const String &p_source, String &r_compiled, St
                 r_error = "Noqeri scene script exceeds maximum supported block depth.";
                 return false;
             }
-            if (!emit_statement(segment, depth, true, r_compiled, r_error, statements, repeat_counter)) {
+            if (!emit_statement(segment, depth, true, r_compiled, r_error, statements, repeat_counter, r_line_map, source_line)) {
+                if (r_error_line) { *r_error_line = source_line; }
                 return false;
             }
             segment = String();
             block_start_count[depth] = statements;
             ++depth;
         } else if (c == '}') {
-            if (!emit_statement(segment, depth, false, r_compiled, r_error, statements, repeat_counter)) {
+            if (!emit_statement(segment, depth, false, r_compiled, r_error, statements, repeat_counter, r_line_map, source_line)) {
+                if (r_error_line) { *r_error_line = source_line; }
                 return false;
             }
             segment = String();
@@ -245,24 +256,31 @@ bool noqeri_translate_game_script(const String &p_source, String &r_compiled, St
                     r_compiled += "\t";
                 }
                 r_compiled += "pass\n";
+                if (r_line_map) { r_line_map->push_back(source_line); }
                 ++statements;
             }
         } else if (c == ';' || c == '\n') {
-            if (!emit_statement(segment, depth, false, r_compiled, r_error, statements, repeat_counter)) {
+            if (!emit_statement(segment, depth, false, r_compiled, r_error, statements, repeat_counter, r_line_map, source_line)) {
+                if (r_error_line) { *r_error_line = source_line; }
                 return false;
             }
             segment = String();
+            if (c == '\n') { ++source_line; }
         } else {
             segment += String::chr(c);
         }
     }
     if (in_string) {
+        if (r_error_line) { *r_error_line = source_line; }
         r_error = "Unterminated string in Noqeri scene script.";
         return false;
     }
     if (depth != 0) {
+        if (r_error_line) { *r_error_line = source_line; }
         r_error = "Unclosed '{' in Noqeri scene script.";
         return false;
     }
-    return emit_statement(segment, depth, false, r_compiled, r_error, statements, repeat_counter);
+    const bool final_ok = emit_statement(segment, depth, false, r_compiled, r_error, statements, repeat_counter, r_line_map, source_line);
+    if (!final_ok && r_error_line) { *r_error_line = source_line; }
+    return final_ok;
 }
