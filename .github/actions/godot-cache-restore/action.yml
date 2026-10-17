@@ -12,7 +12,7 @@ runs:
   using: composite
   steps:
     - name: Restore SCons cache directory
-      uses: actions/cache/restore@v5
+      uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25
       with:
         path: ${{ inputs.scons-cache }}
         key: ${{ inputs.cache-name }}-${{ env.GODOT_BASE_BRANCH }}-${{ github.ref }}-${{ github.sha }}
