@@ -89,7 +89,7 @@ produce an error instead of executing. See [native language documentation]
 After a successful Linux build, test the native scene bridge using:
 
 ```sh
-bin/godot.linuxbsd.editor.x86_64 --headless --path tests/noqeri_scene --quit
+bin/godot.linuxbsd.editor.x86_64 --headless --path tests/noqeri_scene
 ```
 
 The output must include `NOQERI_NATIVE_READY` with a zero exit status.

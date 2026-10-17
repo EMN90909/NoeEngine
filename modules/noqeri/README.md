@@ -62,7 +62,7 @@ After building NoeEngine, run:
 ```sh
 scons platform=linuxbsd target=editor tests=yes -j2
 bin/godot.linuxbsd.editor.* --headless --test
-bin/godot.linuxbsd.editor.* --headless --path tests/noqeri_scene --quit
+bin/godot.linuxbsd.editor.* --headless --path tests/noqeri_scene
 ```
 
 The scene test prints `NOQERI_NATIVE_READY` and quits. Do not claim these

@@ -49,7 +49,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends build-essential pkg-config scons python3 libx11-dev libxcursor-dev libxinerama-dev libxi-dev libxrandr-dev libxrender-dev libgl1-mesa-dev libudev-dev libasound2-dev libpulse-dev libfreetype6-dev libfontconfig1-dev libssl-dev libwayland-dev libxkbcommon-dev libvulkan-dev
       - name: Build editor using SCons
-        run: scons platform=linuxbsd target=editor module_mono_enabled=no debug_symbols=no -j2
+        run: scons platform=linuxbsd target=editor module_mono_enabled=no module_noqeri_enabled=yes tests=yes debug_symbols=no -j2
       - name: Smoke test
         shell: bash
         run: |
@@ -63,6 +63,14 @@ jobs:
           trap 'rm -rf "$project"' EXIT
           printf 'config_version=5\n' > "$project/project.godot"
           timeout 60 "${bins[0]}" --headless --editor --path "$project" --quit
+      - name: Native Noqeri translator tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          bins=(bin/godot.linuxbsd.editor.*)
+          test "${#bins[@]}" -gt 0
+          timeout 120 "${bins[0]}" --headless --test --test-case='[Noqeri]*'
       - name: Native Noqeri scene lifecycle smoke
         shell: bash
         run: |
@@ -70,6 +78,7 @@ jobs:
           shopt -s nullglob
           bins=(bin/godot.linuxbsd.editor.*)
           test "${#bins[@]}" -gt 0
-          output="$(timeout 90 "${bins[0]}" --headless --path tests/noqeri_scene --quit 2>&1)"
+          output="$(timeout 90 "${bins[0]}" --headless --path tests/noqeri_scene 2>&1)"
           printf '%s\n' "$output"
           grep -q 'NOQERI_NATIVE_READY' <<< "$output"
+          grep -q 'NOQERI_NATIVE_PROCESS' <<< "$output"
