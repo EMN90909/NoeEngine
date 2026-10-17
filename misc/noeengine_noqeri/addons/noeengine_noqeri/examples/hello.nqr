@@ -1,7 +1,0 @@
-// Noqeri uses .nqr, not .gd. A compiler must be configured separately.
-function add(a: int, b: int): int {
-    return a + b
-}
-
-print("Hello from NoeEngine + Noqeri")
-print(add(2, 3))
