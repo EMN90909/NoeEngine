@@ -74,18 +74,23 @@ Windows code signing and macOS signing/notarization, as well as tested
 runtime library dependencies. Original Godot upstream attribution is
 retained in `LICENSE.txt`, `COPYRIGHT.txt`, and packaged notices.
 
-## Noqeri language addon
+## Native Noqeri game scripting
 
-The installers include the Noethric-created Noqeri editor addon and an
-installer helper. **They do not include the GPL-3.0-only Noqeri compiler.**
-Copy the addon into an existing project using:
+The Noqeri `.nqr` scripting module is compiled into the engine by SCons
+(`module_noqeri_enabled=yes`, enabled automatically alongside the
+default GDScript module). No separate code editor, addon, or compiler binary
+installation is required for **supported scene-script features**.
 
-```bash
-python3 misc/noeengine_noqeri/install.py /path/to/project
-# Or from a Debian NoeEngine installation:
-python3 /usr/share/noeengine/install_noqeri_addon.py /path/to/project
+Scripts are edited in the existing NoeEngine Script editor and attached
+directly to scene nodes. Unsupported Noqeri language constructs currently
+produce an error instead of executing. See [native language documentation]
+(modules/noqeri/README.md).
+
+After a successful Linux build, test the native scene bridge using:
+
+```sh
+bin/godot.linuxbsd.editor.x86_64 --headless --path tests/noqeri_scene --quit
 ```
 
-Enable the **NoeEngine Noqeri** addon in Project Settings → Plugins,
-then select your separately installed Noqeri compiler to check `.nqr`
-sources. See [Noqeri integration](misc/noeengine_noqeri/README.md).
+The output must include `NOQERI_NATIVE_READY` with a zero exit status.
+No installer build or runtime test has been verified successful yet.

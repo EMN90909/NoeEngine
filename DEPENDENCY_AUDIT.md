@@ -57,15 +57,17 @@ from the Linux and Windows legacy CI workflows.
 No credential exposure or specific exploitable CVE is asserted without
 supporting evidence.
 
-## Noqeri integration licensing and provenance
+## Native Noqeri integration licensing and provenance
 
-The optional integration is based on a source audit of
+The in-engine `modules/noqeri` code implements an original Noethric
+native `ScriptLanguage` wrapper and a limited scene-script syntax bridge
+to the existing Godot VM. It was designed following a review of
 `EMN90909/Noqeri` at commit
 `145667eb0bd8bc1b1e04aaf34c7ab8a412bd2f8a`.
-The compiler and runtime code are marked **GPL-3.0-only** in that
-repository's `LICENSE`, `LEGAL.md`, and `LICENSES.md`.
-No compiler object files, source or libraries are bundled or linked into
-NoeEngine. The Noethric-created Godot addon sends explicit CLI arguments
-to a separately installed compiler. The contemporary supported Stage-2
-CLI supports `check`, but not general `run` execution. The older
-archival C++ bootstrap has a broader CLI and is not implicitly used.
+
+That separate Noqeri compiler and runtime remain **GPL-3.0-only**.
+No Noqeri compiler source, binaries, NIR runtime, standard library,
+or GPL implementation has been copied or linked into the engine.
+The game-script subset bridge is **not** interchangeable with the
+complete Noqeri compiler. Native runtime/API parity remains a separate
+engineering and licensing review requirement.

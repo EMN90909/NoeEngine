@@ -55,17 +55,20 @@ Simple/Mid/Extreme modes or Jamila are running.
 A locally passing packaging test alone is not a release gate for the C++
 engine. See `BUILD_PRODUCTS.md` and `DEPENDENCY_AUDIT.md`.
 
-## Noqeri editor integration (implemented, experimental)
+## Native Noqeri ScriptLanguage integration (experimental)
 
-`misc/noeengine_noqeri/addons/noeengine_noqeri` is an installable
-Godot-compatible editor plugin supporting `.nqr` file recognition,
-editing, syntax highlighting and externally executed Noqeri `check`.
-A separate project installer is located at
-`misc/noeengine_noqeri/install.py`. Addon files are staged into all
-platform installer packages.
+`modules/noqeri/` defines `NoqeriScript`, `NoqeriLanguage`, and the `.nqr`
+resource loader/saver. It registers with `ScriptServer` alongside GDScript.
+The built-in Script editor handles Noqeri source, code highlighting and source
+saving, and compatible Noqeri scripts may be attached directly to nodes.
 
-**Not implemented:** a native Godot `ScriptLanguage`, Noqeri scene
-attachment, engine Node bindings, runtime lifecycle or game export
-execution. In-process embedding of Noqeri's GPL-3.0-only compiler is
-intentionally excluded from this proprietary-addon integration. See
-`NOTICE.md` for licensing boundaries and source provenance.
+The first engine runtime uses a deliberate subset-to-GDScript execution
+bridge. That supports familiar lifecycle callbacks and engine Node methods,
+but does **not** implement the complete Noqeri standalone language or its
+native backend, fixed-width systems types, FFI, imports, atomics, memory safety
+model, standard library, or NIR. Unsupported semantics fail closed. Script
+instance dispatch currently uses the inherited Godot VM and debugging frames
+may carry translated line numbers. A future full runtime must establish
+ABI/host-services parity and license compliance before replacing the bridge.
+
+See `modules/noqeri/README.md` and `tests/noqeri_scene/`.

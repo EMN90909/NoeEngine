@@ -36,8 +36,9 @@ the Noqeri source repository at commit
 `145667eb0bd8bc1b1e04aaf34c7ab8a412bd2f8a`.
 
 Noqeri compiler code is **not copied, statically linked, or bundled** by the
-NoeEngine editor integration. Users install a compatible Noqeri compiler
-separately. A future release which bundles or links GPL-covered compiler
+NoeEngine native scripting module. The independently written native module
+implements a restricted game-script bridge using the inherited Godot VM,
+not the full Noqeri compiler. A future release which bundles or links GPL-covered compiler
 code must separately comply with the GPL, including source obligations, or
 obtain appropriate additional relicensing rights from all rights holders.
 
