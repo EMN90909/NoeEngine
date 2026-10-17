@@ -2,6 +2,9 @@ name: 🏁 Windows Builds
 on:
   workflow_call:
 
+permissions:
+  contents: read
+
 # Global Settings
 # SCONS_CACHE for windows must be set in the build environment
 env:
@@ -51,7 +54,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -63,9 +66,6 @@ jobs:
 
       - name: Setup Python and SCons
         uses: ./.github/actions/godot-deps
-
-      - name: Setup MSVC problem matcher
-        uses: ammaraskar/msvc-problem-matcher@master
 
       - name: Compilation
         uses: ./.github/actions/godot-build

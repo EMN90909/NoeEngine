@@ -2,6 +2,9 @@ name: 📊 Static Checks
 on:
   workflow_call:
 
+permissions:
+  contents: read
+
 jobs:
   static-checks:
     name: Code style, file formatting, and docs
