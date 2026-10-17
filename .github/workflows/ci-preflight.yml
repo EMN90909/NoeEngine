@@ -1,0 +1,34 @@
+name: Local preflight (Linux)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'build.sh'
+      - 'misc/build_products.py'
+      - 'misc/ci_check.sh'
+      - 'tests/python_build/test_noe_installer.py'
+      - 'version.py'
+      - '.github/workflows/**'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preflight-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preflight:
+    name: Packaging and script preflight
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify shell and package contents
+        run: bash misc/ci_check.sh

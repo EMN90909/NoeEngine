@@ -1,5 +1,6 @@
-# Lines starting with '#' are comments.
-# Each line is a file pattern followed by one or more owners.
-# Owners can be @users, @org/teams or emails
-
-# Intentionally left empty to remove codeowners in EOL branches. Do not add entries to this.
+# Review ownership; enforcement requires GitHub branch protection/rulesets.
+* @EMN90909
+/.github/ @EMN90909
+/build.sh @EMN90909
+/misc/build_products.py @EMN90909
+/version.py @EMN90909
