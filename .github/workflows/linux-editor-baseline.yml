@@ -63,3 +63,13 @@ jobs:
           trap 'rm -rf "$project"' EXIT
           printf 'config_version=5\n' > "$project/project.godot"
           timeout 60 "${bins[0]}" --headless --editor --path "$project" --quit
+      - name: Native Noqeri scene lifecycle smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          bins=(bin/godot.linuxbsd.editor.*)
+          test "${#bins[@]}" -gt 0
+          output="$(timeout 90 "${bins[0]}" --headless --path tests/noqeri_scene --quit 2>&1)"
+          printf '%s\n' "$output"
+          grep -q 'NOQERI_NATIVE_READY' <<< "$output"
