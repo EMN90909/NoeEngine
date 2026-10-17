@@ -83,7 +83,12 @@ int NoqeriLanguage::find_function(const String &p_function, const String &p_code
 }
 
 String NoqeriLanguage::make_function(const String &p_class, const String &p_name, const PackedStringArray &p_args) const {
-    return "function " + p_name + "(" + String(", ").join(p_args) + "): void {\n    \n}\n";
+    String args;
+    for (int i = 0; i < p_args.size(); ++i) {
+        if (i > 0) { args += ", "; }
+        args += p_args[i];
+    }
+    return "function " + p_name + "(" + args + "): void {\n    \n}\n";
 }
 
 void NoqeriLanguage::add_global_constant(const StringName &p_name, const Variant &p_value) {

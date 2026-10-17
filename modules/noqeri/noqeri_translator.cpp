@@ -121,7 +121,7 @@ bool noqeri_translate_game_script(const String &p_source, String &r_compiled, St
     r_compiled = String();
     r_error = String();
     String native_base = "Node";
-    const PackedStringArray input_lines = p_source.split("\n");
+    const Vector<String> input_lines = p_source.split("\n");
     for (int i = 0; i < input_lines.size(); ++i) {
         const String trimmed = input_lines[i].strip_edges();
         if (trimmed.begins_with("// noeengine:extends ")) {
