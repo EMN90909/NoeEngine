@@ -6,6 +6,7 @@ set -Eeuo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 echo "[CI] Shell syntax"
 bash -n build.sh
+bash -n misc/capture_editor_snapshot.sh
 bash -n misc/ci_check.sh
 echo "[CI] Python syntax"
 python3 -m py_compile version.py misc/build_products.py

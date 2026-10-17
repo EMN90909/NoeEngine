@@ -94,3 +94,15 @@ bin/godot.linuxbsd.editor.x86_64 --headless --path tests/noqeri_scene
 
 The output must include `NOQERI_NATIVE_READY` with a zero exit status.
 No installer build or runtime test has been verified successful yet.
+
+## Capture the actual running editor on Debian/antiX
+
+Once you have successfully compiled and launched **NoeEngine** in a graphical X11 session, run:
+
+```sh
+bash misc/capture_editor_snapshot.sh
+```
+
+When prompted, focus the NoeEngine Script editor during the five-second countdown. This saves `Products/NoeEngine-editor-snapshot.png`. The script refuses to overwrite an existing screenshot and requires `xfce4-screenshooter` (or ImageMagick + xdotool).
+
+Reference images from upstream Godot documentation are **not** evidence that the current NoeEngine build has rendered successfully.
