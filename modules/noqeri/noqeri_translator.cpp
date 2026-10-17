@@ -33,13 +33,18 @@ bool transform_statement(String &r_line, bool p_block_header, String &r_error) {
     const char *unsupported[] = {
         "module", "import", "record", "extern", "export", "unsafe",
         "throw", "try", "repeat", "volatile", "atomic", "struct",
-        "union", "enum", "defer", "type", "trait",
+        "union", "enum", "defer", "type", "trait", "static", "await",
+        "match", "class_name", "extends", "breakpoint",
     };
     for (const char *term : unsupported) {
         if (is_identifier_boundary(line, String(term))) {
             r_error = "This Noqeri construct requires the native Noqeri runtime: " + String(term);
             return false;
         }
+    }
+    if (line.contains(" as ")) {
+        r_error = "Noqeri cast semantics are not yet supported by the native scene bridge.";
+        return false;
     }
     const char *widths[] = { ": u8", ": u16", ": u32", ": u64", ": i8", ": i16", ": i32", ": i64", ": usize", ": isize" };
     for (const char *width : widths) {
@@ -112,7 +117,9 @@ bool emit_statement(const String &p_segment, int p_depth, bool p_block_header, S
         r_output += "\t";
     }
     r_output += stmt + "\n";
-    ++r_statements;
+    if (!stmt.begins_with("#")) {
+        ++r_statements;
+    }
     return true;
 }
 
