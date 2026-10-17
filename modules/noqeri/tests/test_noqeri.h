@@ -56,5 +56,24 @@ TEST_CASE("[Noqeri] No unsupported blocks or malformed braces") {
             "function _ready() { } }", compiled, error));
 }
 
+TEST_CASE("[Noqeri] Comment-only game blocks emit a pass") {
+    String compiled;
+    String error;
+    CHECK(noqeri_translate_game_script(
+            "function _ready(): void { // no code yet\n}\n",
+            compiled, error));
+    CHECK(error.is_empty());
+    CHECK(compiled.contains("\tpass\n"));
+}
+
+TEST_CASE("[Noqeri] Native bridge rejects incompatible type casts") {
+    String compiled;
+    String error;
+    CHECK_FALSE(noqeri_translate_game_script(
+            "function _ready(): void { let number = 2 as u32 }",
+            compiled, error));
+    CHECK(error.contains("cast semantics"));
+}
+
 } // namespace TestNoeEngineNoqeri
 #endif
