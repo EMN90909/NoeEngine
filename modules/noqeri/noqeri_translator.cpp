@@ -6,6 +6,7 @@
 #include "noqeri_translator.h"
 
 #include "core/string/ustring.h"
+#include "core/object/class_db.h"
 
 namespace {
 
@@ -126,11 +127,7 @@ bool noqeri_translate_game_script(const String &p_source, String &r_compiled, St
         const String trimmed = input_lines[i].strip_edges();
         if (trimmed.begins_with("// noeengine:extends ")) {
             const String desired = trimmed.substr(String("// noeengine:extends ").length()).strip_edges();
-            if (desired != "Node" && desired != "Node2D" && desired != "Node3D" &&
-                    desired != "Control" && desired != "CharacterBody2D" && desired != "CharacterBody3D" &&
-                    desired != "Area2D" && desired != "Area3D" && desired != "Sprite2D" &&
-                    desired != "RigidBody2D" && desired != "RigidBody3D") {
-                r_error = "Unsupported native scene base type in // noeengine:extends directive: " + desired;
+            if (!ClassDB::class_exists(desired) ||\n                    (desired != "Node" && !ClassDB::is_parent_class(desired, "Node"))) {\n                r_error = "Unsupported native scene base type in // noeengine:extends directive: " + desired;
                 return false;
             }
             native_base = desired;

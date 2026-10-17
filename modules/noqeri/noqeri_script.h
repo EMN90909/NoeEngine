@@ -48,6 +48,9 @@ public:
             List<ScriptLanguage::Warning> *r_warnings = nullptr,
             HashSet<int> *r_safe_lines = nullptr) const override;
     Script *create_script() const override;
+    bool is_using_templates() override { return true; }
+    Vector<ScriptTemplate> get_built_in_templates(StringName p_object) override;
+    Ref<Script> make_template(const String &p_template, const String &p_class_name, const String &p_base_class_name) const override;
     bool has_named_classes() const override { return false; }
     bool supports_builtin_mode() const override { return false; }
     int find_function(const String &p_function, const String &p_code) const override;

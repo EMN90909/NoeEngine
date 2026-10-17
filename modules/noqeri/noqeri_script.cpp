@@ -4,6 +4,7 @@
 #include "noqeri_translator.h"
 
 #include "core/io/file_access.h"
+#include "core/object/class_db.h"
 
 NoqeriLanguage *script_language_noqeri = nullptr;
 
@@ -68,6 +69,37 @@ bool NoqeriLanguage::validate(const String &p_source, const String &p_path,
     }
     return GDScriptLanguage::get_singleton()->validate(converted, p_path,
             r_functions, r_errors, r_warnings, r_safe_lines);
+}
+
+Vector<ScriptLanguage::ScriptTemplate> NoqeriLanguage::get_built_in_templates(StringName p_object) {
+    Vector<ScriptTemplate> templates;
+    if (ClassDB::class_exists(p_object) &&
+            (p_object == "Node" || ClassDB::is_parent_class(p_object, "Node"))) {
+        ScriptTemplate entry;
+        entry.name = "Noqeri Node";
+        entry.description = "A native .nqr game script with a scene-ready callback.";
+        entry.inherit = String(p_object);
+        entry.content = "function _ready(): void {\n    \n}\n";
+        templates.push_back(entry);
+    }
+    return templates;
+}
+
+Ref<Script> NoqeriLanguage::make_template(const String &p_template, const String &p_class_name, const String &p_base_class_name) const {
+    Ref<NoqeriScript> script;
+    script.instantiate();
+    String base = p_base_class_name;
+    if (!ClassDB::class_exists(base) ||
+            (base != "Node" && !ClassDB::is_parent_class(base, "Node"))) {
+        base = "Node";
+    }
+    String body = p_template.strip_edges();
+    if (body.is_empty()) {
+        body = "function _ready(): void {\n    \n}";
+    }
+    script->set_source_code("// noeengine:extends " + base + "\n" + body + "\n");
+    script->reload();
+    return script;
 }
 
 Script *NoqeriLanguage::create_script() const {
