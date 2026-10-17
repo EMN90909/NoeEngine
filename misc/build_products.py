@@ -9,6 +9,7 @@ Use CI native runners to produce all three; a Linux host alone cannot ship a
 macOS build without a separately provisioned Apple SDK/osxcross toolchain.
 """
 import argparse
+import json
 import glob
 import os
 from pathlib import Path
@@ -22,6 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PRODUCTS = ROOT / "Products"
 VERSION = "0.1.0-dev"
 NAME = "NoeEngine"
+NOQERI_COMPAT = ROOT / "modules/noqeri/compatibility.json"
 
 
 def command(args, cwd=ROOT):
@@ -60,7 +62,46 @@ def find_binary(target):
     return candidates[0]
 
 
-def compile_editor(target, jobs):
+def verify_toolchain(target, package_only=False):
+    """Fail early when the source, SDK or native setup packager is missing."""
+    if not (ROOT / "SConstruct").is_file():
+        raise RuntimeError("Missing SConstruct: run from a complete source checkout.")
+    for source in ("modules/noqeri/noqeri_script.cpp",
+                   "modules/noqeri/noqeri_translator.cpp"):
+        if not (ROOT / source).is_file():
+            raise RuntimeError("Missing native Noqeri module source: " + source)
+    try:
+        compatibility = json.loads(NOQERI_COMPAT.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise RuntimeError("Cannot read Noqeri compatibility.json: " + str(exc))
+    if (compatibility.get("language_version") != "0.7.0" or
+            compatibility.get("abi_version") != 2 or
+            compatibility.get("release_status") != "development-unreleased"):
+        raise RuntimeError("Noqeri compatibility must declare 0.7.0-dev and ABI v2.")
+    print("Noqeri 0.7.0-dev (edition 2026, ABI v2): restricted native .nqr bridge.", flush=True)
+    host = host_platform()
+    if target == "linux" and host != "linux":
+        raise RuntimeError("Linux builds require a Linux host.")
+    if target == "macos" and host != "macos":
+        raise RuntimeError("macOS builds require Xcode and a Mac.")
+    if target == "windows" and host not in ("windows", "linux"):
+        raise RuntimeError("Windows builds require Windows or Linux with MinGW-w64.")
+    check_tool({"linux": "dpkg-deb", "windows": "makensis", "macos": "pkgbuild"}[target])
+    if package_only:
+        return
+    check_tool("scons")
+    if target == "linux":
+        check_tool("g++")
+        check_tool("pkg-config")
+    if target == "windows" and host == "linux":
+        for tool in ("x86_64-w64-mingw32-gcc", "x86_64-w64-mingw32-g++",
+                     "x86_64-w64-mingw32-windres"):
+            check_tool(tool)
+    if target == "macos":
+        check_tool("xcrun")
+
+
+def compile_editor(target, jobs, with_tests=False):
     check_tool("scons")
     host = host_platform()
     if target == "macos" and host != "macos":
@@ -71,6 +112,8 @@ def compile_editor(target, jobs):
         raise RuntimeError("Windows build requires Windows or Linux with MinGW-w64.")
     args = ["scons", "platform=" + ("linuxbsd" if target == "linux" else target),
             "target=editor", "arch=x86_64", "module_mono_enabled=no",
+            "module_gdscript_enabled=yes", "module_noqeri_enabled=yes",
+            "tests=" + ("yes" if with_tests else "no"),
             "debug_symbols=no", "-j" + str(jobs)]
     if target == "windows" and host == "linux":
         check_tool("x86_64-w64-mingw32-gcc")
@@ -180,14 +223,24 @@ def main(argv=None):
     parser.add_argument("platform", choices=("linux", "windows", "macos"),
                         help="Target platform for this build")
     parser.add_argument("--package-only", action="store_true",
-                        help="Package a previously built editor binary")
-    parser.add_argument("-j", "--jobs", type=int, default=max(1, min(4, os.cpu_count() or 1)))
+                        help="Package a previously compiled editor (without runtime verification)")
+    parser.add_argument("--preflight", action="store_true",
+                        help="Check source and target dependencies before compiling")
+    parser.add_argument("--tests", action="store_true",
+                        help="Build/run native Noqeri unit tests (Linux only)")
+    parser.add_argument("-j", "--jobs", type=int, default=2)
     args = parser.parse_args(argv)
     if args.jobs < 1:
         parser.error("--jobs must be positive")
+    if args.tests and (args.platform != "linux" or args.package_only):
+        parser.error("--tests requires a fresh native Linux editor build")
+    verify_toolchain(args.platform, package_only=args.package_only)
+    if args.preflight:
+        print("Toolchain preflight passed for", args.platform)
+        return
     PRODUCTS.mkdir(exist_ok=True)
     if not args.package_only:
-        compile_editor(args.platform, args.jobs)
+        compile_editor(args.platform, args.jobs, with_tests=args.tests)
     binary = find_binary(args.platform)
     if args.platform == "linux":
         result = write_debian(binary)
@@ -201,6 +254,6 @@ def main(argv=None):
 if __name__ == "__main__":
     try:
         main()
-    except (RuntimeError, subprocess.CalledProcessError) as exc:
+    except (RuntimeError, subprocess.CalledProcessError, OSError) as exc:
         print("Build failed:", exc, file=sys.stderr)
         sys.exit(1)
