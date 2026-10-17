@@ -1,0 +1,87 @@
+name: Editor installers (Linux, Windows, macOS)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'core/**'
+      - 'editor/**'
+      - 'scene/**'
+      - 'servers/**'
+      - 'drivers/**'
+      - 'modules/**'
+      - 'platform/**'
+      - 'thirdparty/**'
+      - 'SConstruct'
+      - 'misc/build_products.py'
+      - '.github/workflows/editor-installers.yml'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux
+            host: ubuntu-22.04
+          - target: windows
+            host: windows-2022
+          - target: macos
+            host: macos-15
+    runs-on: ${{ matrix.host }}
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Linux dependencies
+        if: matrix.target == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends scons build-essential pkg-config dpkg-dev libx11-dev libxcursor-dev libxinerama-dev libxi-dev libxrandr-dev libxrender-dev libgl1-mesa-dev libudev-dev libasound2-dev libpulse-dev libfreetype6-dev libfontconfig1-dev libssl-dev libwayland-dev libxkbcommon-dev libvulkan-dev
+      - name: Install Windows build tools
+        if: matrix.target == 'windows'
+        shell: pwsh
+        run: |
+          choco install nsis -y --no-progress
+          python -m pip install scons==4.8.1
+      - name: Install macOS build tools
+        if: matrix.target == 'macos'
+        run: |
+          python3 -m pip install scons==4.8.1
+          brew install pkg-config
+          sh misc/scripts/install_vulkan_sdk_macos.sh
+      - name: Confirm packaging script syntax
+        run: python -m py_compile misc/build_products.py
+      - name: Build and package Linux
+        if: matrix.target == 'linux'
+        run: python3 misc/build_products.py linux --jobs 2
+      - name: Build and package Windows
+        if: matrix.target == 'windows'
+        shell: pwsh
+        run: python misc/build_products.py windows --jobs 2
+      - name: Build and package macOS
+        if: matrix.target == 'macos'
+        run: python3 misc/build_products.py macos --jobs 2
+      - name: Verify Linux installer
+        if: matrix.target == 'linux'
+        run: dpkg-deb --info Products/*.deb
+      - name: Verify produced installers
+        shell: bash
+        run: |
+          ls -lah Products
+          test -n "$(find Products -type f -size +100k -print -quit)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer-${{ matrix.target }}
+          path: Products/*
+          if-no-files-found: error
