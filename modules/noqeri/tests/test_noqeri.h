@@ -112,5 +112,21 @@ TEST_CASE("[Noqeri] repeated counted loops use separate counters") {
     CHECK(compiled.contains("__nqr_repeat_1"));
 }
 
+TEST_CASE("[Noqeri] Scene scripts reject free-standing execution") {
+    String compiled;
+    String error;
+    CHECK_FALSE(noqeri_translate_game_script(
+            "print(\"only allowed inside _ready\")\n", compiled, error));
+    CHECK(error.contains("Top-level Noqeri scene script"));
+}
+
+TEST_CASE("[Noqeri] Scene scripts reject native GDScript-only annotations") {
+    String compiled;
+    String error;
+    CHECK_FALSE(noqeri_translate_game_script(
+            "@tool\nfunction _ready(): void {}\n", compiled, error));
+    CHECK(error.contains("Top-level Noqeri scene script"));
+}
+
 } // namespace TestNoeEngineNoqeri
 #endif

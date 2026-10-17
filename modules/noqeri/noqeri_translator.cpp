@@ -125,6 +125,18 @@ bool emit_statement(const String &p_segment, int p_depth, bool p_block_header, S
     if (stmt.is_empty()) {
         return true;
     }
+    if (p_depth == 0) {
+        // Scene script classes can declare variables, constants and methods,
+        // but do not execute free-standing Noqeri program statements.
+        // Reject GDScript-only top-level annotations too (e.g. @tool).
+        const bool declaration = p_block_header ? stmt.begins_with("func ") :
+                (stmt.begins_with("var ") || stmt.begins_with("const ") || stmt.begins_with("#"));
+        if (!declaration) {
+            r_error = "Top-level Noqeri scene script code must be inside a function. "
+                      "Only function, let, const and comment declarations are allowed outside functions.";
+            return false;
+        }
+    }
     for (int i = 0; i < p_depth; ++i) {
         r_output += "\t";
     }
