@@ -67,8 +67,12 @@ bool NoqeriLanguage::validate(const String &p_source, const String &p_path,
         }
         return false;
     }
+    // Godot 4.0's GDScriptLanguage::validate() writes its function list
+    // unconditionally on success. Never forward a null pointer.
+    List<String> fallback_functions;
+    List<String> *function_list = r_functions != nullptr ? r_functions : &fallback_functions;
     return GDScriptLanguage::get_singleton()->validate(converted, p_path,
-            r_functions, r_errors, r_warnings, r_safe_lines);
+            function_list, r_errors, r_warnings, r_safe_lines);
 }
 
 Vector<ScriptLanguage::ScriptTemplate> NoqeriLanguage::get_built_in_templates(StringName p_object) {
