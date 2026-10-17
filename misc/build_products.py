@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the Godot editor and create OS-native installers in Products/.
+"""Build the NoeEngine editor and create OS-native installers in Products/.
 
 Linux host: linux (native), windows (MinGW-w64 cross build).
 Windows host: windows (native). macOS host: macos (native).
@@ -18,8 +18,8 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 PRODUCTS = ROOT / "Products"
-VERSION = "4.0.5-rc"
-NAME = "Godot Engine"  # This restored commit has the original Godot branding.
+VERSION = "0.1.0-dev"
+NAME = "NoeEngine by Noethric"
 
 
 def command(args, cwd=ROOT):
@@ -79,51 +79,51 @@ def compile_editor(target, jobs):
 
 def write_debian(binary):
     check_tool("dpkg-deb")
-    with tempfile.TemporaryDirectory(prefix="godot-deb-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="noeengine-deb-") as tmp:
         root = Path(tmp) / "package"
-        app = root / "usr/lib/godot-engine"
+        app = root / "usr/lib/noeengine"
         bindir = root / "usr/bin"
         applications = root / "usr/share/applications"
         control = root / "DEBIAN"
         for directory in (app, bindir, applications, control):
             directory.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(binary, app / "godot-engine")
-        (app / "godot-engine").chmod(0o755)
-        launcher = bindir / "godot-engine"
-        launcher.write_text('#!/bin/sh\nexec /usr/lib/godot-engine/godot-engine "$@"\n')
+        shutil.copy2(binary, app / "noeengine")
+        (app / "noeengine").chmod(0o755)
+        launcher = bindir / "noeengine"
+        launcher.write_text('#!/bin/sh\nexec /usr/lib/noeengine/noeengine "$@"\n')
         launcher.chmod(0o755)
-        (applications / "godot-engine.desktop").write_text(
+        (applications / "noeengine.desktop").write_text(
             "[Desktop Entry]\nType=Application\nName=Godot Engine\n"
-            "Exec=godot-engine %f\nTerminal=false\nCategories=Development;IDE;\n"
+            "Exec=noeengine %f\nTerminal=false\nCategories=Development;IDE;\n"
         )
         (control / "control").write_text(
-            "Package: godot-engine-editor\nVersion: 4.0.5~rc1\n"
+            "Package: noeengine\nVersion: 0.1.0~dev1\n"
             "Section: devel\nPriority: optional\nArchitecture: amd64\n"
             "Maintainer: Local Builder <local@localhost>\n"
-            "Description: Godot 4 editor (locally built, unsigned)\n"
+            "Description: NoeEngine editor by Noethric (locally built, unsigned)\n"
         )
-        destination = PRODUCTS / ("Godot-Engine-" + VERSION + "-debian-amd64.deb")
+        destination = PRODUCTS / "NoeEngine-setup.deb"
         command(["dpkg-deb", "--build", "--root-owner-group", root, destination])
     return destination
 
 
 def write_windows(binary):
     check_tool("makensis")
-    with tempfile.TemporaryDirectory(prefix="godot-nsis-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="noeengine-nsis-") as tmp:
         directory = Path(tmp)
-        shutil.copy2(binary, directory / "godot-engine.exe")
-        out = PRODUCTS / ("Godot-Engine-" + VERSION + "-windows-x86_64-setup.exe")
+        shutil.copy2(binary, directory / "NoeEngine.exe")
+        out = PRODUCTS / "NoeEngine-setup.exe"
         # NSIS strings are double quoted; paths are local trusted build paths.
         nsi = directory / "installer.nsi"
         nsi.write_text(
-            'Unicode true\nName "Godot Engine"\nOutFile "' + out.as_posix() + '"\n'
-            'InstallDir "$PROGRAMFILES64\\Godot Engine"\nRequestExecutionLevel admin\n'
-            'Section "Install"\nSetOutPath "$INSTDIR"\nFile "godot-engine.exe"\n'
+            'Unicode true\nName "NoeEngine by Noethric"\nOutFile "' + out.as_posix() + '"\n'
+            'InstallDir "$PROGRAMFILES64\\Noethric\\NoeEngine"\nRequestExecutionLevel admin\n'
+            'Section "Install"\nSetOutPath "$INSTDIR"\nFile "NoeEngine.exe"\n'
             'WriteUninstaller "$INSTDIR\\Uninstall.exe"\n'
-            'CreateShortCut "$DESKTOP\\Godot Engine.lnk" "$INSTDIR\\godot-engine.exe"\n'
+            'CreateShortCut "$DESKTOP\\NoeEngine.lnk" "$INSTDIR\\NoeEngine.exe"\n'
             'SectionEnd\nSection "Uninstall"\n'
-            'Delete "$DESKTOP\\Godot Engine.lnk"\n'
-            'Delete "$INSTDIR\\godot-engine.exe"\n'
+            'Delete "$DESKTOP\\NoeEngine.lnk"\n'
+            'Delete "$INSTDIR\\NoeEngine.exe"\n'
             'Delete "$INSTDIR\\Uninstall.exe"\nRMDir "$INSTDIR"\nSectionEnd\n'
         )
         command(["makensis", "/V2" if os.name == "nt" else "-V2", nsi], directory)
@@ -132,9 +132,9 @@ def write_windows(binary):
 
 def write_macos(binary):
     check_tool("pkgbuild")
-    with tempfile.TemporaryDirectory(prefix="godot-pkg-") as tmp:
-        app = Path(tmp) / "Godot Engine.app"
-        executable = app / "Contents/MacOS/godot"
+    with tempfile.TemporaryDirectory(prefix="noeengine-pkg-") as tmp:
+        app = Path(tmp) / "NoeEngine.app"
+        executable = app / "Contents/MacOS/NoeEngine"
         executable.parent.mkdir(parents=True)
         shutil.copy2(binary, executable)
         executable.chmod(0o755)
@@ -144,14 +144,14 @@ def write_macos(binary):
             '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" '
             '"http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n'
             '<plist version="1.0"><dict>'
-            '<key>CFBundleExecutable</key><string>godot</string>'
-            '<key>CFBundleIdentifier</key><string>org.godotengine.editor.local</string>'
-            '<key>CFBundleName</key><string>Godot Engine</string>'
+            '<key>CFBundleExecutable</key><string>NoeEngine</string>'
+            '<key>CFBundleIdentifier</key><string>xyz.noethric.noeengine</string>'
+            '<key>CFBundleName</key><string>NoeEngine</string>'
             '<key>CFBundlePackageType</key><string>APPL</string>'
-            '<key>CFBundleVersion</key><string>4.0.5</string>'
+            '<key>CFBundleVersion</key><string>0.1.0</string>'
             '</dict></plist>\n'
         )
-        destination = PRODUCTS / ("Godot-Engine-" + VERSION + "-macos-x86_64.pkg")
+        destination = PRODUCTS / "NoeEngine-setup.pkg"
         command(["pkgbuild", "--component", app, "--install-location", "/Applications",
                  "--identifier", "org.godotengine.editor.local", "--version", "4.0.5", destination])
     return destination
