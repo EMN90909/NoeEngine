@@ -1,0 +1,38 @@
+{
+  "name": "Noqeri",
+  "language_version": "0.7.0",
+  "release_status": "development-unreleased",
+  "language_edition": "2026",
+  "abi_version": 2,
+  "compiler_source_repository": "https://github.com/EMN90909/Noqeri",
+  "compiler_source_commit": "a577578ec48bff94bd66f133ad39349b926fedd9",
+  "compiler_license": "GPL-3.0-only",
+  "game_sdk_status": "source-present-unqualified",
+  "engine_integration": "native ScriptLanguage with restricted GDScript-VM translation",
+  "engine_extension": ".nqr",
+  "compiler_embedded": false,
+  "verified_full_runtime": false,
+  "supported_scene_constructs": [
+    "function",
+    "let",
+    "const",
+    "if",
+    "else",
+    "while",
+    "repeat",
+    "return",
+    "engine Node calls"
+  ],
+  "unsupported_full_noqeri_features": [
+    "module",
+    "import",
+    "record",
+    "generics",
+    "pointers",
+    "FFI",
+    "atomics",
+    "NIR",
+    "standalone stdlib",
+    "complete type checking"
+  ]
+}
