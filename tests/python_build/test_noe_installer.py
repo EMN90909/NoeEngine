@@ -56,5 +56,42 @@ class InstallerPackagingTests(unittest.TestCase):
         self.assertIn("NoeEngine", (extract / "usr/share/applications/noeengine.desktop").read_text())
 
 
+    def test_windows_installer_recipe_has_uninstall_and_credits(self):
+        binary = self.root / "bin/godot.windows.editor.x86_64.exe"
+        binary.write_bytes(b"MZ fixture")
+        captured = []
+
+        def fake_command(arguments, cwd=None):
+            script = (Path(cwd) / "installer.nsi").read_text()
+            captured.append(script)
+            (self.root / "Products/NoeEngine-setup.exe").write_bytes(b"fixture installer")
+
+        with mock.patch.object(build, "check_tool"), mock.patch.object(build, "command", side_effect=fake_command):
+            result = build.write_windows(binary)
+        self.assertEqual(result.name, "NoeEngine-setup.exe")
+        self.assertIn('Name "NoeEngine by Noethric"', captured[0])
+        self.assertIn('File "LICENSE.txt"', captured[0])
+        self.assertIn('File "COPYRIGHT.txt"', captured[0])
+        self.assertIn('Section "Uninstall"', captured[0])
+
+    def test_macos_pkg_recipe_has_bundle_and_credits(self):
+        binary = self.root / "bin/godot.macos.editor.x86_64"
+        binary.write_bytes(b"fixture executable")
+        captured = []
+
+        def fake_command(arguments, cwd=None):
+            app = Path(arguments[2])
+            info = (app / "Contents/Info.plist").read_text()
+            captured.append(info)
+            self.assertTrue((app / "Contents/Resources/LICENSE.txt").exists())
+            self.assertTrue((app / "Contents/Resources/COPYRIGHT.txt").exists())
+            (self.root / "Products/NoeEngine-setup.pkg").write_bytes(b"fixture pkg")
+
+        with mock.patch.object(build, "check_tool"), mock.patch.object(build, "command", side_effect=fake_command):
+            result = build.write_macos(binary)
+        self.assertEqual(result.name, "NoeEngine-setup.pkg")
+        self.assertIn("xyz.noethric.noeengine", captured[0])
+        self.assertIn("NoeEngine", captured[0])
+
 if __name__ == "__main__":
     unittest.main()
