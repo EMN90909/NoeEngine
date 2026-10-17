@@ -19,7 +19,7 @@ afterEvaluate {
                 // Mostly self-explanatory metadata
                 pom {
                     name = PUBLISH_ARTIFACT_ID
-                    description = 'Godot Engine Android Library'
+                    description = 'NoeEngine Android Library'
                     url = 'https://godotengine.org/'
                     licenses {
                         license {
@@ -49,8 +49,8 @@ afterEvaluate {
                     // Version control info - if you're using GitHub, follow the
                     // format as seen here
                     scm {
-                        connection = 'scm:git:github.com/godotengine/godot.git'
-                        developerConnection = 'scm:git:ssh://github.com/godotengine/godot.git'
+                        connection = 'scm:git:github.com/noeengine/noeengine.git'
+                        developerConnection = 'scm:git:ssh://github.com/noeengine/noeengine.git'
                         url = 'https://github.com/godotengine/godot/tree/master'
                     }
                 }

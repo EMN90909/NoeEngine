@@ -5,7 +5,7 @@ on:
 # Global Settings
 env:
   # Used for the cache key. Add version suffix to force clean build.
-  GODOT_BASE_BRANCH: "4.0"
+  NOEENGINE_BASE_BRANCH: "4.0"
   SCONSFLAGS: verbose=yes warnings=extra werror=yes module_text_server_fb_enabled=yes
 
 jobs:
@@ -22,7 +22,7 @@ jobs:
             cache-name: macos-editor
             target: editor
             tests: true
-            bin: ./bin/godot.macos.editor.universal
+            bin: ./bin/noeengine.macos.editor.universal
 
             # Template builds need various fixes for unit tests to be supported in 4.0,
             # so we don't enable tests in this legacy branch.
@@ -32,7 +32,7 @@ jobs:
             target: template_release
             tests: false
             sconsflags: debug_symbols=no
-            bin: ./bin/godot.macos.template_release.universal
+            bin: ./bin/noeengine.macos.template_release.universal
 
     steps:
       - name: Checkout
@@ -44,21 +44,21 @@ jobs:
       - name: Select Xcode 26
         run: sudo xcode-select -s /Applications/Xcode_26.0.1.app
 
-      - name: Restore Godot build cache
-        uses: ./.github/actions/godot-cache-restore
+      - name: Restore NoeEngine build cache
+        uses: ./.github/actions/noeengine-cache-restore
         with:
           cache-name: ${{ matrix.cache-name }}
         continue-on-error: true
 
       - name: Setup Python and SCons
-        uses: ./.github/actions/godot-deps
+        uses: ./.github/actions/noeengine-deps
 
       - name: Setup Vulkan SDK
         run: |
           sh misc/scripts/install_vulkan_sdk_macos.sh
 
       - name: Compilation (x86_64)
-        uses: ./.github/actions/godot-build
+        uses: ./.github/actions/noeengine-build
         with:
           sconsflags: ${{ env.SCONSFLAGS }} arch=x86_64
           platform: macos
@@ -66,25 +66,25 @@ jobs:
           tests: ${{ matrix.tests }}
 
       - name: Compilation (arm64)
-        uses: ./.github/actions/godot-build
+        uses: ./.github/actions/noeengine-build
         with:
           sconsflags: ${{ env.SCONSFLAGS }} arch=arm64
           platform: macos
           target: ${{ matrix.target }}
           tests: ${{ matrix.tests }}
 
-      - name: Save Godot build cache
-        uses: ./.github/actions/godot-cache-save
+      - name: Save NoeEngine build cache
+        uses: ./.github/actions/noeengine-cache-save
         with:
           cache-name: ${{ matrix.cache-name }}
         continue-on-error: true
 
       - name: Prepare artifact
         run: |
-          lipo -create ./bin/godot.macos.${{ matrix.target }}.x86_64 ./bin/godot.macos.${{ matrix.target }}.arm64 -output ./bin/godot.macos.${{ matrix.target }}.universal
-          rm ./bin/godot.macos.${{ matrix.target }}.x86_64 ./bin/godot.macos.${{ matrix.target }}.arm64
-          strip bin/godot.*
-          chmod +x bin/godot.*
+          lipo -create ./bin/noeengine.macos.${{ matrix.target }}.x86_64 ./bin/noeengine.macos.${{ matrix.target }}.arm64 -output ./bin/noeengine.macos.${{ matrix.target }}.universal
+          rm ./bin/noeengine.macos.${{ matrix.target }}.x86_64 ./bin/noeengine.macos.${{ matrix.target }}.arm64
+          strip bin/noeengine.*
+          chmod +x bin/noeengine.*
 
       - name: Upload artifact
         uses: ./.github/actions/upload-artifact

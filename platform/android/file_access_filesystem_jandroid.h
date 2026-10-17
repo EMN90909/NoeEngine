@@ -2,7 +2,7 @@
 /*  file_access_filesystem_jandroid.h                                     */
 /**************************************************************************/
 /*                         This file is part of:                          */
-/*                             GODOT ENGINE                               */
+/*                             NOEENGINE                               */
 /*                        https://godotengine.org                         */
 /**************************************************************************/
 /* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
@@ -32,7 +32,7 @@
 #define FILE_ACCESS_FILESYSTEM_JANDROID_H
 
 #include "core/io/file_access.h"
-#include "java_godot_lib_jni.h"
+#include "java_noeengine_lib_jni.h"
 
 class FileAccessFilesystemJAndroid : public FileAccess {
 	static jobject file_access_handler;

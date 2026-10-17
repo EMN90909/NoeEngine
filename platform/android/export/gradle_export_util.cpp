@@ -2,7 +2,7 @@
 /*  gradle_export_util.cpp                                                */
 /**************************************************************************/
 /*                         This file is part of:                          */
-/*                             GODOT ENGINE                               */
+/*                             NOEENGINE                               */
 /*                        https://godotengine.org                         */
 /**************************************************************************/
 /* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
@@ -194,8 +194,8 @@ String _android_xml_escape(const String &p_string) {
 Error _create_project_name_strings_files(const Ref<EditorExportPreset> &p_preset, const String &project_name) {
 	print_verbose("Creating strings resources for supported locales for project " + project_name);
 	// Stores the string into the default values directory.
-	String processed_default_xml_string = vformat(godot_project_name_xml_string, _android_xml_escape(project_name));
-	store_string_at_path("res://android/build/res/values/godot_project_name_string.xml", processed_default_xml_string);
+	String processed_default_xml_string = vformat(noeengine_project_name_xml_string, _android_xml_escape(project_name));
+	store_string_at_path("res://android/build/res/values/noeengine_project_name_string.xml", processed_default_xml_string);
 
 	// Searches the Gradle project res/ directory to find all supported locales
 	Ref<DirAccess> da = DirAccess::open("res://android/build/res");
@@ -217,10 +217,10 @@ Error _create_project_name_strings_files(const Ref<EditorExportPreset> &p_preset
 			continue;
 		}
 		String locale = file.replace("values-", "").replace("-r", "_");
-		String locale_directory = "res://android/build/res/" + file + "/godot_project_name_string.xml";
+		String locale_directory = "res://android/build/res/" + file + "/noeengine_project_name_string.xml";
 		if (appnames.has(locale)) {
 			String locale_project_name = appnames[locale];
-			String processed_xml_string = vformat(godot_project_name_xml_string, _android_xml_escape(locale_project_name));
+			String processed_xml_string = vformat(noeengine_project_name_xml_string, _android_xml_escape(locale_project_name));
 			print_verbose("Storing project name for locale " + locale + " under " + locale_directory);
 			store_string_at_path(locale_directory, processed_xml_string);
 		} else {
@@ -283,7 +283,7 @@ String _get_xr_features_tag(const Ref<EditorExportPreset> &p_preset, bool p_uses
 String _get_activity_tag(const Ref<EditorExportPreset> &p_preset, bool p_uses_xr) {
 	String orientation = _get_android_orientation_label(DisplayServer::ScreenOrientation(int(GLOBAL_GET("display/window/handheld/orientation"))));
 	String manifest_activity_text = vformat(
-			"        <activity android:name=\"com.godot.game.GodotApp\" "
+			"        <activity android:name=\"com.noeengine.game.NoeEngineApp\" "
 			"tools:replace=\"android:screenOrientation,android:excludeFromRecents,android:resizeableActivity\" "
 			"tools:node=\"mergeOnlyAttributes\" "
 			"android:excludeFromRecents=\"%s\" "
@@ -328,7 +328,7 @@ String _get_application_tag(const Ref<EditorExportPreset> &p_preset, bool p_has_
 	bool uses_xr = xr_mode_index == XR_MODE_OPENXR;
 
 	String manifest_application_text = vformat(
-			"    <application android:label=\"@string/godot_project_name_string\"\n"
+			"    <application android:label=\"@string/noeengine_project_name_string\"\n"
 			"        android:allowBackup=\"%s\"\n"
 			"        android:icon=\"@mipmap/icon\"\n"
 			"        android:appCategory=\"%s\"\n"

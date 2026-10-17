@@ -2,7 +2,7 @@
 /*  android_keys_utils.h                                                  */
 /**************************************************************************/
 /*                         This file is part of:                          */
-/*                             GODOT ENGINE                               */
+/*                             NOEENGINE                               */
 /*                        https://godotengine.org                         */
 /**************************************************************************/
 /* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
@@ -36,12 +36,12 @@
 
 #define AKEYCODE_MAX 0xFFFF
 
-struct AndroidGodotCodePair {
+struct AndroidNoeEngineCodePair {
 	unsigned int android_code = 0;
-	Key godot_code = Key::NONE;
+	Key noeengine_code = Key::NONE;
 };
 
-static AndroidGodotCodePair android_godot_code_pairs[] = {
+static AndroidNoeEngineCodePair android_noeengine_code_pairs[] = {
 	{ AKEYCODE_UNKNOWN, Key::UNKNOWN }, // (0) Unknown key code.
 	{ AKEYCODE_BACK, Key::BACK }, // (4) Back key.
 	{ AKEYCODE_0, Key::KEY_0 }, // (7) '0' key.
@@ -174,6 +174,6 @@ static AndroidGodotCodePair android_godot_code_pairs[] = {
 	{ AKEYCODE_MAX, Key::UNKNOWN }
 };
 
-Key godot_code_from_android_code(unsigned int p_code);
+Key noeengine_code_from_android_code(unsigned int p_code);
 
 #endif // ANDROID_KEYS_UTILS_H

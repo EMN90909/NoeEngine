@@ -2,7 +2,7 @@
 /*  string_android.h                                                      */
 /**************************************************************************/
 /*                         This file is part of:                          */
-/*                             GODOT ENGINE                               */
+/*                             NOEENGINE                               */
 /*                        https://godotengine.org                         */
 /**************************************************************************/
 /* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
@@ -36,10 +36,10 @@
 #include <jni.h>
 
 /**
- * Converts JNI jstring to Godot String.
+ * Converts JNI jstring to NoeEngine String.
  * @param source Source JNI string. If null an empty string is returned.
  * @param env JNI environment instance. If null obtained by get_jni_env().
- * @return Godot string instance.
+ * @return NoeEngine string instance.
  */
 static inline String jstring_to_string(jstring source, JNIEnv *env = nullptr) {
 	String result;

@@ -178,7 +178,7 @@ def configure(env: "Environment"):
         env.Append(CPPDEFINES=[("_FILE_OFFSET_BITS", 64)])
 
     if env["arch"] == "x86_32":
-        # The NDK adds this if targeting API < 24, so we can drop it when Godot targets it at least
+        # The NDK adds this if targeting API < 24, so we can drop it when NoeEngine targets it at least
         env.Append(CCFLAGS=["-mstackrealign"])
     elif env["arch"] == "arm32":
         env.Append(CCFLAGS="-march=armv7-a -mfloat-abi=softfp".split())
@@ -191,7 +191,7 @@ def configure(env: "Environment"):
     # Link flags
 
     env.Append(LINKFLAGS="-Wl,--gc-sections -Wl,--no-undefined -Wl,-z,now".split())
-    env.Append(LINKFLAGS="-Wl,-soname,libgodot_android.so")
+    env.Append(LINKFLAGS="-Wl,-soname,libnoeengine_android.so")
 
     env.Prepend(CPPPATH=["#platform/android"])
     env.Append(CPPDEFINES=["ANDROID_ENABLED", "UNIX_ENABLED"])

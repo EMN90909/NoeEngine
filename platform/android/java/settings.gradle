@@ -14,7 +14,7 @@ pluginManagement {
     }
 }
 
-rootProject.name = "Godot"
+rootProject.name = "NoeEngine"
 
 include ':app'
 include ':lib'

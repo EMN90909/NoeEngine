@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="org.godotengine.editor"
+    package="org.noeengine.editor"
     android:installLocation="auto">
 
     <supports-screens
@@ -27,18 +27,18 @@
     <application
         android:allowBackup="false"
         android:icon="@mipmap/icon"
-        android:label="@string/godot_editor_name_string"
+        android:label="@string/noeengine_editor_name_string"
         tools:ignore="GoogleAppIndexingWarning"
-        android:theme="@style/GodotEditorTheme"
+        android:theme="@style/NoeEngineEditorTheme"
         android:requestLegacyExternalStorage="true">
 
         <activity
-            android:name=".GodotProjectManager"
+            android:name=".NoeEngineProjectManager"
             android:configChanges="orientation|keyboardHidden|screenSize|smallestScreenSize|density|keyboard|navigation|screenLayout|uiMode"
             android:launchMode="singleTask"
             android:screenOrientation="userLandscape"
             android:exported="true"
-            android:process=":GodotProjectManager">
+            android:process=":NoeEngineProjectManager">
 
             <layout android:defaultHeight="@dimen/editor_default_window_height"
                 android:defaultWidth="@dimen/editor_default_window_width" />
@@ -50,9 +50,9 @@
         </activity>
 
         <activity
-            android:name=".GodotEditor"
+            android:name=".NoeEngineEditor"
             android:configChanges="orientation|keyboardHidden|screenSize|smallestScreenSize|density|keyboard|navigation|screenLayout|uiMode"
-            android:process=":GodotEditor"
+            android:process=":NoeEngineEditor"
             android:launchMode="singleTask"
             android:screenOrientation="userLandscape"
             android:exported="false">
@@ -61,10 +61,10 @@
         </activity>
 
         <activity
-            android:name=".GodotGame"
+            android:name=".NoeEngineGame"
             android:configChanges="orientation|keyboardHidden|screenSize|smallestScreenSize|density|keyboard|navigation|screenLayout|uiMode"
-            android:label="@string/godot_project_name_string"
-            android:process=":GodotGame"
+            android:label="@string/noeengine_project_name_string"
+            android:process=":NoeEngineGame"
             android:launchMode="singleTask"
             android:exported="false"
             android:screenOrientation="userLandscape">

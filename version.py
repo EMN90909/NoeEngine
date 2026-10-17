@@ -1,10 +1,10 @@
-short_name = "godot"
-name = "Godot Engine"
+short_name = "noeengine"
+name = "NoeEngine"
 major = 4
 minor = 0
 patch = 5
 status = "rc"
 module_config = ""
 year = 2023
-website = "https://godotengine.org"
+website = "https://github.com/EMN90909/noe"
 docs = "4.0"

@@ -4,7 +4,7 @@ plugins {
 }
 
 ext {
-    PUBLISH_ARTIFACT_ID = 'godot'
+    PUBLISH_ARTIFACT_ID = 'noeengine'
 }
 
 apply from: "../scripts/publish-module.gradle"
@@ -25,10 +25,10 @@ android {
         minSdkVersion versions.minSdk
         targetSdkVersion versions.targetSdk
 
-        manifestPlaceholders = [godotLibraryVersion: getGodotLibraryVersionName()]
+        manifestPlaceholders = [noeengineLibraryVersion: getNoeEngineLibraryVersionName()]
     }
 
-    namespace = "org.godotengine.godot"
+    namespace = "org.noeengine.noeengine"
 
     compileOptions {
         sourceCompatibility versions.javaVersion
@@ -123,7 +123,7 @@ android {
             outputSuffix = "${outputSuffix}.dev"
         }
         variant.outputs.all { output ->
-            output.outputFileName = "godot-lib.${outputSuffix}.aar"
+            output.outputFileName = "noeengine-lib.${outputSuffix}.aar"
         }
 
         // Find scons' executable path

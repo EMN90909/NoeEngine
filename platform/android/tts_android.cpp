@@ -2,7 +2,7 @@
 /*  tts_android.cpp                                                       */
 /**************************************************************************/
 /*                         This file is part of:                          */
-/*                             GODOT ENGINE                               */
+/*                             NOEENGINE                               */
 /*                        https://godotengine.org                         */
 /**************************************************************************/
 /* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
@@ -30,7 +30,7 @@
 
 #include "tts_android.h"
 
-#include "java_godot_wrapper.h"
+#include "java_noeengine_wrapper.h"
 #include "os_android.h"
 #include "string_android.h"
 #include "thread_jandroid.h"

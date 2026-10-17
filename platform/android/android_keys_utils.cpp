@@ -2,7 +2,7 @@
 /*  android_keys_utils.cpp                                                */
 /**************************************************************************/
 /*                         This file is part of:                          */
-/*                             GODOT ENGINE                               */
+/*                             NOEENGINE                               */
 /*                        https://godotengine.org                         */
 /**************************************************************************/
 /* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
@@ -30,10 +30,10 @@
 
 #include "android_keys_utils.h"
 
-Key godot_code_from_android_code(unsigned int p_code) {
-	for (int i = 0; android_godot_code_pairs[i].android_code != AKEYCODE_MAX; i++) {
-		if (android_godot_code_pairs[i].android_code == p_code) {
-			return android_godot_code_pairs[i].godot_code;
+Key noeengine_code_from_android_code(unsigned int p_code) {
+	for (int i = 0; android_noeengine_code_pairs[i].android_code != AKEYCODE_MAX; i++) {
+		if (android_noeengine_code_pairs[i].android_code == p_code) {
+			return android_noeengine_code_pairs[i].noeengine_code;
 		}
 	}
 	return Key::UNKNOWN;

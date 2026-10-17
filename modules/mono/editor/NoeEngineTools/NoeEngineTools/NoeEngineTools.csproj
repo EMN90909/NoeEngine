@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>{27B00618-A6F2-4828-B922-05CAEB08C286}</ProjectGuid>
+    <TargetFramework>net6.0</TargetFramework>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <LangVersion>10</LangVersion>
+    <!-- The NoeEngine editor uses the Debug NoeEngine API assemblies -->
+    <NoeEngineApiConfiguration>Debug</NoeEngineApiConfiguration>
+    <NoeEngineSourceRootPath>$(SolutionDir)/../../../../</NoeEngineSourceRootPath>
+    <NoeEngineOutputDataDir>$(NoeEngineSourceRootPath)/bin/NoeEngineSharp</NoeEngineOutputDataDir>
+    <NoeEngineApiAssembliesDir>$(NoeEngineOutputDataDir)/Api/$(NoeEngineApiConfiguration)</NoeEngineApiAssembliesDir>
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <!-- Needed for our source generators to work despite this not being a NoeEngine game project -->
+  <PropertyGroup>
+    <IsNoeEngineToolsProject>true</IsNoeEngineToolsProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <CompilerVisibleProperty Include="IsNoeEngineToolsProject" />
+  </ItemGroup>
+  <PropertyGroup Condition=" Exists('$(NoeEngineApiAssembliesDir)/NoeEngineSharp.dll') ">
+    <!-- The project is part of the NoeEngine source tree -->
+    <!-- Use the NoeEngine source tree output folder instead of '$(ProjectDir)/bin' -->
+    <OutputPath>$(NoeEngineOutputDataDir)/Tools</OutputPath>
+    <!-- Must not append '$(TargetFramework)' to the output path in this case -->
+    <AppendTargetFrameworkToOutputPath>False</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="JetBrains.Annotations" Version="2019.1.3.0" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.0" PrivateAssets="All" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <!-- For RiderPathLocator -->
+    <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
+    <Reference Include="NoeEngineSharp">
+      <HintPath>$(NoeEngineApiAssembliesDir)/NoeEngineSharp.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="NoeEngineSharpEditor">
+      <HintPath>$(NoeEngineApiAssembliesDir)/NoeEngineSharpEditor.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\NoeEngine.NET.Sdk\NoeEngine.SourceGenerators\NoeEngine.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\..\glue\NoeEngineSharp\NoeEngine.SourceGenerators.Internal\NoeEngine.SourceGenerators.Internal.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NoeEngineTools.BuildLogger\NoeEngineTools.BuildLogger.csproj" />
+    <ProjectReference Include="..\NoeEngineTools.IdeMessaging\NoeEngineTools.IdeMessaging.csproj" />
+    <ProjectReference Include="..\NoeEngineTools.ProjectEditor\NoeEngineTools.ProjectEditor.csproj" />
+    <ProjectReference Include="..\NoeEngineTools.Core\NoeEngineTools.Core.csproj" />
+    <!-- Include it if this is an SCons build targeting Windows, or if it's not an SCons build but we're on Windows -->
+    <ProjectReference Include="..\NoeEngineTools.OpenVisualStudio\NoeEngineTools.OpenVisualStudio.csproj" Condition=" '$(NoeEnginePlatform)' == 'windows' Or ( '$(NoeEnginePlatform)' == '' And '$(OS)' == 'Windows_NT' ) " />
+  </ItemGroup>
+</Project>

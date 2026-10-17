@@ -1,0 +1,39 @@
+<Project>
+  <!-- Generate C# file with the version of all the nupkgs bundled with NoeEngine -->
+
+  <Target Name="SetPropertiesForGenerateNoeEngineNupkgsVersions">
+    <PropertyGroup>
+      <GeneratedNoeEngineNupkgsVersionsFile>$(IntermediateOutputPath)NoeEngineNupkgsVersions.g.cs</GeneratedNoeEngineNupkgsVersionsFile>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="GenerateNoeEngineNupkgsVersionsFile"
+          DependsOnTargets="_GenerateNoeEngineNupkgsVersionsFile"
+          BeforeTargets="PrepareForBuild;CompileDesignTime;BeforeCompile;CoreCompile">
+    <ItemGroup>
+      <Compile Include="$(GeneratedNoeEngineNupkgsVersionsFile)" />
+      <FileWrites Include="$(GeneratedNoeEngineNupkgsVersionsFile)" />
+    </ItemGroup>
+  </Target>
+  <Target Name="_GenerateNoeEngineNupkgsVersionsFile"
+          DependsOnTargets="SetPropertiesForGenerateNoeEngineNupkgsVersions"
+          Inputs="$(MSBuildProjectFile);$(MSBuildThisFileDirectory);$(MSBuildProjectFile)\..\..\..\SdkPackageVersions.props"
+          Outputs="$(GeneratedNoeEngineNupkgsVersionsFile)">
+    <PropertyGroup>
+      <GenerateNoeEngineNupkgsVersionsCode><![CDATA[
+namespace $(RootNamespace)
+{
+    public class GeneratedNoeEngineNupkgsVersions
+    {
+        public const string NoeEngineNETSdk = "$(PackageVersion_NoeEngine_NET_Sdk)"%3b
+        public const string NoeEngineSourceGenerators = "$(PackageVersion_NoeEngine_SourceGenerators)"%3b
+        public const string NoeEngineSharp = "$(PackageVersion_NoeEngineSharp)"%3b
+    }
+}
+]]></GenerateNoeEngineNupkgsVersionsCode>
+    </PropertyGroup>
+    <WriteLinesToFile Lines="$(GenerateNoeEngineNupkgsVersionsCode)"
+                      File="$(GeneratedNoeEngineNupkgsVersionsFile)"
+                      Overwrite="True" WriteOnlyWhenDifferent="True" />
+  </Target>
+</Project>

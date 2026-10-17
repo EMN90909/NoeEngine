@@ -1,20 +1,25 @@
-Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md).
-Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.
+NOEENGINE — PROPRIETARY ADDITIONS AND DISTRIBUTION NOTICE
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Copyright (c) 2026 NoeEngine contributors, solely for original contributions
+for which those contributors hold the relevant copyrights.
+All rights reserved in such independently owned proprietary additions.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Unless separately authorized in writing, no license is granted to copy,
+modify, distribute, sublicense, or commercialize original NoeEngine additions
+that are expressly identified as proprietary.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+IMPORTANT UPSTREAM LICENSE EXCEPTION
+
+NoeEngine is derived from Godot Engine. The upstream Godot Engine code remains
+MIT-licensed, including the right to use, modify, distribute and sublicense
+that code under its original license. This proprietary notice does NOT replace,
+revoke, or restrict the MIT rights of any recipient in the upstream code.
+
+The full original upstream copyright and MIT permission notice is retained in
+UPSTREAM-MIT-LICENSE.txt, which must accompany copies or substantial portions
+of the affected code. More component-specific licensing requirements are in
+COPYRIGHT.txt and relevant third-party directories.
+
+A file is NOT proprietary solely because it appears in this repository, uses
+the NoeEngine name, or bears this repository-level notice. Copyright
+ownership and the file's applicable notices determine its actual license.

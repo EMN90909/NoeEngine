@@ -1,0 +1,50 @@
+name: NoeEngine path rebrand
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/noeengine-path-rebrand.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rebrand:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - name: Preview rename
+        run: python3 tools/rebrand_to_noeengine.py --dry-run > /tmp/noeengine-dry-run.txt && head -n 25 /tmp/noeengine-dry-run.txt
+      - name: Apply rename
+        run: python3 tools/rebrand_to_noeengine.py --apply
+      - name: Verify changed file paths and Python syntax
+        shell: bash
+        run: |
+          python3 -m py_compile tools/rebrand_to_noeengine.py
+          python3 - <<'PY'
+          import subprocess, re
+          paths = subprocess.check_output(['git','ls-files','-z']).decode().split('\0')
+          remaining = [p for p in paths if re.search('godot', p, re.I)]
+          if remaining:
+              raise SystemExit(f'{len(remaining)} Godot-named paths remain: {remaining[:20]}')
+          print(f'Checked {len(paths)-1} paths: zero Godot-named paths')
+          PY
+          git diff --check
+      - name: Commit path and reference rebrand to main
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes needed"
+          else
+            git commit -m "Rebrand Godot file paths and internal references to NoeEngine"
+            git push origin HEAD:main
+          fi
