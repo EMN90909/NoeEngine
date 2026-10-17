@@ -166,6 +166,7 @@ bool noqeri_translate_game_script(const String &p_source, String &r_compiled,
             const String desired = trimmed.substr(String("// noeengine:extends ").length()).strip_edges();
             if (!ClassDB::class_exists(desired) ||
                     (desired != "Node" && !ClassDB::is_parent_class(desired, "Node"))) {
+                if (r_error_line) { *r_error_line = i + 1; }
                 r_error = "Unsupported native scene base type in // noeengine:extends directive: " + desired;
                 return false;
             }
@@ -193,6 +194,7 @@ bool noqeri_translate_game_script(const String &p_source, String &r_compiled,
             if (c == '\n') {
                 in_comment = false;
                 if (!emit_statement(segment, depth, false, r_compiled, r_error, statements, repeat_counter, r_line_map, source_line)) {
+                    if (r_error_line) { *r_error_line = source_line; }
                     return false;
                 }
                 segment = String();
@@ -203,6 +205,11 @@ bool noqeri_translate_game_script(const String &p_source, String &r_compiled,
             continue;
         }
         if (in_string) {
+            if (c == '\n') {
+                if (r_error_line) { *r_error_line = source_line; }
+                r_error = "Multiline string literals are not supported in Noqeri scene scripts.";
+                return false;
+            }
             segment += String::chr(c);
             if (escaped) {
                 escaped = false;
@@ -219,6 +226,7 @@ bool noqeri_translate_game_script(const String &p_source, String &r_compiled,
             continue;
         }
         if (c == '/' && i + 1 < p_source.length() && p_source[i + 1] == '*') {
+            if (r_error_line) { *r_error_line = source_line; }
             r_error = "Block comments are not supported in NoeEngine's initial .nqr scene bridge. Use //.";
             return false;
         }
@@ -230,6 +238,7 @@ bool noqeri_translate_game_script(const String &p_source, String &r_compiled,
         }
         if (c == '{') {
             if (depth >= 63) {
+                if (r_error_line) { *r_error_line = source_line; }
                 r_error = "Noqeri scene script exceeds maximum supported block depth.";
                 return false;
             }
@@ -247,6 +256,7 @@ bool noqeri_translate_game_script(const String &p_source, String &r_compiled,
             }
             segment = String();
             if (depth == 0) {
+                if (r_error_line) { *r_error_line = source_line; }
                 r_error = "Unmatched closing '}' in Noqeri scene script.";
                 return false;
             }
