@@ -128,5 +128,47 @@ TEST_CASE("[Noqeri] Scene scripts reject native GDScript-only annotations") {
     CHECK(error.contains("Top-level Noqeri scene script"));
 }
 
+TEST_CASE("[Noqeri] Native source line mapping includes generated code") {
+    String translated;
+    String error;
+    Vector<int> source_lines;
+    int error_line = 0;
+    const String source =
+            "// noeengine:extends Node2D\n"
+            "function _ready(): void {\n"
+            "  let health: int = 10\n"
+            "  print(health)\n"
+            "}\n";
+    CHECK(noqeri_translate_game_script(source, translated, error, &source_lines, &error_line));
+    CHECK(error.is_empty());
+    CHECK(source_lines.size() == translated.count("\n"));
+    CHECK(source_lines[0] == 1);
+    bool mapped_function = false;
+    bool mapped_variable = false;
+    bool mapped_call = false;
+    for (int i = 0; i < source_lines.size(); ++i) {
+        mapped_function = mapped_function || source_lines[i] == 2;
+        mapped_variable = mapped_variable || source_lines[i] == 3;
+        mapped_call = mapped_call || source_lines[i] == 4;
+    }
+    CHECK(mapped_function);
+    CHECK(mapped_variable);
+    CHECK(mapped_call);
+}
+
+TEST_CASE("[Noqeri] Noqeri syntax errors report their original line") {
+    String translated;
+    String error;
+    int original_error_line = 0;
+    const String source =
+            "// first comment\n"
+            "function _ready(): void {\n"
+            "  import \"invalid.nqr\"\n"
+            "}\n";
+    CHECK_FALSE(noqeri_translate_game_script(source, translated, error, nullptr, &original_error_line));
+    CHECK(original_error_line == 3);
+    CHECK(error.contains("native Noqeri runtime"));
+}
+
 } // namespace TestNoeEngineNoqeri
 #endif
