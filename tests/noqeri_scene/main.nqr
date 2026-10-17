@@ -1,0 +1,6 @@
+// NoeEngine .nqr scripts run inside the existing scene lifecycle.
+// This sample uses the restricted engine scripting subset, not Noqeri's full ABI.
+function _ready(): void {
+    print("NOQERI_NATIVE_READY")
+    get_tree().quit()
+}
