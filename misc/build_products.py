@@ -122,6 +122,34 @@ def compile_editor(target, jobs, with_tests=False):
     command(args)
 
 
+def smoke_test_linux(binary, with_tests=False):
+    """Verify the compiled editor and the real native .nqr scene before shipping."""
+    command([binary, "--headless", "--version"])
+    if with_tests:
+        command([binary, "--headless", "--test", "--test-case=[Noqeri]*"])
+    project = ROOT / "tests/noqeri_scene"
+    if not (project / "project.godot").is_file():
+        raise RuntimeError("Noqeri runtime smoke project is missing.")
+    print("+", binary, "--headless --path", project, flush=True)
+    try:
+        run = subprocess.run(
+            [str(binary), "--headless", "--path", str(project)],
+            cwd=str(ROOT), capture_output=True, text=True, timeout=90,
+            check=False)
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError("Native Noqeri scene timed out after 90 seconds.") from exc
+    output = run.stdout + "\n" + run.stderr
+    print(output, flush=True)
+    if run.returncode != 0:
+        raise RuntimeError("Native Noqeri scene failed, exit code " + str(run.returncode))
+    for marker in ("NOQERI_NATIVE_READY", "NOQERI_NATIVE_PROCESS"):
+        if marker not in output:
+            raise RuntimeError("Noqeri scene failed to emit " + marker)
+    if output.count("NOQERI_REPEAT_STEP") != 2:
+        raise RuntimeError("Noqeri repeat test failed: expected exactly two iterations.")
+    print("Native Noqeri lifecycle and repeat smoke: PASSED", flush=True)
+
+
 def write_debian(binary):
     check_tool("dpkg-deb")
     with tempfile.TemporaryDirectory(prefix="noeengine-deb-") as tmp:
@@ -242,13 +270,19 @@ def main(argv=None):
     if not args.package_only:
         compile_editor(args.platform, args.jobs, with_tests=args.tests)
     binary = find_binary(args.platform)
+    if not args.package_only and args.platform == "linux":
+        smoke_test_linux(binary, with_tests=args.tests)
+    elif args.package_only:
+        print("Packaging prebuilt binary; runtime verification is not performed.", flush=True)
     if args.platform == "linux":
         result = write_debian(binary)
     elif args.platform == "windows":
         result = write_windows(binary)
     else:
         result = write_macos(binary)
-    print("Installer created:", result)
+    if not result.is_file() or result.stat().st_size == 0:
+        raise RuntimeError("Packaging returned without a nonempty setup installer: " + str(result))
+    print("Installer created:", result, "(", result.stat().st_size, "bytes )")
 
 
 if __name__ == "__main__":
