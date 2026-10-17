@@ -52,27 +52,73 @@ void NoqeriLanguage::get_string_delimiters(List<String> *p_delimiters) const {
     p_delimiters->push_back("\" \"");
 }
 
+static int _noqeri_original_line(const Vector<int> &p_line_map, int p_compiled_line) {
+    if (p_compiled_line > 0 && p_compiled_line <= p_line_map.size()) {
+        return p_line_map[p_compiled_line - 1];
+    }
+    return p_compiled_line;
+}
+
 bool NoqeriLanguage::validate(const String &p_source, const String &p_path,
         List<String> *r_functions, List<ScriptLanguage::ScriptError> *r_errors,
         List<ScriptLanguage::Warning> *r_warnings, HashSet<int> *r_safe_lines) const {
     String converted;
     String message;
-    if (!noqeri_translate_game_script(p_source, converted, message)) {
+    Vector<int> line_map;
+    int native_error_line = 1;
+    if (!noqeri_translate_game_script(p_source, converted, message, &line_map, &native_error_line)) {
         if (r_errors) {
             ScriptError error;
-            error.line = 1;
+            error.line = native_error_line;
             error.column = 1;
             error.message = message;
             r_errors->push_back(error);
         }
         return false;
     }
-    // Godot 4.0's GDScriptLanguage::validate() writes its function list
-    // unconditionally on success. Never forward a null pointer.
-    List<String> fallback_functions;
-    List<String> *function_list = r_functions != nullptr ? r_functions : &fallback_functions;
-    return GDScriptLanguage::get_singleton()->validate(converted, p_path,
-            function_list, r_errors, r_warnings, r_safe_lines);
+
+    // Godot 4.0's GDScript validator unconditionally appends to its function
+    // list. Use local non-null collections, then map lines back to .nqr.
+    List<String> translated_functions;
+    List<ScriptError> translated_errors;
+    List<Warning> translated_warnings;
+    HashSet<int> translated_safe_lines;
+    const bool ok = GDScriptLanguage::get_singleton()->validate(converted, p_path,
+            &translated_functions, &translated_errors, &translated_warnings, &translated_safe_lines);
+
+    if (r_functions) {
+        for (const String &function : translated_functions) {
+            const int colon = function.rfind(":");
+            if (colon >= 0) {
+                const int compiled_line = function.substr(colon + 1).to_int();
+                r_functions->push_back(function.substr(0, colon + 1) +
+                        itos(_noqeri_original_line(line_map, compiled_line)));
+            } else {
+                r_functions->push_back(function);
+            }
+        }
+    }
+    if (r_errors) {
+        for (const ScriptError &native_error : translated_errors) {
+            ScriptError err = native_error;
+            err.line = _noqeri_original_line(line_map, err.line);
+            r_errors->push_back(err);
+        }
+    }
+    if (r_warnings) {
+        for (const Warning &native_warning : translated_warnings) {
+            Warning warning = native_warning;
+            warning.start_line = _noqeri_original_line(line_map, warning.start_line);
+            warning.end_line = _noqeri_original_line(line_map, warning.end_line);
+            r_warnings->push_back(warning);
+        }
+    }
+    if (r_safe_lines) {
+        for (const int &line : translated_safe_lines) {
+            r_safe_lines->insert(_noqeri_original_line(line_map, line));
+        }
+    }
+    return ok;
 }
 
 Vector<ScriptLanguage::ScriptTemplate> NoqeriLanguage::get_built_in_templates(StringName p_object) {
