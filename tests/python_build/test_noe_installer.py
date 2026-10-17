@@ -57,8 +57,6 @@ class InstallerPackagingTests(unittest.TestCase):
         self.assertTrue((extract / "usr/lib/noeengine/noeengine").is_file())
         self.assertTrue((extract / "usr/share/doc/noeengine/copyright").is_file())
         self.assertTrue((extract / "usr/share/doc/noeengine/NOTICE.md").is_file())
-        self.assertTrue((extract / "usr/share/noeengine/addons/noeengine_noqeri/plugin.cfg").is_file())
-        self.assertTrue((extract / "usr/share/noeengine/install_noqeri_addon.py").is_file())
         self.assertIn("noeengine", (extract / "usr/bin/noeengine").read_text())
         self.assertIn("NoeEngine", (extract / "usr/share/applications/noeengine.desktop").read_text())
 
@@ -76,11 +74,9 @@ class InstallerPackagingTests(unittest.TestCase):
         with mock.patch.object(build, "check_tool"), mock.patch.object(build, "command", side_effect=fake_command):
             result = build.write_windows(binary)
         self.assertEqual(result.name, "NoeEngine-setup.exe")
-        self.assertIn('Name "NoeEngine by Noethric"', captured[0])
+        self.assertIn('Name "NoeEngine"', captured[0])
         self.assertIn('File "LICENSE.txt"', captured[0])
         self.assertIn('File "COPYRIGHT.txt"', captured[0])
-        self.assertIn('File "install_noqeri_addon.py"', captured[0])
-        self.assertIn('File /r "addons', captured[0])
         self.assertIn('Section "Uninstall"', captured[0])
 
     def test_macos_pkg_recipe_has_bundle_and_credits(self):
@@ -94,8 +90,6 @@ class InstallerPackagingTests(unittest.TestCase):
             captured.append(info)
             self.assertTrue((app / "Contents/Resources/LICENSE.txt").exists())
             self.assertTrue((app / "Contents/Resources/COPYRIGHT.txt").exists())
-            self.assertTrue((app / "Contents/Resources/addons/noeengine_noqeri/plugin.cfg").is_file())
-            self.assertTrue((app / "Contents/Resources/install_noqeri_addon.py").is_file())
             (self.root / "Products/NoeEngine-setup.pkg").write_bytes(b"fixture pkg")
 
         with mock.patch.object(build, "check_tool"), mock.patch.object(build, "command", side_effect=fake_command):

@@ -1,62 +1,56 @@
 # Copyright (c) 2026 Noethric.
 # SPDX-License-Identifier: LicenseRef-Noethric-Proprietary
-"""NoeEngine Noqeri editor addon contract and non-destructive installer tests."""
-import importlib.util
-from pathlib import Path
-import tempfile
+"""Offline checks for the in-engine Noqeri ScriptLanguage integration.
+
+These are source-structure checks, not a substitute for the C++ unit tests
+and the executable Godot scene smoke test.
+"""
+import pathlib
 import unittest
-from unittest import mock
 
-ROOT = Path(__file__).resolve().parents[2]
-INTEGRATION = ROOT / "misc" / "noeengine_noqeri"
-spec = importlib.util.spec_from_file_location("noe_noqeri_installer", INTEGRATION / "install.py")
-installer = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(installer)
+ROOT = pathlib.Path(__file__).resolve().parents[2]
+MODULE = ROOT / "modules/noqeri"
 
 
-class NoqeriIntegrationTests(unittest.TestCase):
-    def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
-        self.addCleanup(self.tmp.cleanup)
-        self.base = Path(self.tmp.name)
-        self.project = self.base / "game"
-        self.project.mkdir()
-        self.project_file = self.project / "project.godot"
-        self.project_file.write_text("config_version=5\n")
+class NativeNoqeriContractTests(unittest.TestCase):
+    def test_native_module_registration(self):
+        register = (MODULE / "register_types.cpp").read_text()
+        config = (MODULE / "config.py").read_text()
+        self.assertIn("ScriptServer::register_language(script_language_noqeri)", register)
+        self.assertIn("ResourceLoader::add_resource_format_loader(noqeri_loader)", register)
+        self.assertIn("ResourceSaver::add_resource_format_saver(noqeri_saver)", register)
+        self.assertIn('env.module_add_dependencies("noqeri", ["gdscript"])', config)
 
-    def test_addon_installs_without_changing_project_settings(self):
-        before = self.project_file.read_bytes()
-        out = installer.install(self.project)
-        self.assertTrue((out / "plugin.cfg").is_file())
-        self.assertTrue((out / "plugin.gd").is_file())
-        self.assertTrue((out / "noqeri_importer.gd").is_file())
-        self.assertTrue((out / "examples/hello.nqr").is_file())
-        self.assertEqual(before, self.project_file.read_bytes())
+    def test_language_and_scene_script(self):
+        header = (MODULE / "noqeri_script.h").read_text()
+        impl = (MODULE / "noqeri_script.cpp").read_text()
+        self.assertIn("class NoqeriScript : public GDScript", header)
+        self.assertIn("class NoqeriLanguage : public ScriptLanguage", header)
+        self.assertIn('get_extension() const override { return "nqr"; }', header)
+        self.assertIn('get_name() const override { return "Noqeri"; }', header)
+        self.assertIn("NoqeriScript::reload", impl)
+        self.assertIn("GDScript::reload(p_keep_state)", impl)
+        self.assertIn("GDScript::set_source_code(translated)", impl)
+        self.assertIn('p_extensions->push_back("nqr")', header)
 
-    def test_existing_addon_is_not_overwritten(self):
-        original = self.project / "addons/noeengine_noqeri"
-        original.mkdir(parents=True)
-        existing = original / "important.txt"
-        existing.write_text("do not lose")
-        with self.assertRaises(FileExistsError):
-            installer.install(self.project)
-        self.assertEqual(existing.read_text(), "do not lose")
+    def test_reject_unsupported_semantics(self):
+        transpiler = (MODULE / "noqeri_translator.cpp").read_text()
+        for construct in ['"import"', '"unsafe"', '"record"', '"extern"', '"repeat"']:
+            self.assertIn(construct, transpiler)
+        self.assertIn("Unsupported Noqeri block", transpiler)
+        self.assertIn("Unmatched closing", transpiler)
+        self.assertIn("Fixed-width Noqeri types", transpiler)
 
-    def test_install_requires_valid_project(self):
-        self.project_file.unlink()
-        with self.assertRaises(ValueError):
-            installer.install(self.project)
+    def test_native_smoke_scene_and_godot_compatibility(self):
+        project = ROOT / "tests/noqeri_scene"
+        self.assertTrue((project / "project.godot").is_file())
+        self.assertTrue((project / "smoke.tscn").is_file())
+        self.assertIn('path="res://main.nqr"', (project / "smoke.tscn").read_text())
+        self.assertIn("NOQERI_NATIVE_READY", (project / "main.nqr").read_text())
+        self.assertTrue((MODULE / "tests/test_noqeri.h").is_file())
 
-    def test_required_resource_and_editor_contracts(self):
-        plugin = (INTEGRATION / "addons/noeengine_noqeri/plugin.gd").read_text()
-        importer = (INTEGRATION / "addons/noeengine_noqeri/noqeri_importer.gd").read_text()
-        self.assertIn("OS.execute(compiler_path, arguments, messages, true)", plugin)
-        self.assertIn('PackedStringArray([command, ProjectSettings.globalize_path(current_path)])', plugin)
-        self.assertIn('return PackedStringArray(["nqr"])', importer)
-        self.assertIn("add_import_plugin(importer)", plugin)
-        self.assertIn("remove_import_plugin(importer)", plugin)
-        self.assertIn('begins_with("res://")', plugin)
-        self.assertIn("run_confirmation.confirmed.connect(_run_legacy)", plugin)
+    def test_no_legacy_duplicate_file_importer(self):
+        self.assertFalse((ROOT / "misc/noeengine_noqeri/addons").exists())
 
 
 if __name__ == "__main__":
