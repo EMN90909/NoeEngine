@@ -1,8 +1,12 @@
-# Editor setup installers
+# NoeEngine setup installers
 
-Run from the repository root. Builds go through **SCons**, not CMake.
+The NoeEngine 0.1.0-dev distribution is built from an upstream Godot
+4.0.5 RC engine source tree. Original SCons source paths and binary
+filenames stay compatible; users receive NoeEngine-branded installers.
 
-On Debian/Ubuntu, install build dependencies first:
+## Debian / antiX / Ubuntu
+
+Install the build prerequisites:
 
 ```sh
 sudo apt update
@@ -11,40 +15,61 @@ sudo apt install -y python3 scons build-essential pkg-config dpkg-dev \
   libxrender-dev libgl1-mesa-dev libudev-dev libasound2-dev \
   libpulse-dev libfreetype6-dev libfontconfig1-dev libssl-dev \
   libwayland-dev libxkbcommon-dev libvulkan-dev
-python3 misc/build_products.py linux --jobs 2
 ```
 
-Result: `Products/Godot-Engine-4.0.5-rc-debian-amd64.deb`.
-Install it with `sudo apt install ./Products/*.deb`. The installer
-includes the compiled editor executable and a launcher, not just an archive.
-
-For Windows from **Debian** (optional cross compilation):
+From the repository root:
 
 ```sh
-sudo apt install -y g++-mingw-w64-x86-64 gcc-mingw-w64-x86-64 nsis
-python3 misc/build_products.py windows --jobs 2
+./build.sh linux 2
 ```
 
-Result: `Products/Godot-Engine-4.0.5-rc-windows-x86_64-setup.exe`.
-On Windows itself, install Python, SCons, MSVC build tools and NSIS, then
-run `python misc/build_products.py windows`.
-
-For macOS, run on a **Mac** with Xcode tools, SCons, the Vulkan SDK and
-`pkgbuild`:
+Creates `Products/NoeEngine-setup.deb`. To install:
 
 ```sh
-python3 misc/build_products.py macos --jobs 2
+sudo apt install ./Products/NoeEngine-setup.deb
 ```
 
-Result: `Products/Godot-Engine-4.0.5-rc-macos-x86_64.pkg`.
+The installed launch command is `noeengine`.
 
-A regular Debian setup **cannot compile macOS binaries** without a separately
-configured osxcross/macOS SDK toolchain. The GitHub workflow
-`.github/workflows/editor-installers.yml` builds the three platforms on
-their respective runners and uploads their individual installers as artifacts.
-Download the artifacts to combine them into one local `Products/` folder.
+## Windows setup from Debian
 
-The packages are **unsigned** local builds. Windows SmartScreen and macOS
-Gatekeeper may warn; production releases need platform-specific code signing
-and notarization. The restored Git revision retains the original Godot branding.
-The installable editor is the payload **inside** the setup installer.
+For MinGW-w64 cross-compiling and NSIS installer packaging:
+
+```sh
+sudo apt install -y gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 nsis
+./build.sh windows 2
+```
+
+Creates `Products/NoeEngine-setup.exe`. The `./build.sh all 2`
+command produces both Linux and Windows installers on Linux, assuming
+both toolchains are installed. A native Windows build is also available
+through `python misc/build_products.py windows --jobs 2` with MSVC,
+Python, SCons, and NSIS installed.
+
+## macOS setup
+
+macOS requires a Mac with Xcode command-line tools, Python, SCons,
+the appropriate graphics SDK, and `pkgbuild`. Run `./build.sh macos 2`
+on macOS to create `Products/NoeEngine-setup.pkg`.
+
+**Debian by itself cannot build a macOS installer** without an Apple SDK
+and specially configured cross-compilation toolchain. GitHub Actions has
+a dedicated macOS runner for this target.
+
+## Local checks
+
+```sh
+bash misc/ci_check.sh
+```
+
+This performs shell and Python syntax checks and exercises actual Debian
+packaging with a fixture binary. It **does not** prove that the full C++
+engine compiles. A successful build requires running `./build.sh` and
+smoke-testing the produced editor on its target operating system.
+
+## Distribution notes
+
+Installers are currently **unsigned**. Production releases require
+Windows code signing and macOS signing/notarization, as well as tested
+runtime library dependencies. Original Godot upstream attribution is
+retained in `LICENSE.txt`, `COPYRIGHT.txt`, and packaged notices.

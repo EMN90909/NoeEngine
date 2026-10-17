@@ -378,3 +378,6 @@ $RECYCLE.BIN/
 *.msm
 *.msp
 *.lnk
+
+# Release installer output; never commit binaries
+/Products/
