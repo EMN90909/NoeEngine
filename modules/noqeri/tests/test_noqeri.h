@@ -4,9 +4,18 @@
 #define TEST_NOEENGINE_NOQERI_H
 
 #include "../noqeri_translator.h"
+#include "../noqeri_compatibility.h"
 #include "tests/test_macros.h"
 
 namespace TestNoeEngineNoqeri {
+TEST_CASE("[Noqeri] Version metadata tracks unreleased 0.7.0 source") {
+    CHECK(String(NoeEngineNoqeri::LANGUAGE_VERSION) == "0.7.0");
+    CHECK(String(NoeEngineNoqeri::EDITION) == "2026");
+    CHECK(NoeEngineNoqeri::ABI_VERSION == 2);
+    CHECK(String(NoeEngineNoqeri::RELEASE_STATUS) == "development-unreleased");
+}
+
+
 
 TEST_CASE("[Noqeri] Native .nqr function translation") {
     String compiled;

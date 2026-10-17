@@ -6,6 +6,7 @@ These are source-structure checks, not a substitute for the C++ unit tests
 and the executable Godot scene smoke test.
 """
 import pathlib
+import json
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -35,9 +36,11 @@ class NativeNoqeriContractTests(unittest.TestCase):
 
     def test_reject_unsupported_semantics(self):
         transpiler = (MODULE / "noqeri_translator.cpp").read_text()
-        for construct in ['"import"', '"unsafe"', '"record"', '"extern"', '"repeat"']:
+        for construct in ['"import"', '"unsafe"', '"record"', '"extern"']:
             self.assertIn(construct, transpiler)
         self.assertIn("Unsupported Noqeri block", transpiler)
+        self.assertIn('line.begins_with("repeat ")', transpiler)
+        self.assertIn("range(max(0, int(", transpiler)
         self.assertIn("Unmatched closing", transpiler)
         self.assertIn("Fixed-width Noqeri types", transpiler)
 
@@ -48,6 +51,20 @@ class NativeNoqeriContractTests(unittest.TestCase):
         self.assertIn('path="res://main.nqr"', (project / "smoke.tscn").read_text())
         self.assertIn("NOQERI_NATIVE_READY", (project / "main.nqr").read_text())
         self.assertTrue((MODULE / "tests/test_noqeri.h").is_file())
+
+    def test_noqeri_070_source_compatibility_is_pinned_and_honest(self):
+        metadata = json.loads((MODULE / "compatibility.json").read_text())
+        header = (MODULE / "noqeri_compatibility.h").read_text()
+        self.assertEqual(metadata["language_version"], "0.7.0")
+        self.assertEqual(metadata["release_status"], "development-unreleased")
+        self.assertEqual(metadata["abi_version"], 2)
+        self.assertEqual(metadata["language_edition"], "2026")
+        self.assertEqual(len(metadata["compiler_source_commit"]), 40)
+        self.assertFalse(metadata["compiler_embedded"])
+        self.assertFalse(metadata["verified_full_runtime"])
+        self.assertIn("LANGUAGE_VERSION = \\"0.7.0\\"", header)
+        self.assertIn("ABI_VERSION = 2", header)
+        self.assertIn(metadata["compiler_source_commit"], header)
 
     def test_no_legacy_duplicate_file_importer(self):
         self.assertFalse((ROOT / "misc/noeengine_noqeri/addons").exists())
