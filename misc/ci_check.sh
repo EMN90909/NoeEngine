@@ -8,7 +8,7 @@ bash -n misc/ci_check.sh
 echo "[CI] Python syntax"
 python3 -m py_compile version.py misc/build_products.py
 echo "[CI] Installer packaging tests"
-python3 -m unittest discover -s tests/python_build -p 'test_noe_installer.py' -v
+python3 -m unittest discover -s tests/python_build -p 'test_no*.py' -v
 if command -v actionlint >/dev/null 2>&1; then
   echo "[CI] GitHub workflow validation"
   actionlint .github/workflows/*.yml
