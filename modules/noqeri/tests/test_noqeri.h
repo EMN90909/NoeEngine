@@ -75,5 +75,42 @@ TEST_CASE("[Noqeri] Native bridge rejects incompatible type casts") {
     CHECK(error.contains("cast semantics"));
 }
 
+TEST_CASE("[Noqeri] repeat evaluates a count once with zero floor") {
+    String compiled;
+    String error;
+    CHECK(noqeri_translate_game_script(
+            "function _ready(): void {\n"
+            "    let total: int = 0\n"
+            "    repeat 4 { total = total + 3 }\n"
+            "    print(total)\n"
+            "}\n",
+            compiled, error));
+    CHECK(error.is_empty());
+    CHECK(compiled.contains("for __nqr_repeat_0 in range(max(0, int(4))):"));
+    CHECK(compiled.contains("total = total + 3"));
+}
+
+TEST_CASE("[Noqeri] repeat is invalid without braces") {
+    String compiled;
+    String error;
+    CHECK_FALSE(noqeri_translate_game_script(
+            "function _ready(): void {\nrepeat 3\nprint(1)\n}\n",
+            compiled, error));
+    CHECK(error.contains("requires a"));
+}
+
+TEST_CASE("[Noqeri] repeated counted loops use separate counters") {
+    String compiled;
+    String error;
+    CHECK(noqeri_translate_game_script(
+            "function _ready(): void {\n"
+            "repeat 2 { print(1) }\n"
+            "repeat 3 { print(2) }\n"
+            "}\n",
+            compiled, error));
+    CHECK(compiled.contains("__nqr_repeat_0"));
+    CHECK(compiled.contains("__nqr_repeat_1"));
+}
+
 } // namespace TestNoeEngineNoqeri
 #endif

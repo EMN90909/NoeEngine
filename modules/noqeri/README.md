@@ -36,7 +36,7 @@ reports the type `NoqeriScript`, which derives from `Script`.
 
 Implemented subset: `function` declarations (including `_ready` and
 `_process`), `let` variables, `const`, `return`, `if`/`else`,
-`while`, primitive `int`/`float`/`bool`/`string` type declarations,
+`while`, counted `repeat N { ... }` loops, primitive `int`/`float`/`bool`/`string` type declarations,
 string literals, basic arithmetic, and calls/properties supported by the
 engine's existing GDScript VM.
 
@@ -44,7 +44,7 @@ Optional `// noeengine:extends Node2D` comment chooses an engine Node base
 from a small allowlist. It does not affect the standalone Noqeri compiler.
 
 **Not supported yet:** `import`, `module`, `record`, `export`,
-`extern`, `unsafe`, `try`/`throw`, `repeat`, fixed-width integer
+`extern`, `unsafe`, `try`/`throw`, fixed-width integer
 semantics, Noqeri atomics/FFI/pointers/stdlib, native NIR execution, and
 complete Noqeri type checking. Unsupported syntax returns a clear
 error instead of being passed through as if it were fully compatible.
@@ -75,3 +75,5 @@ The new native Noqeri module is original proprietary Noethric code.
 Noqeri's separate full compiler is licensed GPL-3.0-only.
 The native scene bridge does not implement its complete runtime or ABI.
 See `NOTICE.md` and `LICENSE.md` at the repository root.
+
+Counted loops are lowered into GDScript `range(max(0, int(count)))`, evaluating the count once and executing zero times for negative counts. This implements the documented basic `repeat` behavior, not the standalone Noqeri compiler's complete type system.

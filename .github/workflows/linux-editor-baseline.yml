@@ -82,3 +82,4 @@ jobs:
           printf '%s\n' "$output"
           grep -q 'NOQERI_NATIVE_READY' <<< "$output"
           grep -q 'NOQERI_NATIVE_PROCESS' <<< "$output"
+          test "$(grep -c 'NOQERI_REPEAT_STEP' <<< "$output")" -eq 2
