@@ -21,7 +21,7 @@ String convert_basic_types(String p_line) {
     return p_line;
 }
 
-bool transform_statement(String &r_line, bool p_block_header, String &r_error) {
+bool transform_statement(String &r_line, bool p_block_header, String &r_error, int &r_repeat_counter) {
     String line = r_line.strip_edges();
     if (line.is_empty()) {
         r_line = String();
@@ -32,7 +32,7 @@ bool transform_statement(String &r_line, bool p_block_header, String &r_error) {
     // incompatible GDScript semantics.
     const char *unsupported[] = {
         "module", "import", "record", "extern", "export", "unsafe",
-        "throw", "try", "repeat", "volatile", "atomic", "struct",
+        "throw", "try", "volatile", "atomic", "struct",
         "union", "enum", "defer", "type", "trait", "static", "await",
         "match", "class_name", "extends", "breakpoint",
     };
@@ -78,18 +78,30 @@ bool transform_statement(String &r_line, bool p_block_header, String &r_error) {
         line = "var " + line.substr(4);
     } else if (line.begins_with("else if ")) {
         line = "elif " + line.substr(8);
+    } else if (line.begins_with("repeat ")) {
+        if (!p_block_header) {
+            r_error = "Noqeri repeat requires a { ... } block.";
+            return false;
+        }
+        const String times = line.substr(7).strip_edges();
+        if (times.is_empty()) {
+            r_error = "Noqeri repeat requires a count.";
+            return false;
+        }
+        // Evaluate the count once, with zero iterations for negative counts.
+        line = "for __nqr_repeat_" + itos(r_repeat_counter++) + " in range(max(0, int(" + times + ")))";
     }
 
     line = convert_basic_types(line);
     if (p_block_header) {
         if (!(line.begins_with("func ") || line.begins_with("if ") || line.begins_with("elif ") ||
-                    line == "else" || line.begins_with("while "))) {
+                    line == "else" || line.begins_with("while ") || line.begins_with("for "))) {
             r_error = "Unsupported Noqeri block; supported blocks: function, if, else, while.";
             return false;
         }
         line += ":";
     } else if (line.begins_with("func ") || line.begins_with("if ") ||
-            line.begins_with("while ") || line == "else" || line.begins_with("elif ")) {
+            line.begins_with("while ") || line == "else" || line.begins_with("elif ") || line.begins_with("repeat ")) {
         r_error = "Expected '{' after a Noqeri block header.";
         return false;
     }
@@ -98,7 +110,7 @@ bool transform_statement(String &r_line, bool p_block_header, String &r_error) {
     return true;
 }
 
-bool emit_statement(const String &p_segment, int p_depth, bool p_block_header, String &r_output, String &r_error, int &r_statements) {
+bool emit_statement(const String &p_segment, int p_depth, bool p_block_header, String &r_output, String &r_error, int &r_statements, int &r_repeat_counter) {
     String stmt = p_segment.strip_edges();
     if (stmt.is_empty()) {
         if (p_block_header) {
@@ -107,7 +119,7 @@ bool emit_statement(const String &p_segment, int p_depth, bool p_block_header, S
         }
         return true;
     }
-    if (!transform_statement(stmt, p_block_header, r_error)) {
+    if (!transform_statement(stmt, p_block_header, r_error, r_repeat_counter)) {
         return false;
     }
     if (stmt.is_empty()) {
@@ -150,6 +162,7 @@ bool noqeri_translate_game_script(const String &p_source, String &r_compiled, St
     bool escaped = false;
     bool in_comment = false;
     int statements = 0;
+    int repeat_counter = 0;
     int block_start_count[64] = {};
     for (int i = 0; i < p_source.length(); ++i) {
         const char32_t c = p_source[i];
@@ -159,7 +172,7 @@ bool noqeri_translate_game_script(const String &p_source, String &r_compiled, St
         if (in_comment) {
             if (c == '\n') {
                 in_comment = false;
-                if (!emit_statement(segment, depth, false, r_compiled, r_error, statements)) {
+                if (!emit_statement(segment, depth, false, r_compiled, r_error, statements, repeat_counter)) {
                     return false;
                 }
                 segment = String();
@@ -199,14 +212,14 @@ bool noqeri_translate_game_script(const String &p_source, String &r_compiled, St
                 r_error = "Noqeri scene script exceeds maximum supported block depth.";
                 return false;
             }
-            if (!emit_statement(segment, depth, true, r_compiled, r_error, statements)) {
+            if (!emit_statement(segment, depth, true, r_compiled, r_error, statements, repeat_counter)) {
                 return false;
             }
             segment = String();
             block_start_count[depth] = statements;
             ++depth;
         } else if (c == '}') {
-            if (!emit_statement(segment, depth, false, r_compiled, r_error, statements)) {
+            if (!emit_statement(segment, depth, false, r_compiled, r_error, statements, repeat_counter)) {
                 return false;
             }
             segment = String();
@@ -223,7 +236,7 @@ bool noqeri_translate_game_script(const String &p_source, String &r_compiled, St
                 ++statements;
             }
         } else if (c == ';' || c == '\n') {
-            if (!emit_statement(segment, depth, false, r_compiled, r_error, statements)) {
+            if (!emit_statement(segment, depth, false, r_compiled, r_error, statements, repeat_counter)) {
                 return false;
             }
             segment = String();
@@ -239,5 +252,5 @@ bool noqeri_translate_game_script(const String &p_source, String &r_compiled, St
         r_error = "Unclosed '{' in Noqeri scene script.";
         return false;
     }
-    return emit_statement(segment, depth, false, r_compiled, r_error, statements);
+    return emit_statement(segment, depth, false, r_compiled, r_error, statements, repeat_counter);
 }
