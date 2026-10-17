@@ -19,7 +19,9 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 PRODUCTS = ROOT / "Products"
 VERSION = "0.1.0-dev"
-NAME = "NoeEngine by Noethric"
+NAME = "NoeEngine"
+NOQERI_ROOT = Path(__file__).resolve().parent / "noeengine_noqeri"
+NOQERI_ADDON = NOQERI_ROOT / "addons" / "noeengine_noqeri"
 
 
 def command(args, cwd=ROOT):
@@ -77,6 +79,19 @@ def compile_editor(target, jobs):
     command(args)
 
 
+def copy_noqeri_addon(destination):
+    """Ship the independent editor addon, but never bundle the GPL Noqeri compiler."""
+    if not (NOQERI_ADDON / "plugin.cfg").is_file():
+        raise RuntimeError("Missing Noqeri editor addon sources: " + str(NOQERI_ADDON))
+    shutil.copytree(NOQERI_ADDON, destination)
+
+
+def stage_notices(destination):
+    destination.mkdir(parents=True, exist_ok=True)
+    for name in ("LICENSE.txt", "COPYRIGHT.txt", "NOTICE.md", "NOETHRIC-PROPRIETARY-LICENSE.txt"):
+        shutil.copy2(ROOT / name, destination / name)
+
+
 def write_debian(binary):
     check_tool("dpkg-deb")
     with tempfile.TemporaryDirectory(prefix="noeengine-deb-") as tmp:
@@ -95,6 +110,11 @@ def write_debian(binary):
         documentation = root / "usr/share/doc/noeengine"
         documentation.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / "LICENSE.txt", documentation / "copyright")
+        for name in ("COPYRIGHT.txt", "NOTICE.md", "NOETHRIC-PROPRIETARY-LICENSE.txt"):
+            shutil.copy2(ROOT / name, documentation / name)
+        distribution = root / "usr/share/noeengine"
+        copy_noqeri_addon(distribution / "addons" / "noeengine_noqeri")
+        shutil.copy2(NOQERI_ROOT / "install.py", distribution / "install_noqeri_addon.py")
         (applications / "noeengine.desktop").write_text(
             "[Desktop Entry]\nType=Application\nName=NoeEngine by Noethric\n"
             "Exec=noeengine %f\nTerminal=false\nCategories=Development;IDE;\n"
@@ -117,18 +137,26 @@ def write_windows(binary):
         shutil.copy2(binary, directory / "NoeEngine.exe")
         shutil.copy2(ROOT / "LICENSE.txt", directory / "LICENSE.txt")
         shutil.copy2(ROOT / "COPYRIGHT.txt", directory / "COPYRIGHT.txt")
+        shutil.copy2(ROOT / "NOTICE.md", directory / "NOTICE.md")
+        shutil.copy2(ROOT / "NOETHRIC-PROPRIETARY-LICENSE.txt", directory / "NOETHRIC-PROPRIETARY-LICENSE.txt")
+        shutil.copy2(NOQERI_ROOT / "install.py", directory / "install_noqeri_addon.py")
+        copy_noqeri_addon(directory / "addons" / "noeengine_noqeri")
         out = PRODUCTS / "NoeEngine-setup.exe"
         # NSIS strings are double quoted; paths are local trusted build paths.
         nsi = directory / "installer.nsi"
         nsi.write_text(
             'Unicode true\nName "NoeEngine by Noethric"\nOutFile "' + out.as_posix() + '"\n'
             'InstallDir "$PROGRAMFILES64\\Noethric\\NoeEngine"\nRequestExecutionLevel admin\n'
-            'Section "Install"\nSetOutPath "$INSTDIR"\nFile "NoeEngine.exe"\nFile "LICENSE.txt"\nFile "COPYRIGHT.txt"\n'
+            'Section "Install"\nSetOutPath "$INSTDIR"\nFile "NoeEngine.exe"\nFile "LICENSE.txt"\nFile "COPYRIGHT.txt"\nFile "NOTICE.md"\nFile "NOETHRIC-PROPRIETARY-LICENSE.txt"\nFile "install_noqeri_addon.py"\n'
+            'SetOutPath "$INSTDIR\\addons\\noeengine_noqeri"\nFile /r "addons\\noeengine_noqeri\\*.*"\nSetOutPath "$INSTDIR"\n'
             'WriteUninstaller "$INSTDIR\\Uninstall.exe"\n'
             'CreateShortCut "$DESKTOP\\NoeEngine.lnk" "$INSTDIR\\NoeEngine.exe"\n'
             'SectionEnd\nSection "Uninstall"\n'
             'Delete "$DESKTOP\\NoeEngine.lnk"\n'
             'Delete "$INSTDIR\\NoeEngine.exe"\nDelete "$INSTDIR\\LICENSE.txt"\nDelete "$INSTDIR\\COPYRIGHT.txt"\n'
+            'Delete "$INSTDIR\\NOTICE.md"\nDelete "$INSTDIR\\NOETHRIC-PROPRIETARY-LICENSE.txt"\n'
+            'Delete "$INSTDIR\\install_noqeri_addon.py"\n'
+            'RMDir /r "$INSTDIR\\addons\\noeengine_noqeri"\nRMDir "$INSTDIR\\addons"\n'
             'Delete "$INSTDIR\\Uninstall.exe"\nRMDir "$INSTDIR"\nSectionEnd\n'
         )
         command(["makensis", "/V2" if os.name == "nt" else "-V2", nsi], directory)
@@ -147,6 +175,10 @@ def write_macos(binary):
         resources.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / "LICENSE.txt", resources / "LICENSE.txt")
         shutil.copy2(ROOT / "COPYRIGHT.txt", resources / "COPYRIGHT.txt")
+        shutil.copy2(ROOT / "NOTICE.md", resources / "NOTICE.md")
+        shutil.copy2(ROOT / "NOETHRIC-PROPRIETARY-LICENSE.txt", resources / "NOETHRIC-PROPRIETARY-LICENSE.txt")
+        shutil.copy2(NOQERI_ROOT / "install.py", resources / "install_noqeri_addon.py")
+        copy_noqeri_addon(resources / "addons" / "noeengine_noqeri")
         info = app / "Contents/Info.plist"
         info.write_text(
             '<?xml version="1.0" encoding="UTF-8"?>\n'
