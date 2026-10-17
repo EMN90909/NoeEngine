@@ -56,3 +56,16 @@ from the Linux and Windows legacy CI workflows.
 
 No credential exposure or specific exploitable CVE is asserted without
 supporting evidence.
+
+## Noqeri integration licensing and provenance
+
+The optional integration is based on a source audit of
+`EMN90909/Noqeri` at commit
+`145667eb0bd8bc1b1e04aaf34c7ab8a412bd2f8a`.
+The compiler and runtime code are marked **GPL-3.0-only** in that
+repository's `LICENSE`, `LEGAL.md`, and `LICENSES.md`.
+No compiler object files, source or libraries are bundled or linked into
+NoeEngine. The Noethric-created Godot addon sends explicit CLI arguments
+to a separately installed compiler. The contemporary supported Stage-2
+CLI supports `check`, but not general `run` execution. The older
+archival C++ bootstrap has a broader CLI and is not implicitly used.

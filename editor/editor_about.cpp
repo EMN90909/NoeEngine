@@ -116,7 +116,7 @@ ScrollContainer *EditorAbout::_populate_list(const String &p_name, const List<St
 }
 
 EditorAbout::EditorAbout() {
-	set_title(TTR("About NoeEngine by Noethric"));
+	set_title(TTR("About NoeEngine"));
 	set_hide_on_ok(true);
 
 	VBoxContainer *vbc = memnew(VBoxContainer);
@@ -150,6 +150,11 @@ EditorAbout::EditorAbout() {
 	version_btn->set_tooltip_text(TTR("Click to copy."));
 	version_btn->connect("pressed", callable_mp(this, &EditorAbout::_version_button_pressed));
 	version_info_vbc->add_child(version_btn);
+
+	Label *noe_origin = memnew(Label);
+	noe_origin->set_text(TTR("A Noethric product, based on Godot Engine (MIT)."));
+	noe_origin->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
+	version_info_vbc->add_child(noe_origin);
 
 	Label *about_text = memnew(Label);
 	about_text->set_v_size_flags(Control::SIZE_SHRINK_CENTER);

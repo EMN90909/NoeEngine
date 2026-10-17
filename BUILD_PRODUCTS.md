@@ -73,3 +73,19 @@ Installers are currently **unsigned**. Production releases require
 Windows code signing and macOS signing/notarization, as well as tested
 runtime library dependencies. Original Godot upstream attribution is
 retained in `LICENSE.txt`, `COPYRIGHT.txt`, and packaged notices.
+
+## Noqeri language addon
+
+The installers include the Noethric-created Noqeri editor addon and an
+installer helper. **They do not include the GPL-3.0-only Noqeri compiler.**
+Copy the addon into an existing project using:
+
+```bash
+python3 misc/noeengine_noqeri/install.py /path/to/project
+# Or from a Debian NoeEngine installation:
+python3 /usr/share/noeengine/install_noqeri_addon.py /path/to/project
+```
+
+Enable the **NoeEngine Noqeri** addon in Project Settings → Plugins,
+then select your separately installed Noqeri compiler to check `.nqr`
+sources. See [Noqeri integration](misc/noeengine_noqeri/README.md).

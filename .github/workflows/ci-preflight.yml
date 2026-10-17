@@ -7,6 +7,10 @@ on:
       - 'misc/build_products.py'
       - 'misc/ci_check.sh'
       - 'tests/python_build/test_noe_installer.py'
+      - 'tests/python_build/test_noqeri_integration.py'
+      - 'misc/noeengine_noqeri/**'
+      - 'NOTICE.md'
+      - 'NOETHRIC-PROPRIETARY-LICENSE.txt'
       - 'version.py'
       - '.github/workflows/**'
   pull_request:

@@ -116,7 +116,7 @@ def write_debian(binary):
         copy_noqeri_addon(distribution / "addons" / "noeengine_noqeri")
         shutil.copy2(NOQERI_ROOT / "install.py", distribution / "install_noqeri_addon.py")
         (applications / "noeengine.desktop").write_text(
-            "[Desktop Entry]\nType=Application\nName=NoeEngine by Noethric\n"
+            "[Desktop Entry]\nType=Application\nName=NoeEngine\n"
             "Exec=noeengine %f\nTerminal=false\nCategories=Development;IDE;\n"
         )
         (control / "control").write_text(
@@ -145,7 +145,7 @@ def write_windows(binary):
         # NSIS strings are double quoted; paths are local trusted build paths.
         nsi = directory / "installer.nsi"
         nsi.write_text(
-            'Unicode true\nName "NoeEngine by Noethric"\nOutFile "' + out.as_posix() + '"\n'
+            'Unicode true\nName "NoeEngine"\nOutFile "' + out.as_posix() + '"\n'
             'InstallDir "$PROGRAMFILES64\\Noethric\\NoeEngine"\nRequestExecutionLevel admin\n'
             'Section "Install"\nSetOutPath "$INSTDIR"\nFile "NoeEngine.exe"\nFile "LICENSE.txt"\nFile "COPYRIGHT.txt"\nFile "NOTICE.md"\nFile "NOETHRIC-PROPRIETARY-LICENSE.txt"\nFile "install_noqeri_addon.py"\n'
             'SetOutPath "$INSTDIR\\addons\\noeengine_noqeri"\nFile /r "addons\\noeengine_noqeri\\*.*"\nSetOutPath "$INSTDIR"\n'

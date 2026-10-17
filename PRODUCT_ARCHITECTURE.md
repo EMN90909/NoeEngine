@@ -54,3 +54,18 @@ Simple/Mid/Extreme modes or Jamila are running.
 
 A locally passing packaging test alone is not a release gate for the C++
 engine. See `BUILD_PRODUCTS.md` and `DEPENDENCY_AUDIT.md`.
+
+## Noqeri editor integration (implemented, experimental)
+
+`misc/noeengine_noqeri/addons/noeengine_noqeri` is an installable
+Godot-compatible editor plugin supporting `.nqr` file recognition,
+editing, syntax highlighting and externally executed Noqeri `check`.
+A separate project installer is located at
+`misc/noeengine_noqeri/install.py`. Addon files are staged into all
+platform installer packages.
+
+**Not implemented:** a native Godot `ScriptLanguage`, Noqeri scene
+attachment, engine Node bindings, runtime lifecycle or game export
+execution. In-process embedding of Noqeri's GPL-3.0-only compiler is
+intentionally excluded from this proprietary-addon integration. See
+`NOTICE.md` for licensing boundaries and source provenance.
