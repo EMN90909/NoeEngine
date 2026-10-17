@@ -92,8 +92,11 @@ def write_debian(binary):
         launcher = bindir / "noeengine"
         launcher.write_text('#!/bin/sh\nexec /usr/lib/noeengine/noeengine "$@"\n')
         launcher.chmod(0o755)
+        documentation = root / "usr/share/doc/noeengine"
+        documentation.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ROOT / "LICENSE.txt", documentation / "copyright")
         (applications / "noeengine.desktop").write_text(
-            "[Desktop Entry]\nType=Application\nName=Godot Engine\n"
+            "[Desktop Entry]\nType=Application\nName=NoeEngine by Noethric\n"
             "Exec=noeengine %f\nTerminal=false\nCategories=Development;IDE;\n"
         )
         (control / "control").write_text(
@@ -112,18 +115,20 @@ def write_windows(binary):
     with tempfile.TemporaryDirectory(prefix="noeengine-nsis-") as tmp:
         directory = Path(tmp)
         shutil.copy2(binary, directory / "NoeEngine.exe")
+        shutil.copy2(ROOT / "LICENSE.txt", directory / "LICENSE.txt")
+        shutil.copy2(ROOT / "COPYRIGHT.txt", directory / "COPYRIGHT.txt")
         out = PRODUCTS / "NoeEngine-setup.exe"
         # NSIS strings are double quoted; paths are local trusted build paths.
         nsi = directory / "installer.nsi"
         nsi.write_text(
             'Unicode true\nName "NoeEngine by Noethric"\nOutFile "' + out.as_posix() + '"\n'
             'InstallDir "$PROGRAMFILES64\\Noethric\\NoeEngine"\nRequestExecutionLevel admin\n'
-            'Section "Install"\nSetOutPath "$INSTDIR"\nFile "NoeEngine.exe"\n'
+            'Section "Install"\nSetOutPath "$INSTDIR"\nFile "NoeEngine.exe"\nFile "LICENSE.txt"\nFile "COPYRIGHT.txt"\n'
             'WriteUninstaller "$INSTDIR\\Uninstall.exe"\n'
             'CreateShortCut "$DESKTOP\\NoeEngine.lnk" "$INSTDIR\\NoeEngine.exe"\n'
             'SectionEnd\nSection "Uninstall"\n'
             'Delete "$DESKTOP\\NoeEngine.lnk"\n'
-            'Delete "$INSTDIR\\NoeEngine.exe"\n'
+            'Delete "$INSTDIR\\NoeEngine.exe"\nDelete "$INSTDIR\\LICENSE.txt"\nDelete "$INSTDIR\\COPYRIGHT.txt"\n'
             'Delete "$INSTDIR\\Uninstall.exe"\nRMDir "$INSTDIR"\nSectionEnd\n'
         )
         command(["makensis", "/V2" if os.name == "nt" else "-V2", nsi], directory)
@@ -138,6 +143,10 @@ def write_macos(binary):
         executable.parent.mkdir(parents=True)
         shutil.copy2(binary, executable)
         executable.chmod(0o755)
+        resources = app / "Contents/Resources"
+        resources.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ROOT / "LICENSE.txt", resources / "LICENSE.txt")
+        shutil.copy2(ROOT / "COPYRIGHT.txt", resources / "COPYRIGHT.txt")
         info = app / "Contents/Info.plist"
         info.write_text(
             '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -153,7 +162,7 @@ def write_macos(binary):
         )
         destination = PRODUCTS / "NoeEngine-setup.pkg"
         command(["pkgbuild", "--component", app, "--install-location", "/Applications",
-                 "--identifier", "org.godotengine.editor.local", "--version", "4.0.5", destination])
+                 "--identifier", "xyz.noethric.noeengine", "--version", "0.1.0", destination])
     return destination
 
 
