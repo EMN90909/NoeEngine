@@ -1,7 +1,7 @@
 # NoeEngine 0.1.0-dev fork of Godot 4.0.5 RC.
 # Keep short_name='godot' and the 4.0 ABI version for SCons/artifact compatibility.
 short_name = "godot"
-name = "NoeEngine by Noethric"
+name = "NoeEngine"
 major = 4
 minor = 0
 patch = 5
