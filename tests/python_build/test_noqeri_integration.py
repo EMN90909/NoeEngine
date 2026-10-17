@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Noethric.
+# SPDX-License-Identifier: LicenseRef-Noethric-Proprietary
 """NoeEngine Noqeri editor addon contract and non-destructive installer tests."""
 import importlib.util
 from pathlib import Path

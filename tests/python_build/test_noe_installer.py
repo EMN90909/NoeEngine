@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Noethric.
+# SPDX-License-Identifier: LicenseRef-Noethric-Proprietary
 """Installer packaging checks; do not require compiling the full engine."""
 import importlib.util
 from pathlib import Path

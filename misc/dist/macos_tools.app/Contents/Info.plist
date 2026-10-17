@@ -7,7 +7,7 @@
 	<key>CFBundleExecutable</key>
 	<string>Godot</string>
 	<key>CFBundleName</key>
-	<string>NoeEngine by Noethric</string>
+	<string>NoeEngine</string>
 	<key>CFBundleIconFile</key>
 	<string>Godot.icns</string>
 	<key>CFBundleIdentifier</key>

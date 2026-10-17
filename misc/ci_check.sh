@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 Noethric.
+# SPDX-License-Identifier: LicenseRef-Noethric-Proprietary
 # Run local CI preflight before spending time on a full C++ compile.
 set -Eeuo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."

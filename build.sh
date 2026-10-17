@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 Noethric.
+# SPDX-License-Identifier: LicenseRef-Noethric-Proprietary
 # Native installer build entry point for NoeEngine by Noethric.
 set -Eeuo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"

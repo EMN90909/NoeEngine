@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Noethric.
+# SPDX-License-Identifier: LicenseRef-Noethric-Proprietary
 """Build the NoeEngine editor and create OS-native installers in Products/.
 
 Linux host: linux (native), windows (MinGW-w64 cross build).
