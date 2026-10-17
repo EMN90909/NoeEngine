@@ -1,0 +1,33 @@
+name: Linux editor baseline
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  editor:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential pkg-config scons python3 libx11-dev libxcursor-dev libxinerama-dev libxi-dev libxrandr-dev libxrender-dev libgl1-mesa-dev libudev-dev libasound2-dev libpulse-dev libfreetype6-dev libfontconfig1-dev libssl-dev libwayland-dev libxkbcommon-dev libvulkan-dev
+      - name: Build editor using SCons
+        run: scons platform=linuxbsd target=editor module_mono_enabled=no debug_symbols=no -j2
+      - name: Smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          bins=(bin/godot.linuxbsd.editor.*)
+          test "${#bins[@]}" -gt 0
+          "${bins[0]}" --headless --version
+          "${bins[0]}" --headless --help > /dev/null
