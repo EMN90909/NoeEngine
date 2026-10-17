@@ -1,0 +1,8 @@
+# Noqeri is statically checked using the separately installed compiler.
+# NoeEngine imports this file as a Noqeri source Resource.
+function add(a: int, b: int): int {
+    return a + b
+}
+
+print("Hello from NoeEngine + Noqeri")
+print(add(2, 3))
