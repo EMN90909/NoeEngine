@@ -1,5 +1,4 @@
-# Noqeri is statically checked using the separately installed compiler.
-# NoeEngine imports this file as a Noqeri source Resource.
+// Noqeri uses .nqr, not .gd. A compiler must be configured separately.
 function add(a: int, b: int): int {
     return a + b
 }
