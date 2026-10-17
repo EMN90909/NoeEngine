@@ -2,8 +2,36 @@ name: Linux editor baseline
 on:
   push:
     branches: [main]
+    paths:
+      - 'core/**'
+      - 'editor/**'
+      - 'scene/**'
+      - 'servers/**'
+      - 'drivers/**'
+      - 'modules/**'
+      - 'platform/**'
+      - 'thirdparty/**'
+      - 'SConstruct'
+      - 'version.py'
+      - 'build.sh'
+      - 'misc/build_products.py'
+      - '.github/workflows/linux-editor-baseline.yml'
   pull_request:
     branches: [main]
+    paths:
+      - 'core/**'
+      - 'editor/**'
+      - 'scene/**'
+      - 'servers/**'
+      - 'drivers/**'
+      - 'modules/**'
+      - 'platform/**'
+      - 'thirdparty/**'
+      - 'SConstruct'
+      - 'version.py'
+      - 'build.sh'
+      - 'misc/build_products.py'
+      - '.github/workflows/linux-editor-baseline.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -31,3 +59,7 @@ jobs:
           test "${#bins[@]}" -gt 0
           "${bins[0]}" --headless --version
           "${bins[0]}" --headless --help > /dev/null
+          project="$(mktemp -d)"
+          trap 'rm -rf "$project"' EXIT
+          printf 'config_version=5\n' > "$project/project.godot"
+          timeout 60 "${bins[0]}" --headless --editor --path "$project" --quit
