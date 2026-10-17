@@ -116,7 +116,7 @@ def write_windows(binary):
         # NSIS strings are double quoted; paths are local trusted build paths.
         nsi = directory / "installer.nsi"
         nsi.write_text(
-            'Unicode true\nName "Godot Engine"\nOutFile "' + str(out).replace("/", "\\") + '"\n'
+            'Unicode true\nName "Godot Engine"\nOutFile "' + out.as_posix() + '"\n'
             'InstallDir "$PROGRAMFILES64\\Godot Engine"\nRequestExecutionLevel admin\n'
             'Section "Install"\nSetOutPath "$INSTDIR"\nFile "godot-engine.exe"\n'
             'WriteUninstaller "$INSTDIR\\Uninstall.exe"\n'
