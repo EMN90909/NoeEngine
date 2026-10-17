@@ -30,7 +30,7 @@ func _get_import_options(_path: String, _preset_index: int) -> Array[Dictionary]
 func _get_option_visibility(_path: String, _option_name: StringName, _options: Dictionary) -> bool:
     return true
 
-func _import(source_file: String, save_path: String, _options: Dictionary, _platform_variants: Array[String], _gen_files: Array[String]) -> Error:
+func _import(source_file: String, save_path: String, _options: Dictionary, _platform_variants: Array[String], _gen_files: Array[String]) -> int:
     var file := FileAccess.open(source_file, FileAccess.READ)
     if file == null:
         return ERR_FILE_CANT_OPEN
