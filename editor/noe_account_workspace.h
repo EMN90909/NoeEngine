@@ -29,6 +29,7 @@ class NoeAccountWorkspace : public AcceptDialog {
     MenuButton *avatar_button = nullptr;
     VBoxContainer *pages[5] = {};
     Label *name_label = nullptr;
+    Label *profile_avatar_label = nullptr;
     Label *email_label = nullptr;
     Label *account_status = nullptr;
     Label *session_label = nullptr;
