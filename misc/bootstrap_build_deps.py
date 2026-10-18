@@ -128,12 +128,13 @@ def linux_build_packages(targets: list[str], *, antix: bool) -> list[str]:
         packages += ["libx11-dev", "libxcursor-dev", "libxinerama-dev",
                      "libxrandr-dev", "libxi-dev", "libgl1-mesa-dev", "libasound2-dev",
                      "libpulse-dev"]
-        # On antiX 26, the compatibility libudev-dev package depends on a
-        # conflicting libeudev-dev version. Udev hotplug support is optional
-        # in platform/linuxbsd/detect.py; the editor can compile without it.
-        # If the system already has libudev.pc, SCons uses it automatically.
-        if not antix:
-            packages.append("libudev-dev")
+        # libudev is optional for the Linux editor. Do not install its
+        # development package automatically: antiX/eudev and some Debian
+        # derivatives provide incompatible libudev-dev replacements, causing
+        # apt to fail before the compiler is reached. If libudev.pc already
+        # exists, SCons can still enable hotplug support automatically.
+        # Users who need it may install their distribution's matching dev
+        # package separately after resolving their native package policy.
     return list(dict.fromkeys(packages))
 
 
@@ -157,9 +158,9 @@ def install_distro_packages(targets: list[str], *, dry_run: bool):
                            "through your distro's package manager.")
     antix = is_antix_system()
     packages = linux_build_packages(targets, antix=antix)
-    if antix and "linux" in targets:
-        print("antiX detected: omitting conflicting libudev-dev/libeudev-dev installation.")
-        print("Controller hotplug uses existing libudev if available; otherwise SCons disables this optional feature.")
+    if "linux" in targets:
+        print("Optional libudev-dev is not installed automatically (avoids eudev conflicts).")
+        print("SCons detects existing libudev; controller hotplug may be unavailable if absent.")
     privilege = [] if os.geteuid() == 0 else ["sudo"]
     if privilege and not shutil.which("sudo"):
         raise RuntimeError("System package installation needs sudo; install manually or run as root.")
