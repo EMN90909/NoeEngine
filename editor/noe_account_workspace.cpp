@@ -181,6 +181,7 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
     }
     auth_base = OS::get_singleton()->get_environment("NOEENGINE_AUTH_URL").strip_edges();
     if (auth_base.is_empty()) auth_base = String(config->get_value("account", "website_url", "")).strip_edges();
+    if (auth_base.is_empty()) auth_base = "https://noeengine-web.onrender.com";
     if (!_is_https_url(auth_base)) auth_base = "";
     if (auth_base.ends_with("/")) auth_base = auth_base.substr(0, auth_base.length() - 1);
     HBoxContainer *layout = memnew(HBoxContainer);
