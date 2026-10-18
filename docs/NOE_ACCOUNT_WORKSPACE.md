@@ -79,3 +79,15 @@ The new editor/noe_update_manager.{h,cpp} is included automatically by editor/SC
 **Do not mistake staging for installation.** This release does not execute downloaded patches, overwrite the installed engine, invoke a package manager or elevate privileges. The user installs the verified platform package separately and restarts. Full safe binary auto-update requires offline-pinned signing keys, rollback/recovery, and OS-native privileged helpers. Release publishing is gated by Supabase RLS and explicitly approved publisher accounts, but an unhashed/signed update manifest is not cryptographic proof of origin against a compromised trusted server.
 
 Static regression tests: tests/python_build/test_noe_update_manager.py. Real C++ compilation, Linux window rendering, cross-platform installer behavior and update-download E2E remain unverified until the user runs ./build.sh linux 2 and tests with a published release.
+
+## Implementation ownership and account service
+
+**Native NoeEngine (this repository)** contains the top-right avatar, first-run welcome, Profile, Usage & limits charts, API & MCP management, extensions, and Security dialog. The account website is deliberately limited to browser signup/login/password recovery, one-time device-code approval, and publisher-only update uploads.
+
+**Website and backend source:** https://github.com/EMN90909/NoeEngine-web
+
+The website's Node API implements `POST /device/start`, `POST /device/poll`, and `GET /me`; Supabase Auth handles the browser identity, and dedicated PostgreSQL RPCs implement the short-lived, single-use device approval record. The desktop only shows a verified identity when `GET /me` returns a valid result. Tokens are memory-only, so a desktop restart currently requires signing in again. `NOEENGINE_AUTH_URL` overrides the website URL saved in Account → Security.
+
+**Deployment still needs explicit connection:** The accessible Supabase projects are named Aroeno. No production NoeEngine Supabase project, deployed URL, or confirmed Render workspace has been supplied. Do not point the engine at a guessed `onrender.com` hostname and never install NoeEngine SQL in Aroeno. Follow the web repository's `DEPLOYMENT.md` only after a dedicated project and Render service are identified.
+
+UI consistency measures: native `Button` controls, keyboard-focusable sidebar, default editor theme tokens, `EDSCALE` spacing, clamp-to-window account dialog, clear loading/error/offline states, and dynamic profile monogram. Static code inspection and source-level test coverage are not a substitute for a real Linux C++ compilation, visual screenshots, keyboard navigation, or authenticated integration testing.
