@@ -16,6 +16,9 @@ class CollaborationContracts(unittest.TestCase):
         self.assertIn('payload["path"] = queued_collaboration_paths[0];',SOURCE)
         self.assertIn('queued_collaboration_paths.push_back(relative_path)',SOURCE)
         self.assertNotIn('payload["actorId"]',SOURCE)
+        self.assertNotIn('CONVEX_DEPLOY_KEY', SOURCE)
+        self.assertNotIn('CONVEX_SITE_URL', SOURCE)
+        self.assertIn('NOEENGINE_COLLAB_URL', SOURCE)
         self.assertNotIn('payload["fileContents"]',SOURCE)
     def test_activity_feed_is_member_scoped_on_backend(self):
         self.assertIn('/v1/collaboration/activity?projectId=',SOURCE)
