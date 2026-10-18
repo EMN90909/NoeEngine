@@ -88,6 +88,9 @@ void NoeAccountWorkspace::_make_page(VBoxContainer *root, Page page) {
         charts = memnew(NoeUsageCharts);
         p->add_child(charts);
         _add_label(p, TTR("Donut: playtest vs app time. Bars: app time and playtest time."));
+        _add_label(p, TTR("AI provider usage (local vs cloud): pie and bar chart"));
+        ai_charts = memnew(NoeUsageCharts);
+        p->add_child(ai_charts);
         ai_label = _add_label(p, TTR("AI calls: no telemetry connected. Provider quota unavailable."));
         session_label = _add_label(p, TTR("Current session: 0 min"));
         totals_label = _add_label(p, TTR("Total app time: 0 min"));
@@ -401,6 +404,13 @@ void NoeAccountWorkspace::_tick_usage() {
     totals_label->set_text(vformat(TTR("Total app time: %d min"), (int)(total_session_ms / 60000)));
     render_label->set_text(vformat(TTR("Playtest runtime: %d min. GPU rendering hours not instrumented."), (int)(total_render_ms / 60000)));
     charts->update_data(total_session_ms, total_render_ms);
+    // Providers will report counts here once AI requests are instrumented.
+    // Until then, explicitly render zero activity instead of fabricated usage.
+    const uint64_t ai_local = (uint64_t)(int64_t)config->get_value("ai_usage", "local_requests", (int64_t)0);
+    const uint64_t ai_cloud = (uint64_t)(int64_t)config->get_value("ai_usage", "cloud_requests", (int64_t)0);
+    ai_charts->update_data(ai_local + ai_cloud, ai_cloud);
+    ai_label->set_text(vformat(TTR("AI calls: %d local, %d cloud. Provider quota unavailable until connected."),
+            (int)ai_local, (int)ai_cloud));
     if (now >= next_save_msec) { _save_usage(); next_save_msec = now + 60000; }
 }
 void NoeAccountWorkspace::_show_api_form() {
