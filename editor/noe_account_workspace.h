@@ -43,6 +43,8 @@ class NoeAccountWorkspace : public AcceptDialog {
     Label *login_message = nullptr;
     Label *api_error = nullptr;
     Label *mcp_error = nullptr;
+    LineEdit *website_url_field = nullptr;
+    Label *website_url_status = nullptr;
     LineEdit *api_name = nullptr;
     LineEdit *api_url = nullptr;
     LineEdit *mcp_name = nullptr;
@@ -87,6 +89,7 @@ class NoeAccountWorkspace : public AcceptDialog {
     void _save_usage();
     void _tick_usage();
     void _logout();
+    void _save_website_url();
     void _show_api_form();
     void _save_api();
     void _show_mcp_form();
