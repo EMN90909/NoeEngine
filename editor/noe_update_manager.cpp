@@ -216,7 +216,17 @@ void NoeUpdateManager::_on_patch(int result, int status, const PackedStringArray
         DirAccess::remove_absolute(saved_path);
         _show_notice(TTR("Verification failed"), TTR("The package checksum or size did not match. The download was discarded.")); return;
     }
-    _show_notice(TTR("Update downloaded and verified"),
-            vformat(TTR("NoeEngine %s\n\nWhat's new:\n%s\n\nVerified patch saved at:\n%s\n\nContinue to your operating system's installer to apply this update, then restart NoeEngine."),
-                    release_version, release_notes, saved_path));
+    trusted_helper = OS::get_singleton()->get_environment("NOEENGINE_PATCH_HELPER").strip_edges();
+    signing_public_key = OS::get_singleton()->get_environment("NOEENGINE_UPDATE_PUBKEY").strip_edges();
+    const bool supported = patch_filename.ends_with(".noepatch") && trusted_helper.is_absolute_path() &&
+            FileAccess::exists(trusted_helper) && signing_public_key.length() == 44;
+    if (!supported) {
+        _show_notice(TTR("Update downloaded and verified"),
+                vformat(TTR("NoeEngine %s downloaded.\n\nWhat's new:\n%s\n\nSaved at: %s\n\nAutomatic installation requires a trusted updater and Ed25519 public key."),
+                        release_version, release_notes, saved_path));
+        return;
+    }
+    install_dialog->set_text(vformat(TTR("Signed patch %s is downloaded.\n\nWhat's new:\n%s\n\nThe editor closes while the trusted updater verifies and changes files. No elevated privileges are requested. Continue?"),
+            release_version, release_notes));
+    install_dialog->popup_centered(Size2i(590, 360) * EDSCALE);
 }
