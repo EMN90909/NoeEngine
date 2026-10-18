@@ -27,10 +27,12 @@ class TestNoeEngineBranding(unittest.TestCase):
         self.assertIn('"noeengine.windows.editor.x86_64.exe"', packaging)
         self.assertIn('"noeengine.macos.editor.*"', packaging)
 
-    def test_black_default_theme(self):
+    def test_soft_default_and_classic_lightweight_theme(self):
         settings = (ROOT / "editor/editor_settings.cpp").read_text(encoding="utf-8")
         theme = (ROOT / "editor/editor_themes.cpp").read_text(encoding="utf-8")
-        self.assertIn('"interface/theme/preset", "NoeEngine Dark"', settings)
+        self.assertIn('"interface/theme/preset", "NoeEngine Soft"', settings)
+        self.assertIn('"NoeEngine Soft,NoeEngine Dark,Default', settings)
+        self.assertIn('preset == "NoeEngine Soft"', theme)
         self.assertIn('Color(0.075, 0.08, 0.09)', settings)
         self.assertIn('Color(0.72, 0.75, 0.80)', settings)
         self.assertIn('NoeEngine Dark and legacy Default presets', theme)
