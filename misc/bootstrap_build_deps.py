@@ -78,7 +78,7 @@ def install_android_tools(*, download: bool, dry_run: bool):
             source = extracted / "cmdline-tools"
             if not (source / "bin/sdkmanager").exists():
                 raise RuntimeError("Unexpected Android command-line archive layout")
-            manager.parent.parent.mkdir(parents=True, exist_ok=True)
+            manager.parent.parent.parent.mkdir(parents=True, exist_ok=True)
             shutil.move(str(source), str(manager.parent.parent))
     if shutil.which("java") is None:
         raise RuntimeError("JDK 17 is required before running sdkmanager.")
