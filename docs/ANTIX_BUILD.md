@@ -4,7 +4,7 @@
 
 On antiX 26, the `libudev-dev` Debian compatibility package can conflict with antiX `libeudev-dev` versions. Previously, NoeEngine's system-package bootstrap always requested `libudev-dev` on Linux. That stops `apt-get` with dependency-solver error 100 **before SCons starts compiling C++**.
 
-`misc/bootstrap_build_deps.py` now identifies antiX via `/etc/os-release` and does **not** request either `libudev-dev` or `libeudev-dev`. The regular X11, Mesa, ALSA, PulseAudio, Python, SCons and compiler dependencies remain installed. This is deliberate: `platform/linuxbsd/detect.py` uses `pkg-config --exists libudev` and disables optional controller hotplug support if the development library is missing. It does not prevent the editor from compiling.
+`misc/bootstrap_build_deps.py` now identifies antiX through `/etc/antix-version`, with `/etc/os-release` as a secondary signal and does **not** request either `libudev-dev` or `libeudev-dev`. The regular X11, Mesa, ALSA, PulseAudio, Python, SCons and compiler dependencies remain installed. This is deliberate: `platform/linuxbsd/detect.py` uses `pkg-config --exists libudev` and disables optional controller hotplug support if the development library is missing. It does not prevent the editor from compiling.
 
 **Do not** use `apt --fix-broken install`, force package downgrades, remove system eudev packages, or overwrite system `libudev.so` merely to build the engine.
 
@@ -32,6 +32,7 @@ To compile native Noqeri tests too, run `./build.sh linux 1 --tests` once depend
 To inspect antiX support without changing the system:
 
 ```bash
+cat /etc/antix-version
 cat /etc/os-release
 pkg-config --exists libudev && echo 'udev headers found' || echo 'udev disabled; optional controller hotplug only'
 python3 -m unittest discover -s tests/python_build -p 'test_no*.py' -v
@@ -43,4 +44,4 @@ The no-argument script intentionally runs preflight, Linux, Windows and Android 
 
 ## Validation status
 
-The user-provided log of the **previous** checkout shows all 53 preflight tests passing before the antiX `apt-get` conflict. New antiX bootstrap tests were added to `tests/python_build/test_noe_bootstrap_deps.py`. The actual engine C++ compiler and the updated build have **not** yet been run on the user's antiX machine. Re-run the commands above on the latest commit to verify the real compiler.
+The user-provided log of the **previous** checkout shows all 53 preflight tests passing before the antiX `apt-get` conflict. New antiX bootstrap tests, including the case where `/etc/os-release` identifies Debian, were added to `tests/python_build/test_noe_bootstrap_deps.py`. The actual engine C++ compiler and the updated build have **not** yet been run on the user's antiX machine. Re-run the commands above on the latest commit to verify the real compiler.
