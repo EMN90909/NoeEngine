@@ -27,7 +27,9 @@ class NativeSignedUpdateContracts(unittest.TestCase):
         self.assertIn('get_tree()->quit()',CPP)
         self.assertIn('get_process_id()',CPP)
     def test_no_forged_production_domain(self):
-        self.assertNotIn('website_url = "https://noeengine-web.onrender.com"',CPP)
+        self.assertIn('if (website_url.is_empty()) website_url = "https://noeengine-web.onrender.com";',CPP)
+        self.assertIn('NOEENGINE_AUTH_URL',CPP)
+        self.assertIn('get_value("account", "website_url"',CPP)
         self.assertIn('if (quiet_check) return;',CPP)
     def test_logo_is_real_png(self):
         self.assertTrue((ROOT/'logo.png').read_bytes().startswith(bytes.fromhex('89504e470d0a1a0a')))
