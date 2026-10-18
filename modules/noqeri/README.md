@@ -1,4 +1,13 @@
-# Noqeri in NoeEngine's native Script editor
+# Noqeri 0.7.0-dev compatibility in NoeEngine's native Script editor
+
+**Upstream:** Noqeri 0.7.0 development source (not a stable release),
+edition 2026, ABI v2; [source revision](https://github.com/EMN90909/Noqeri/tree/a577578ec48bff94bd66f133ad39349b926fedd9).
+The ABI version is a *source compatibility reference*, not proof that NoeEngine
+implements the full standalone Noqeri ABI or game SDK. See
+[compatibility.json](compatibility.json). In particular, upstream
+`Lib/game/` contains experimental vector math, fixed timestep,
+AABB collision and button-input source that is not linked or bundled
+in this proprietary scene bridge.
 
 NoeEngine 0.1.0-dev registers **Noqeri** as a native Godot `ScriptLanguage`
 and **NoqeriScript** as a `.nqr` Script resource. No separate Noqeri dock
@@ -57,7 +66,13 @@ Noqeri compiler code is **GPL-3.0-only** and is not shipped or linked.
 
 The source includes `modules/noqeri/tests/test_noqeri.h` with C++ unit
 tests and `tests/noqeri_scene` with a minimal Node scene.
-After building NoeEngine, run:
+For a build and executable qualification attempt from the repository root:
+
+```bash
+./build.sh linux 2 --tests
+```
+
+For direct execution after successfully building NoeEngine, run:
 
 ```sh
 scons platform=linuxbsd target=editor tests=yes -j2

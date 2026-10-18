@@ -72,3 +72,10 @@ may carry translated line numbers. A future full runtime must establish
 ABI/host-services parity and license compliance before replacing the bridge.
 
 See `modules/noqeri/README.md` and `tests/noqeri_scene/`.
+
+## Noqeri source compatibility tracking
+
+Native scene scripting tracks Noqeri **0.7.0-dev** (unreleased), edition 2026,
+ABI v2 source reference at commit `a577578ec48bff94bd66f133ad39349b926fedd9`.
+`modules/noqeri/compatibility.json` records the boundary. This does not
+embed the self-hosted Noqeri Stage-2 compiler or qualify the upstream game SDK.

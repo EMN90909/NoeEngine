@@ -8,6 +8,8 @@
 
 The inherited Godot editor supports its original project format, GDScript (`.gd`), and C++ through the engine and extension tooling. **Noqeri (`.nqr`) is now registered as a native ScriptLanguage and Script resource** through `modules/noqeri/`, alongside GDScript (`.gd`). The existing built-in Script editor opens `.nqr` source files, and supported Noqeri scene scripts can be attached to nodes and receive lifecycle calls such as `_ready()`.
 
+**Noqeri source compatibility target:** **0.7.0-dev (unreleased)**, edition **2026**, ABI metadata **v2**, matching [upstream Noqeri](https://github.com/EMN90909/Noqeri/tree/a577578ec48bff94bd66f133ad39349b926fedd9). The upstream game SDK has source implementations for vector math, fixed-step timing, collision and button input, but is not fully qualified. See [Noqeri compatibility metadata](modules/noqeri/compatibility.json).
+
 **Current implementation boundary:** The native Noqeri scene bridge supports a **restricted, explicitly validated subset** of Noqeri (functions, variables, conditions, loops, Node calls). It converts this subset to the existing engine scripting VM. This is **not** full Noqeri compiler/ABI/stdlib/runtime parity. Unsupported Noqeri constructs fail instead of silently changing semantics. No GPL Noqeri compiler source or runtime is linked or bundled.
 
 ## Build and installation
@@ -15,6 +17,7 @@ The inherited Godot editor supports its original project format, GDScript (`.gd`
 From a Debian-family Linux machine, after installing dependencies in [BUILD_PRODUCTS.md](BUILD_PRODUCTS.md):
 
 ```bash
+./build.sh check
 ./build.sh linux 2
 # With MinGW-w64 + NSIS installed, also:
 ./build.sh windows 2

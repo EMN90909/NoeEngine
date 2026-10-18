@@ -35,6 +35,10 @@ Noqeri © 2026 Noethric and Noqeri contributors, GPL-3.0-only according to
 the Noqeri source repository at commit
 `145667eb0bd8bc1b1e04aaf34c7ab8a412bd2f8a`.
 
+Compatibility review updated to source commit
+`a577578ec48bff94bd66f133ad39349b926fedd9` (Noqeri 0.7.0-dev,
+not released; language edition 2026, ABI version 2).
+
 Noqeri compiler code is **not copied, statically linked, or bundled** by the
 NoeEngine native scripting module. The independently written native module
 implements a restricted game-script bridge using the inherited Godot VM,

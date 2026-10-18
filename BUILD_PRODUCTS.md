@@ -1,5 +1,36 @@
 # NoeEngine setup installers
 
+## One-command source build and installer
+
+From the repository root, after installing the platform dependencies below:
+
+```bash
+./build.sh                 # build/smoke Linux editor, create Products/NoeEngine-setup.deb
+./build.sh check           # run shell/Python tests only, no C++ compilation
+./build.sh linux 2 --tests # build Noqeri C++ unit tests, run .nqr scene, then package
+./build.sh all 2           # on Linux, requires MinGW-w64 + NSIS for Windows setup too
+```
+
+The script stops on failed local checks, missing toolchains, SCons errors,
+missing native Noqeri symbols, executable startup failures, and failing
+Noqeri scene callbacks. It **does not** claim the build succeeded without
+actually compiling. Results and logs go into `Products/`:
+
+- `NoeEngine-setup.deb` (Linux)
+- `NoeEngine-setup.exe` (Windows, Linux cross-compile requires MinGW-w64)
+- `NoeEngine-setup.pkg` (native macOS only)
+- `preflight.log`, `build-linux.log`, etc.
+
+Do not treat a `--package-only` build as a runtime-tested release.
+
+**Noqeri compatibility reference:** upstream source version **0.7.0
+development/unreleased**, edition **2026**, ABI **v2**, at commit
+`a577578ec48bff94bd66f133ad39349b926fedd9`. The compiler and
+game SDK are not certified for complete native execution. NoeEngine's
+`.nqr` scene bridge is deliberately a smaller, independently written
+feature subset and does not bundle the GPL compiler.
+
+
 The NoeEngine 0.1.0-dev distribution is built from an upstream Godot
 4.0.5 RC engine source tree. Original SCons source paths and binary
 filenames stay compatible; users receive NoeEngine-branded installers.
@@ -36,7 +67,7 @@ The installed launch command is `noeengine`.
 For MinGW-w64 cross-compiling and NSIS installer packaging:
 
 ```sh
-sudo apt install -y gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 nsis
+sudo apt install -y gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 binutils-mingw-w64-x86-64 nsis
 ./build.sh windows 2
 ```
 

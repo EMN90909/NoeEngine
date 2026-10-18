@@ -59,6 +59,11 @@ supporting evidence.
 
 ## Native Noqeri integration licensing and provenance
 
+The current compatibility target is Noqeri **0.7.0-dev**, language edition
+**2026**, ABI metadata **v2**. The upstream game SDK currently has source
+under `Lib/game/` but is not a qualified native game toolchain, per its
+`Doc/GAME_DEV_READINESS.md` and `Doc/GAME_PLATFORM_MATRIX.md`.
+
 The in-engine `modules/noqeri` code implements an original Noethric
 native `ScriptLanguage` wrapper and a limited scene-script syntax bridge
 to the existing Godot VM. It was designed following a review of
@@ -68,6 +73,8 @@ to the existing Godot VM. It was designed following a review of
 That separate Noqeri compiler and runtime remain **GPL-3.0-only**.
 No Noqeri compiler source, binaries, NIR runtime, standard library,
 or GPL implementation has been copied or linked into the engine.
+The current source reference is commit
+`a577578ec48bff94bd66f133ad39349b926fedd9`.
 The game-script subset bridge is **not** interchangeable with the
 complete Noqeri compiler. Native runtime/API parity remains a separate
 engineering and licensing review requirement.
