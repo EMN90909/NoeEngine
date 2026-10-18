@@ -42,7 +42,9 @@ func TestOfflineSignerToUpdaterEndToEnd(t *testing.T) {
  if err:=apply(root,pkg,receipt,pub,"0.1.1");err!=nil{t.Fatalf("signed installer rejected a valid release: %v",err)}
  final,err:=os.ReadFile(oldFile);if err!=nil||!bytes.Equal(final,newFile){t.Fatal("installed file did not match signed bytes")}
  notice,err:=os.ReadFile(receipt);if err!=nil{t.Fatal(err)}
- if !bytes.Contains(notice,[]byte("\\"status\\":\\"installed\\"")){t.Fatal("missing successful update receipt")}
+ var updateReceipt map[string]string
+ if err:=json.Unmarshal(notice,&updateReceipt);err!=nil{t.Fatal(err)}
+ if updateReceipt["status"]!="installed"||updateReceipt["version"]!="0.1.1"{t.Fatal("missing successful update receipt")}
 
  // Incorrect expected release number cannot be used to install.
  staleRoot:=t.TempDir()
