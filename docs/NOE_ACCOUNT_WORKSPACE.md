@@ -67,3 +67,15 @@ Then manually test first-launch sign-in/offline, focus order, dialog rendering a
 - Implement MCP HTTP/SSE transport, OAuth authorization/permission prompts, tool allowlists, and testable enable/disable lifecycle before labeling a server **connected**.
 - Build full extension installation, updates, signed manifests, and permission review UI.
 - Validate a complete native C++ build, first-run screenshots and authenticated end-to-end journeys.
+
+## Website connection and update checker (October 2026)
+
+The companion React website repository is https://github.com/EMN90909/NoeEngine-web. The working Node/Express Render service is https://noeengine-web.onrender.com. The legacy static Render service has the shorter hostname but does not execute the device-authorization API.
+
+Configure the native editor via Account > Security > Account website URL, using https://noeengine-web.onrender.com, or launch with NOEENGINE_AUTH_URL set to that exact HTTPS origin. This setting is used both for browser device approval and by the native update checker. The account backend remains disabled until the companion website has a dedicated Supabase project URL, a public publishable/anon key, and the schema migrations applied.
+
+The new editor/noe_update_manager.{h,cpp} is included automatically by editor/SCsub. An Updates button appears in the Project Manager and editor top bars. The client checks GET /updates/latest?platform=linuxbsd&channel=stable (or windows/macos), compares published product versions against 0.1.0-dev and, when one is newer, shows an Update available action. It downloads only HTTPS public Supabase patch URLs, rejects nonallowlisted paths and oversized files, and verifies size plus SHA-256 before showing update notes and the staged patch's path.
+
+**Do not mistake staging for installation.** This release does not execute downloaded patches, overwrite the installed engine, invoke a package manager or elevate privileges. The user installs the verified platform package separately and restarts. Full safe binary auto-update requires offline-pinned signing keys, rollback/recovery, and OS-native privileged helpers. Release publishing is gated by Supabase RLS and explicitly approved publisher accounts, but an unhashed/signed update manifest is not cryptographic proof of origin against a compromised trusted server.
+
+Static regression tests: tests/python_build/test_noe_update_manager.py. Real C++ compilation, Linux window rendering, cross-platform installer behavior and update-download E2E remain unverified until the user runs ./build.sh linux 2 and tests with a published release.
