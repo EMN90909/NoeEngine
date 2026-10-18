@@ -107,7 +107,7 @@ void NoeUpdateManager::_show_notice(const String &title, const String &message) 
     completion_dialog->popup_centered(Size2i(560, 270) * EDSCALE);
 }
 void NoeUpdateManager::_check() {
-    if (downloading) return;
+    if (downloading || update_button->is_disabled()) return;
     _read_website();
     if (website_url.is_empty()) {
         _show_notice(TTR("Configure update source"),
@@ -123,11 +123,12 @@ void NoeUpdateManager::_check() {
         String("linuxbsd");
 #endif
     const Error status = metadata_request->request(path + "&channel=stable");
-    if (status == OK) update_button->set_text(TTR("Checking..."));
+    if (status == OK) { update_button->set_text(TTR("Checking...")); update_button->set_disabled(true); }
     else _show_notice(TTR("Update check failed"), TTR("The update server is busy. Try again."));
 }
 void NoeUpdateManager::_on_manifest(int result, int status, const PackedStringArray &headers, const PackedByteArray &body) {
     update_button->set_text(TTR("Updates"));
+    update_button->set_disabled(false);
     if (status == 204) return; // No releases published for this platform.
     if (result != HTTPRequest::RESULT_SUCCESS || status != 200) {
         _show_notice(TTR("Update check failed"), TTR("The NoeEngine release catalog is unavailable."));
