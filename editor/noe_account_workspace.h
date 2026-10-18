@@ -5,6 +5,7 @@
 
 #include "scene/gui/dialogs.h"
 #include "core/io/config_file.h"
+#include "core/templates/vector.h"
 
 class Button;
 class CheckBox;
@@ -67,6 +68,9 @@ class NoeAccountWorkspace : public AcceptDialog {
     Label *collab_activity = nullptr;
     String collaboration_url;
     bool collaboration_polling = false;
+    Vector<String> queued_collaboration_paths;
+    Vector<String> queued_collaboration_ids;
+    uint64_t collaboration_counter = 0;
     Timer *poll_timer = nullptr;
     Timer *metrics_timer = nullptr;
     Ref<ConfigFile> config;
@@ -101,6 +105,7 @@ class NoeAccountWorkspace : public AcceptDialog {
     void _on_resource_saved(const Ref<Resource> &p_resource);
     void _send_collaboration_event(const String &p_path);
     void _poll_collaboration_activity();
+    void _flush_collaboration_queue();
     void _on_collaboration_response(int p_result, int p_code, const PackedStringArray &p_headers, const PackedByteArray &p_body);
     void _save_collaboration_project();
     void _tick_usage();
