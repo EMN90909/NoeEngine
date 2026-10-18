@@ -64,6 +64,23 @@ class TestNoeAccountWorkspace(unittest.TestCase):
         self.assertIn('cb->connect("toggled"', self.source)
         self.assertNotIn("OS::execute(", self.source)
 
+    def test_settings_are_native_and_keyboard_navigation_is_visible(self):
+        for text in ('Profile', 'Usage & limits', 'API & MCP', 'Extensions', 'Security'):
+            self.assertIn(text, self.source)
+        self.assertIn('navigation_buttons[i]->set_pressed_no_signal(i == idx)', self.source)
+        self.assertIn('set_focus_mode(Control::FOCUS_ALL)', self.source)
+        self.assertIn('popup_centered_clamped', self.source)
+        self.assertIn('profile_avatar_label->set_text(', self.source)
+        self.assertIn('NoeAccountWorkspace::install(gui_base, right_menu_hb)', (ROOT / 'editor/editor_node.cpp').read_text())
+        self.assertIn('NoeAccountWorkspace::install(this, settings_hb)', (ROOT / 'editor/project_manager.cpp').read_text())
+
+    def test_unverified_deployment_is_never_hardcoded(self):
+        self.assertNotIn('auth_base = "https://noeengine-web.onrender.com"', self.source)
+        self.assertIn('NOEENGINE_AUTH_URL', self.source)
+        self.assertIn('config->get_value("account", "website_url"', self.source)
+        self.assertIn('No account website configured', self.source)
+        self.assertIn('void NoeAccountWorkspace::_save_website_url()', self.source)
+
     def test_cpp_brace_count(self):
         self.assertEqual(self.source.count("{"), self.source.count("}"))
 
