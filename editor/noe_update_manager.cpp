@@ -155,7 +155,7 @@ void NoeUpdateManager::_on_manifest(int result, int status, const PackedStringAr
         _show_notice(TTR("Update check failed"), TTR("The NoeEngine release catalog is unavailable."));
         return;
     }
-    const Variant parsed = JSON::parse_string(body.get_string_from_utf8());
+    const Variant parsed = JSON::parse_string(String::utf8(reinterpret_cast<const char *>(body.ptr()), body.size()));
     if (parsed.get_type() != Variant::DICTIONARY) {
         _show_notice(TTR("Invalid release"), TTR("The server returned an invalid release manifest.")); return;
     }
