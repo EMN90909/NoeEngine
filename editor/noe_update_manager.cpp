@@ -81,7 +81,7 @@ NoeUpdateManager::NoeUpdateManager() {
     startup_timer = memnew(Timer);
     startup_timer->set_one_shot(true);
     startup_timer->set_wait_time(8);
-    startup_timer->connect("timeout", callable_mp(this, &NoeUpdateManager::_check));
+    startup_timer->connect("timeout", callable_mp(this, &NoeUpdateManager::_startup_check));
     add_child(startup_timer);
 }
 NoeUpdateManager *NoeUpdateManager::install(Control *parent, HBoxContainer *toolbar) {
@@ -92,7 +92,7 @@ NoeUpdateManager *NoeUpdateManager::install(Control *parent, HBoxContainer *tool
     b->set_text(TTR("Updates"));
     b->set_tooltip_text(TTR("Check for updates from your configured NoeEngine website"));
     b->set_focus_mode(Control::FOCUS_ALL);
-    b->connect("pressed", callable_mp(manager, &NoeUpdateManager::_check));
+    b->connect("pressed", callable_mp(manager, &NoeUpdateManager::_manual_check));
     toolbar->add_child(b);
     manager->update_button = b;
     return manager;
@@ -107,6 +107,8 @@ void NoeUpdateManager::_show_notice(const String &title, const String &message) 
     completion_dialog->set_text(message);
     completion_dialog->popup_centered(Size2i(560, 270) * EDSCALE);
 }
+void NoeUpdateManager::_manual_check() { quiet_check = false; _check(); }
+void NoeUpdateManager::_startup_check() { quiet_check = true; _check(); }
 void NoeUpdateManager::_check() {
     if (downloading || update_button->is_disabled()) return;
     _read_website();
@@ -132,6 +134,7 @@ void NoeUpdateManager::_on_manifest(int result, int status, const PackedStringAr
     update_button->set_disabled(false);
     if (status == 204) return; // No releases published for this platform.
     if (result != HTTPRequest::RESULT_SUCCESS || status != 200) {
+        if (quiet_check) return;
         _show_notice(TTR("Update check failed"), TTR("The NoeEngine release catalog is unavailable."));
         return;
     }
