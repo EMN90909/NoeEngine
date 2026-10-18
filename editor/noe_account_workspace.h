@@ -13,6 +13,7 @@ class HBoxContainer;
 class Label;
 class LineEdit;
 class MenuButton;
+class NoeUsageCharts;
 class PopupMenu;
 class Timer;
 class VBoxContainer;
@@ -34,8 +35,9 @@ class NoeAccountWorkspace : public AcceptDialog {
     Label *totals_label = nullptr;
     Label *render_label = nullptr;
     Label *ai_label = nullptr;
-    Label *mcp_list = nullptr;
-    Label *api_list = nullptr;
+    VBoxContainer *mcp_list = nullptr;
+    VBoxContainer *api_list = nullptr;
+    NoeUsageCharts *charts = nullptr;
     Label *security_label = nullptr;
     Label *login_message = nullptr;
     Label *api_error = nullptr;
@@ -57,7 +59,6 @@ class NoeAccountWorkspace : public AcceptDialog {
     String device_code;
     String email;
     String display_name;
-    String pending_api_token;
     uint64_t start_msec = 0;
     uint64_t last_tick_msec = 0;
     uint64_t next_save_msec = 0;
@@ -85,6 +86,7 @@ class NoeAccountWorkspace : public AcceptDialog {
     void _save_api();
     void _show_mcp_form();
     void _save_mcp();
+    void _toggle_mcp(bool p_enabled, int p_index);
     void _render_integrations();
     void _open_godot_mcp();
     void _open_registry();
