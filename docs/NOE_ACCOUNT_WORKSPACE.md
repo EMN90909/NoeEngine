@@ -15,7 +15,7 @@ All panes reuse Godot 4.0 / NoeEngine UI controls, the built-in charcoal theme, 
 
 ## Account backend needed for live sign-in
 
-**An authentication service was not present in the NoeEngine repository.** The client does not invent users, trust a browser-provided email, or claim successful login without server verification. To activate live sign-in, deploy a real HTTPS account service and configure its base URL:
+**The companion account website is implemented in [NoeEngine-web](https://github.com/EMN90909/NoeEngine-web)** with React, Supabase Auth, one-time device approval and a Node API. The website is not automatically live until deployed with its Supabase URL, anon key and server-side signing secret. In **Account > Security**, enter and save your real deployed HTTPS website URL. NoeEngine will use that setting for future browser sign-ins. `NOEENGINE_AUTH_URL` remains an optional process-level override.\n\n**An authentication service was not present in the NoeEngine repository.** The client does not invent users, trust a browser-provided email, or claim successful login without server verification. To activate live sign-in, deploy a real HTTPS account service and configure its base URL:
 
 ```sh
 export NOEENGINE_AUTH_URL="https://accounts.example.com/noeengine"
