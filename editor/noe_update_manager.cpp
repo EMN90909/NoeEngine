@@ -145,7 +145,10 @@ void NoeUpdateManager::_check() {
 void NoeUpdateManager::_on_manifest(int result, int status, const PackedStringArray &headers, const PackedByteArray &body) {
     update_button->set_text(TTR("Updates"));
     update_button->set_disabled(false);
-    if (status == 204) return; // No releases published for this platform.
+    if (status == 204) {
+        if (!quiet_check) _show_notice(TTR("No update available"), TTR("No published update exists for this platform and channel."));
+        return;
+    }
     if (result != HTTPRequest::RESULT_SUCCESS || status != 200) {
         if (quiet_check) return;
         _show_notice(TTR("Update check failed"), TTR("The NoeEngine release catalog is unavailable."));
@@ -162,7 +165,11 @@ void NoeUpdateManager::_on_manifest(int result, int status, const PackedStringAr
     const String filename = info.get("filename", "");
     const String notes = info.get("release_notes", "");
     const int64_t expected_size = (int64_t)info.get("size_bytes", (int64_t)0);
-    if (!_version_newer(version)) return;
+    if (!_version_newer(version)) {
+        if (!quiet_check) _show_notice(TTR("No update available"), TTR("You are already on the latest installed NoeEngine version."));
+        return;
+    }
+    if (quiet_check && notified_version == version) return;
     if (hash.length() != 64 || !_valid_download_url(url) || filename.is_empty() ||
             filename.contains("/") || filename.contains("\\") || filename.contains("..") ||
             expected_size <= 0 || expected_size > MAX_NOE_PATCH || notes.length() > 10000) {
@@ -172,8 +179,9 @@ void NoeUpdateManager::_on_manifest(int result, int status, const PackedStringAr
         const char32_t c = hash[i];
         if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))) return;
     }
-    // No silent package installation: an OS-level installer must confirm executable changes.
+    // No silent install: signature validation and explicit consent remain mandatory.
     available = true;
+    notified_version = version;
     release_version = version;
     patch_sha256 = hash;
     patch_filename = filename;
