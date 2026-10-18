@@ -53,7 +53,7 @@ class BuildDependencyBootstrapTests(unittest.TestCase):
     @mock.patch.object(bootstrap.platform, "system", return_value="Linux")
     @mock.patch.object(bootstrap.os, "geteuid", return_value=0)
     def test_simulated_install_calls_apt_without_udev(self, *_):
-        with mock.patch.object(bootstrap.shutil, "which", return_value="/usr/bin/apt-get"), \\
+        with mock.patch.object(bootstrap.shutil, "which", return_value="/usr/bin/apt-get"), \
                 mock.patch.object(bootstrap.subprocess, "run") as run:
             bootstrap.install_distro_packages(["linux"], dry_run=False)
         commands = [call.args[0] for call in run.call_args_list]
@@ -67,7 +67,7 @@ class BuildDependencyBootstrapTests(unittest.TestCase):
     @mock.patch.object(bootstrap.platform, "system", return_value="Linux")
     @mock.patch.object(bootstrap.os, "geteuid", return_value=0)
     def test_dry_run_never_calls_apt(self, *_):
-        with mock.patch.object(bootstrap.shutil, "which", return_value="/usr/bin/apt-get"), \\
+        with mock.patch.object(bootstrap.shutil, "which", return_value="/usr/bin/apt-get"), \
                 mock.patch.object(bootstrap.subprocess, "run") as run:
             bootstrap.install_distro_packages(["linux"], dry_run=True)
         run.assert_not_called()
