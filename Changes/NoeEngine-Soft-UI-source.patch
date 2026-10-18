@@ -75,7 +75,7 @@ diff --git a/editor/editor_themes.cpp b/editor/editor_themes.cpp
 diff --git a/misc/apply_noeengine_branding.py b/misc/apply_noeengine_branding.py
 --- a/misc/apply_noeengine_branding.py
 +++ b/misc/apply_noeengine_branding.py
-@@ -30,7 +30,7 @@
+@@ -31,7 +31,7 @@
      "editor/editor_settings.cpp": [
          ('"interface/theme/preset", "Default",',
 -         '"interface/theme/preset", "NoeEngine Dark",'),
