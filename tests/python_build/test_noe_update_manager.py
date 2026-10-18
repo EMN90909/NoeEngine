@@ -43,6 +43,9 @@ class TestNoeUpdater(unittest.TestCase):
     def test_no_secret_key_embedded(self):
         self.assertNotIn('SUPABASE_SERVICE_ROLE_KEY', self.cpp)
         self.assertNotIn('NOE_DEVICE_TOKEN_SECRET', self.cpp)
+        self.assertNotIn('CONVEX_DEPLOY_KEY', self.cpp)
+        self.assertNotIn('CONVEX_SITE_URL', self.cpp)
+        self.assertIn('auto_timer->set_wait_time(5.0 * 60.0 * 60.0)', self.cpp)
 
     def test_balanced_source_brackets(self):
         self.assertEqual(self.cpp.count("{"), self.cpp.count("}"))
