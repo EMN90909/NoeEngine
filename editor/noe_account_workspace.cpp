@@ -135,6 +135,14 @@ void NoeAccountWorkspace::_make_page(Page page) {
         _add_label(p, TTR("Security"));
         security_label = _add_label(p, TTR("Offline. No active access token."));
         _add_label(p, TTR("HTTPS device authorization. Tokens are only held in memory, not in settings."));
+        _add_label(p, TTR("Account website URL (HTTPS)"));
+        website_url_field = memnew(LineEdit);
+        website_url_field->set_placeholder("https://your-noeengine-site.onrender.com");
+        website_url_field->set_max_length(2048);
+        website_url_field->set_tooltip_text(TTR("The origin hosting your NoeEngine website and device authentication API."));
+        p->add_child(website_url_field);
+        website_url_status = _add_label(p, TTR("Enter the deployed account website address to enable browser sign-in."));
+        _add_button(p, TTR("Save account website"), callable_mp(this, &NoeAccountWorkspace::_save_website_url));
         _add_button(p, TTR("Log out"), callable_mp(this, &NoeAccountWorkspace::_logout));
     }
 }
@@ -153,8 +161,10 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
         total_render_ms = (uint64_t)(int64_t)config->get_value("usage", "playtest_ms", (int64_t)0);
     }
     auth_base = OS::get_singleton()->get_environment("NOEENGINE_AUTH_URL").strip_edges();
+    if (auth_base.is_empty()) auth_base = String(config->get_value("account", "website_url", "")).strip_edges();
     if (!_is_https_url(auth_base)) auth_base = "";
     if (auth_base.ends_with("/")) auth_base = auth_base.substr(0, auth_base.length() - 1);
+    if (website_url_field) website_url_field->set_text(auth_base);
     HBoxContainer *layout = memnew(HBoxContainer);
     layout->set_custom_minimum_size(Size2(720, 425) * EDSCALE);
     layout->add_theme_constant_override("separation", 16 * EDSCALE);
@@ -395,7 +405,21 @@ void NoeAccountWorkspace::_refresh_profile() {
     email_label->set_text(TTR("Email: ") + (online_session ? email : TTR("Not signed in")));
     account_status->set_text(online_session ? TTR("Verified session") : TTR("Offline / unverified"));
     security_label->set_text(online_session ? TTR("Signed in; token is in memory only.") : TTR("Offline; no token stored."));
+    if (website_url_status && !auth_base.is_empty()) website_url_status->set_text(TTR("Account website: ") + auth_base);
     if (avatar_button) avatar_button->set_text(online_session ? display_name.left(14) : TTR("Account"));
+}
+void NoeAccountWorkspace::_save_website_url() {
+    String site = website_url_field->get_text().strip_edges();
+    if (!_is_https_url(site)) {
+        website_url_status->set_text(TTR("Enter a valid HTTPS URL without credentials."));
+        return;
+    }
+    while (site.ends_with("/")) site = site.substr(0, site.length() - 1);
+    // Device authorization is only allowed at the explicitly configured origin.
+    auth_base = site;
+    config->set_value("account", "website_url", site);
+    _save_usage();
+    website_url_status->set_text(TTR("Website saved. Choose Sign in to authorize this editor."));
 }
 void NoeAccountWorkspace::_logout() {
     // Cancel outstanding approval/profile responses so logout cannot be undone by a late callback.
