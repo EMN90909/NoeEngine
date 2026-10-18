@@ -54,7 +54,7 @@ export NOEENGINE_PATCH_HELPER=/absolute/path/to/preinstalled/noe-updater
 export NOEENGINE_UPDATE_PUBKEY=BASE64_PUBLIC_KEY_PRINTED_DURING_OFFLINE_KEYGEN
 ```
 
-The native client has no guessed website URL. Published releases cannot be installed if the helper or signing key is missing. The private key remains offline.
+The native client now has the verified deployed default `https://noeengine-web.onrender.com`, and still allows environment-variable and Account → Security overrides. Do not hardcode database credentials or Convex deployment keys in the native editor. Published releases cannot be installed if the helper or signing key is missing. The private key remains offline.
 
 ## Verified locally
 
