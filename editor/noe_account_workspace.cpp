@@ -384,6 +384,9 @@ void NoeAccountWorkspace::_refresh_profile() {
     if (avatar_button) avatar_button->set_text(online_session ? display_name.left(14) : TTR("Account"));
 }
 void NoeAccountWorkspace::_logout() {
+    // Cancel outstanding approval/profile responses so logout cannot be undone by a late callback.
+    if (request_kind != REQUEST_NONE) auth_request->cancel_request();
+    request_kind = REQUEST_NONE;
     access_token.clear(); device_code.clear(); email.clear(); display_name.clear();
     online_session = false; awaiting_login = false; poll_timer->stop();
     _refresh_profile();
