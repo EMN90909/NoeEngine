@@ -100,7 +100,8 @@ def verify_toolchain(target, package_only=False):
         if not (ROOT / "platform/android/java/gradlew").is_file():
             raise RuntimeError("Missing Android Gradle wrapper")
         return
-    check_tool({"linux": "dpkg-deb", "windows": "makensis", "macos": "pkgbuild"}[target])
+    if target in ("windows", "macos"):
+        check_tool({"windows": "makensis", "macos": "pkgbuild"}[target])
     if package_only:
         return
     check_tool("scons")
@@ -358,8 +359,8 @@ def main(argv=None):
     else:
         result = write_macos(binary)
     if not result.is_file() or result.stat().st_size == 0:
-        raise RuntimeError("Packaging returned without a nonempty setup installer: " + str(result))
-    print("Installer created:", result, "(", result.stat().st_size, "bytes )")
+        raise RuntimeError("Packaging returned without a nonempty artifact: " + str(result))
+    print("Build artifact created:", result, "(", result.stat().st_size, "bytes )")
 
 
 if __name__ == "__main__":
