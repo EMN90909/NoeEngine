@@ -30,6 +30,7 @@
 
 #include "project_manager.h"
 #include "editor/noe_account_workspace.h"
+#include "editor/noe_update_manager.h"
 
 #include "core/config/project_settings.h"
 #include "core/io/config_file.h"
@@ -2916,6 +2917,7 @@ ProjectManager::ProjectManager() {
 
 		settings_hb->add_child(language_btn);
 		NoeAccountWorkspace::install(this, settings_hb);
+		NoeUpdateManager::install(this, settings_hb);
 		center_box->add_child(settings_hb);
 	}
 
