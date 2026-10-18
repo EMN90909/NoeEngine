@@ -2,6 +2,19 @@
 
 `build.sh` builds **real native binaries** from this Godot-derived source tree. It never renames an incompatible binary into a different OS format. The build fails if required SDKs are missing or if the native compiler/package builder fails.
 
+## No-argument full build
+
+Calling **`./build.sh` without arguments** now runs the following four independent commands, strictly in order:
+
+```sh
+./build.sh check
+./build.sh linux 2 --install-deps
+./build.sh windows 2 --install-deps
+./build.sh android 2 --install-deps
+```
+
+The pipeline is fail-fast. It never claims all builds passed if any stage fails, and the artifacts already produced by earlier successful stages remain in `Products/`. Because each stage uses `--install-deps`, it may download large SDK/compiler packages, use `sudo`, prompt for Android SDK licenses, and consume tens of gigabytes. On low-memory machines, retain the default **two compiler jobs**. The macOS installer remains an explicit macOS-host build (`./build.sh macos 2`) because it requires Xcode.
+
 ## Build matrix
 
 | Command | Supported host | `Products/` output |
