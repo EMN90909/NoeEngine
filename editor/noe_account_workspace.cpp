@@ -90,7 +90,15 @@ void NoeAccountWorkspace::_make_page(Page page) {
     p->add_theme_constant_override("separation", 10 * EDSCALE);
     if (page == PROFILE) {
         _add_label(p, TTR("Profile"));
-        _add_label(p, TTR("Avatar  N"));
+        PanelContainer *avatar_frame = memnew(PanelContainer);
+        avatar_frame->set_custom_minimum_size(Size2(64, 64) * EDSCALE);
+        p->add_child(avatar_frame);
+        profile_avatar_label = memnew(Label);
+        profile_avatar_label->set_text("N");
+        profile_avatar_label->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
+        profile_avatar_label->set_vertical_alignment(VERTICAL_ALIGNMENT_CENTER);
+        profile_avatar_label->set_custom_minimum_size(Size2(64, 64) * EDSCALE);
+        avatar_frame->add_child(profile_avatar_label);
         name_label = _add_label(p, TTR("Name: Not signed in"));
         email_label = _add_label(p, TTR("Email: Not signed in"));
         account_status = _add_label(p, TTR("Offline. No verified session."));
@@ -165,7 +173,7 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
     if (!_is_https_url(auth_base)) auth_base = "";
     if (auth_base.ends_with("/")) auth_base = auth_base.substr(0, auth_base.length() - 1);
     HBoxContainer *layout = memnew(HBoxContainer);
-    layout->set_custom_minimum_size(Size2(720, 425) * EDSCALE);
+    layout->set_custom_minimum_size(Size2(660, 390) * EDSCALE);
     layout->add_theme_constant_override("separation", 16 * EDSCALE);
     add_child(layout);
     VBoxContainer *nav = memnew(VBoxContainer);
@@ -298,7 +306,7 @@ NoeAccountWorkspace::~NoeAccountWorkspace() { _save_usage(); access_token.clear(
 void NoeAccountWorkspace::_show_page(int idx) {
     if (idx < 0 || idx >= 5) return;
     for (int i = 0; i < 5; ++i) pages[i]->set_visible(i == idx);
-    if (is_inside_tree()) popup_centered(Size2i(810, 515) * EDSCALE);
+    if (is_inside_tree()) popup_centered_clamped(Size2i(810, 515) * EDSCALE, 0.90f);
 }
 void NoeAccountWorkspace::_account_action(int id) {
     if (id == 20) { _logout(); return; }
@@ -408,6 +416,10 @@ void NoeAccountWorkspace::_refresh_profile() {
     security_label->set_text(online_session ? TTR("Signed in; token is in memory only.") : TTR("Offline; no token stored."));
     if (website_url_status) website_url_status->set_text(auth_base.is_empty() ?
             TTR("No account website configured. Set an HTTPS origin to connect.") : TTR("Account website: ") + auth_base);
+    if (profile_avatar_label) {
+        profile_avatar_label->set_text(online_session && !display_name.is_empty() ?
+                display_name.left(1).to_upper() : String("N"));
+    }
     if (avatar_button) avatar_button->set_text(online_session ? display_name.left(14) : TTR("Account"));
 }
 void NoeAccountWorkspace::_save_website_url() {
