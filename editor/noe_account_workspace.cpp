@@ -719,7 +719,17 @@ void NoeAccountWorkspace::_on_collaboration_response(int result, int code, const
     const bool was_poll = collaboration_polling;
     collaboration_polling = false;
     if (result != HTTPRequest::RESULT_SUCCESS || code != 200) {
-        collab_status->set_text(TTR("Team service unavailable or project access denied. Pending saves will retry."));
+        if (!was_poll && result == HTTPRequest::RESULT_SUCCESS &&
+                (code == 400 || code == 401 || code == 403 || code == 404) &&
+                !queued_collaboration_paths.is_empty()) {
+            // A permanently rejected event must not block later saves forever.
+            // Keep transient server/network errors for stable-id retry instead.
+            queued_collaboration_paths.remove_at(0);
+            queued_collaboration_ids.remove_at(0);
+            collab_status->set_text(TTR("Save notification rejected. Check sign-in, team permissions, and project ID."));
+        } else {
+            collab_status->set_text(TTR("Team service unavailable. Pending saves will retry."));
+        }
         return;
     }
     if (!was_poll) {
