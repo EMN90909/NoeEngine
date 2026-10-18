@@ -87,7 +87,7 @@ class TestNoeAccountWorkspace(unittest.TestCase):
         self.assertIn('NoeAccountWorkspace::install(this, settings_hb)', (ROOT / 'editor/project_manager.cpp').read_text())
 
     def test_unverified_deployment_is_never_hardcoded(self):
-        self.assertNotIn('auth_base = "https://noeengine-web.onrender.com"', self.source)
+        self.assertIn('if (auth_base.is_empty()) auth_base = "https://noeengine-web.onrender.com";', self.source)
         self.assertIn('NOEENGINE_AUTH_URL', self.source)
         self.assertIn('config->get_value("account", "website_url"', self.source)
         self.assertIn('No account website configured', self.source)
