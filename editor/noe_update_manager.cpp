@@ -230,3 +230,55 @@ void NoeUpdateManager::_on_patch(int result, int status, const PackedStringArray
             release_version, release_notes));
     install_dialog->popup_centered(Size2i(590, 360) * EDSCALE);
 }
+
+void NoeUpdateManager::_install_and_restart() {
+    if (downloading || !available || saved_path.is_empty() || !FileAccess::exists(saved_path) ||
+            patch_filename.get_extension() != "noepatch" || !EditorPaths::get_singleton()) return;
+    // The helper is installed with a trusted build, not downloaded from the release server.
+    const String helper = OS::get_singleton()->get_environment("NOEENGINE_PATCH_HELPER").strip_edges();
+    const String pub = OS::get_singleton()->get_environment("NOEENGINE_UPDATE_PUBKEY").strip_edges();
+    if (!helper.is_absolute_path() || !FileAccess::exists(helper) || pub.length() != 44) {
+        _show_notice(TTR("Trusted installer unavailable"), TTR("Configure a preinstalled signed-patch helper and its public key."));
+        return;
+    }
+    const String executable = OS::get_singleton()->get_executable_path();
+    const String root = executable.get_base_dir();
+    if (executable.is_empty() || root.is_empty() || !executable.is_absolute_path()) return;
+    const String receipt = EditorPaths::get_singleton()->get_cache_dir().path_join("noeengine-updates").path_join("last_update.json");
+    List<String> args;
+    args.push_back("-root"); args.push_back(root);
+    args.push_back("-package"); args.push_back(saved_path);
+    args.push_back("-public-key"); args.push_back(pub);
+    args.push_back("-receipt"); args.push_back(receipt);
+    args.push_back("-wait-pid"); args.push_back(itos(OS::get_singleton()->get_process_id()));
+    args.push_back("-restart"); args.push_back(executable);
+    if (OS::get_singleton()->create_process(helper, args) != OK) {
+        _show_notice(TTR("Update error"), TTR("Could not start the trusted installer. The app was not changed."));
+        return;
+    }
+    get_tree()->quit();
+}
+void NoeUpdateManager::_show_post_restart_notice() {
+    if (!EditorPaths::get_singleton()) return;
+    const String cache = EditorPaths::get_singleton()->get_cache_dir().path_join("noeengine-updates");
+    const String receipt = cache.path_join("last_update.json");
+    Ref<ConfigFile> cfg;
+    cfg.instantiate();
+    const String config_path = EditorPaths::get_singleton()->get_config_dir().path_join("noeengine_account.cfg");
+    cfg->load(config_path);
+    installed_version = String(cfg->get_value("update", "installed_version", ""));
+    if (!FileAccess::exists(receipt)) return;
+    const Variant parsed = JSON::parse_string(FileAccess::get_file_as_string(receipt));
+    DirAccess::remove_absolute(receipt);
+    if (parsed.get_type() != Variant::DICTIONARY) return;
+    Dictionary info = parsed;
+    if (String(info.get("status", "")) != "installed") return;
+    const String version = info.get("version", "");
+    const String notes = info.get("notes", "");
+    if (version.is_empty() || version.length() > 64 || notes.length() > 10000) return;
+    installed_version = version;
+    cfg->set_value("update", "installed_version", version);
+    cfg->save(config_path);
+    _show_notice(TTR("NoeEngine updated successfully"),
+            vformat(TTR("Version %s has been installed.\n\nWhat's new:\n%s\n\nChoose Continue to start creating."), version, notes));
+}
