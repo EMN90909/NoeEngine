@@ -479,6 +479,8 @@ void NoeAccountWorkspace::_logout() {
     // Cancel outstanding approval/profile responses so logout cannot be undone by a late callback.
     if (request_kind != REQUEST_NONE) auth_request->cancel_request();
     request_kind = REQUEST_NONE;
+    if (collab_request) collab_request->cancel_request();
+    queued_collaboration_paths.clear(); queued_collaboration_ids.clear();
     access_token.clear(); device_code.clear(); email.clear(); display_name.clear();
     online_session = false; awaiting_login = false; poll_timer->stop();
     if (collab_request) collab_request->cancel_request();
@@ -648,6 +650,8 @@ void NoeAccountWorkspace::_save_collaboration_project() {
         collab_status->set_text(TTR("Invalid project ID."));
         return;
     }
+    queued_collaboration_paths.clear();
+    queued_collaboration_ids.clear();
     config->set_value("collaboration", "project_id", candidate);
     _save_usage();
     collab_status->set_text(candidate.is_empty() ? TTR("Collaboration disabled.") :
@@ -658,56 +662,86 @@ void NoeAccountWorkspace::_on_resource_saved(const Ref<Resource> &resource) {
     if (resource.is_valid()) _send_collaboration_event(resource->get_path());
 }
 void NoeAccountWorkspace::_send_collaboration_event(const String &file) {
-    if (!online_session || access_token.is_empty() || collaboration_url.is_empty() || !collab_project ||
-            collab_request->get_http_client_status() != HTTPClient::STATUS_DISCONNECTED) return;
-    const String project = collab_project->get_text().strip_edges();
+    if (!online_session || access_token.is_empty() || collaboration_url.is_empty() || !collab_project) return;
+    const String project = String(config->get_value("collaboration", "project_id", ""));
     if (project.is_empty() || !file.begins_with("res://")) return;
     const String relative_path = file.trim_prefix("res://");
     if (relative_path.is_empty() || relative_path.length() > 512 || relative_path.contains("..") ||
-            relative_path.contains("\\") || relative_path.contains("\n")) return;
+            relative_path.contains("\\") || relative_path.contains("\n") || relative_path.contains("\r")) return;
+    // Preserve each save notification while the gateway is handling another request.
+    // A bounded queue prevents uncontrolled memory growth while the service is offline.
+    if (queued_collaboration_paths.size() >= 64) {
+        collab_status->set_text(TTR("Team activity queue full. Some new save notifications were not recorded."));
+        return;
+    }
+    queued_collaboration_paths.push_back(relative_path);
+    queued_collaboration_ids.push_back(itos((int64_t)Time::get_singleton()->get_ticks_usec()) +
+            "-" + itos((int64_t)++collaboration_counter));
+    _flush_collaboration_queue();
+}
+void NoeAccountWorkspace::_flush_collaboration_queue() {
+    if (!online_session || access_token.is_empty() || collaboration_url.is_empty() ||
+            queued_collaboration_paths.is_empty() || collaboration_polling ||
+            collab_request->get_http_client_status() != HTTPClient::STATUS_DISCONNECTED) return;
+    const String project = String(config->get_value("collaboration", "project_id", ""));
+    if (project.is_empty()) return;
     Dictionary payload;
     payload["projectId"] = project;
-    payload["path"] = relative_path;
+    payload["path"] = queued_collaboration_paths[0];
     payload["action"] = "saved";
-    payload["requestId"] = itos((int64_t)Time::get_singleton()->get_ticks_usec());
+    payload["requestId"] = queued_collaboration_ids[0];
     PackedStringArray headers;
     headers.push_back("Content-Type: application/json");
     headers.push_back("Authorization: Bearer " + access_token);
-    Error err = collab_request->request(collaboration_url + "/v1/collaboration/events", headers,
-            HTTPClient::METHOD_POST, JSON::stringify(payload));
-    if (err != OK) collab_status->set_text(TTR("Could not publish file activity."));
+    if (collab_request->request(collaboration_url + "/v1/collaboration/events", headers,
+            HTTPClient::METHOD_POST, JSON::stringify(payload)) != OK)
+        collab_status->set_text(TTR("Team activity queued. Reconnecting on next check."));
 }
 void NoeAccountWorkspace::_poll_collaboration_activity() {
     if (!online_session || access_token.is_empty() || collaboration_url.is_empty() || !collab_project ||
-            collab_project->get_text().strip_edges().is_empty() ||
-            collab_request->get_http_client_status() != HTTPClient::STATUS_DISCONNECTED) return;
+            String(config->get_value("collaboration", "project_id", "")).is_empty()) return;
+    // Saves take priority over the feed poll; retry using the same request ID.
+    if (!queued_collaboration_paths.is_empty()) {
+        _flush_collaboration_queue();
+        return;
+    }
+    if (collab_request->get_http_client_status() != HTTPClient::STATUS_DISCONNECTED) return;
     PackedStringArray headers;
     headers.push_back("Authorization: Bearer " + access_token);
     collaboration_polling = true;
-    const String project = collab_project->get_text().strip_edges().uri_encode();
+    const String project = String(config->get_value("collaboration", "project_id", "")).uri_encode();
     if (collab_request->request(collaboration_url + "/v1/collaboration/activity?projectId=" + project, headers) != OK)
         collaboration_polling = false;
 }
 void NoeAccountWorkspace::_on_collaboration_response(int result, int code, const PackedStringArray &headers,
         const PackedByteArray &body) {
     if (!online_session) return;
-    if (result != HTTPRequest::RESULT_SUCCESS || code != 200) {
-        collab_status->set_text(TTR("Team service unavailable or project access denied."));
-        collaboration_polling = false;
-        return;
-    }
-    if (!collaboration_polling) {
-        collab_status->set_text(TTR("File save shared with authorized teammates."));
-        return;
-    }
+    const bool was_poll = collaboration_polling;
     collaboration_polling = false;
+    if (result != HTTPRequest::RESULT_SUCCESS || code != 200) {
+        collab_status->set_text(TTR("Team service unavailable or project access denied. Pending saves will retry."));
+        return;
+    }
+    if (!was_poll) {
+        if (!queued_collaboration_paths.is_empty()) {
+            queued_collaboration_paths.remove_at(0);
+            queued_collaboration_ids.remove_at(0);
+        }
+        collab_status->set_text(TTR("File save shared with authorized teammates."));
+        _flush_collaboration_queue();
+        return;
+    }
     Variant parsed = JSON::parse_string(body.get_string_from_utf8());
     if (parsed.get_type() != Variant::DICTIONARY) return;
     Dictionary json = parsed;
     Variant raw = json.get("events", Array());
     if (raw.get_type() != Variant::ARRAY) return;
     Array activity = raw;
-    if (activity.is_empty()) { collab_activity->set_text(TTR("No teammate changes yet.")); return; }
+    if (activity.is_empty()) {
+        collab_activity->set_text(TTR("No teammate changes yet."));
+        _flush_collaboration_queue();
+        return;
+    }
     String summary;
     for (int i = 0; i < MIN(activity.size(), 8); ++i) {
         if (activity[i].get_type() != Variant::DICTIONARY) continue;
@@ -718,4 +752,5 @@ void NoeAccountWorkspace::_on_collaboration_response(int result, int code, const
         summary += actor.left(80) + " " + action.left(12) + " " + path.left(120) + "\n";
     }
     collab_activity->set_text(summary.strip_edges());
+    _flush_collaboration_queue();
 }
