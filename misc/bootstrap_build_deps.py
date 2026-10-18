@@ -28,8 +28,8 @@ ANDROID_TOOLS = {
     "darwin-arm64": ("commandlinetools-mac_arm64-15859902_latest.zip",
                      "835b62a26162b229b441d1f6d4680383815a270809eb33522c0d480fa5002c4e"),
 }
-ANDROID_PACKAGES = ("platform-tools", "build-tools;35.0.0", "platforms;android-35",
-                    "cmake;3.10.2.4988404", "ndk;28.1.13356709")
+ANDROID_PACKAGES = ("platform-tools", "build-tools;33.0.2", "platforms;android-33",
+                    "cmake;3.10.2.4988404", "ndk;23.2.8568313")
 
 def checked_zip_extract(source: Path, destination: Path):
     with zipfile.ZipFile(source) as archive:
