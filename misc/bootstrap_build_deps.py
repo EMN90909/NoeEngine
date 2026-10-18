@@ -89,6 +89,47 @@ def install_android_tools(*, download: bool, dry_run: bool):
         subprocess.run(cmd, check=True)
     return sdk
 
+def is_antix_system(os_release: Path = Path("/etc/os-release")) -> bool:
+    """antiX replaces systemd-udev with eudev; the libudev-dev metapackage can conflict.
+
+    Rely on the distro identity, not the presence of a particular init binary:
+    Debian or Devuan can also use non-systemd init systems.
+    """
+    try:
+        lines = os_release.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        lines = []
+    fields = {}
+    for line in lines:
+        key, _, value = line.partition("=")
+        if key in ("ID", "NAME", "PRETTY_NAME", "ID_LIKE"):
+            fields[key] = value.strip().strip('"').strip("'").lower()
+    return fields.get("ID") == "antix" or (
+        "antix" in fields.get("NAME", "").split()
+        or "antix" in fields.get("PRETTY_NAME", "").split()
+    )
+
+
+def linux_build_packages(targets: list[str], *, antix: bool) -> list[str]:
+    """System packages required for the selected build targets, without unrelated SDKs."""
+    packages = ["python3", "python3-pip", "scons", "build-essential", "pkg-config"]
+    if "windows" in targets:
+        packages += ["mingw-w64", "nsis"]
+    if "android" in targets:
+        packages += ["openjdk-17-jdk", "unzip", "curl"]
+    if "linux" in targets:
+        packages += ["libx11-dev", "libxcursor-dev", "libxinerama-dev",
+                     "libxrandr-dev", "libxi-dev", "libgl1-mesa-dev", "libasound2-dev",
+                     "libpulse-dev"]
+        # On antiX 26, the compatibility libudev-dev package depends on a
+        # conflicting libeudev-dev version. Udev hotplug support is optional
+        # in platform/linuxbsd/detect.py; the editor can compile without it.
+        # If the system already has libudev.pc, SCons uses it automatically.
+        if not antix:
+            packages.append("libudev-dev")
+    return list(dict.fromkeys(packages))
+
+
 def install_distro_packages(targets: list[str], *, dry_run: bool):
     system = platform.system().lower()
     if system == "darwin":
@@ -107,15 +148,11 @@ def install_distro_packages(targets: list[str], *, dry_run: bool):
     if shutil.which("apt-get") is None:
         raise RuntimeError("Automatic packages require an apt-based Linux; install dependencies "
                            "through your distro's package manager.")
-    packages = ["python3", "python3-pip", "scons", "build-essential", "pkg-config"]
-    if "windows" in targets:
-        packages += ["mingw-w64", "nsis"]
-    if "android" in targets:
-        packages += ["openjdk-17-jdk", "unzip", "curl"]
-    if "linux" in targets:
-        packages += ["libx11-dev", "libxcursor-dev", "libxinerama-dev",
-                     "libxrandr-dev", "libxi-dev", "libgl1-mesa-dev", "libasound2-dev",
-                     "libpulse-dev", "libudev-dev"]
+    antix = is_antix_system()
+    packages = linux_build_packages(targets, antix=antix)
+    if antix and "linux" in targets:
+        print("antiX detected: omitting conflicting libudev-dev/libeudev-dev installation.")
+        print("Controller hotplug uses existing libudev if available; otherwise SCons disables this optional feature.")
     privilege = [] if os.geteuid() == 0 else ["sudo"]
     if privilege and not shutil.which("sudo"):
         raise RuntimeError("System package installation needs sudo; install manually or run as root.")
