@@ -190,7 +190,11 @@ jobs:
                       raise SystemExit(f"Missing or invalid {job}/{name}: release bundle cancelled")
                   dst = staging / name
                   shutil.copyfile(src, dst)
-                  hashes.append(f"{sha256(dst.read_bytes()).hexdigest()}  {name}")
+                  digest = sha256()
+                  with dst.open("rb") as stream:
+                      for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                          digest.update(chunk)
+                  hashes.append(f"{digest.hexdigest()}  {name}")
           (staging / "SHA256SUMS.txt").write_text("\n".join(hashes) + "\n")
           (staging / "README.txt").write_text(
               "NoeEngine 0.1.0-dev. Unsigned test builds.\n"
