@@ -223,6 +223,8 @@ NoeAccountWorkspace *NoeAccountWorkspace::install(Control *parent, HBoxContainer
     b->set_tooltip_text(TTR("Account, usage and integration settings"));
     b->set_flat(true);
     toolbar->add_child(b);
+    // The editor icon was rebranded to the NoeEngine monogram. Reuse it as avatar fallback.
+    b->set_icon(b->get_theme_icon(SNAME("Godot"), SNAME("EditorIcons")));
     w->avatar_button = b;
     PopupMenu *menu = b->get_popup();
     menu->add_item(TTR("Profile settings"), PROFILE);
