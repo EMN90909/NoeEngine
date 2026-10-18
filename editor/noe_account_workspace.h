@@ -38,6 +38,7 @@ class NoeAccountWorkspace : public AcceptDialog {
     VBoxContainer *mcp_list = nullptr;
     VBoxContainer *api_list = nullptr;
     NoeUsageCharts *charts = nullptr;
+    NoeUsageCharts *ai_charts = nullptr;
     Label *security_label = nullptr;
     Label *login_message = nullptr;
     Label *api_error = nullptr;
