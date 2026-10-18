@@ -30,7 +30,7 @@ REPLACEMENTS = {
     ],
     "editor/editor_settings.cpp": [
         ('"interface/theme/preset", "Default",',
-         '"interface/theme/preset", "NoeEngine Dark",'),
+         '"interface/theme/preset", "NoeEngine Soft",'),
         ('"interface/theme/base_color", Color(0.2, 0.23, 0.31)',
          '"interface/theme/base_color", Color(0.075, 0.08, 0.09)'),
         ('"interface/theme/accent_color", Color(0.41, 0.61, 0.91)',
