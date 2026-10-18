@@ -85,7 +85,7 @@ NoeUpdateManager::NoeUpdateManager() {
     install_dialog->connect("confirmed", callable_mp(this, &NoeUpdateManager::_install_and_restart));
     add_child(install_dialog);
     auto_timer = memnew(Timer);
-    auto_timer->set_wait_time(300.0);
+    auto_timer->set_wait_time(5.0 * 60.0 * 60.0); // Check every five hours of editor uptime.
     auto_timer->connect("timeout", callable_mp(this, &NoeUpdateManager::_startup_check));
     add_child(auto_timer);
     startup_timer = memnew(Timer);
