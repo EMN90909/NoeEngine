@@ -48,6 +48,7 @@ void NoeUpdateManager::_read_website() {
         if (cfg->load(EditorPaths::get_singleton()->get_config_dir().path_join("noeengine_account.cfg")) == OK)
             website_url = String(cfg->get_value("account", "website_url", ""));
     }
+    if (website_url.is_empty()) website_url = "https://noeengine-web.onrender.com";
     if (!website_url.begins_with("https://") || website_url.contains("@") ||
             website_url.contains("?") || website_url.contains("#") ||
             website_url.contains("\n") || website_url.contains(" ")) {
