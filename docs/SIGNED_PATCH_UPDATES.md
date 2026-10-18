@@ -70,3 +70,26 @@ The native client has no guessed website URL. Published releases cannot be insta
 - Patch publication should be performed only by the publisher role; Supabase RLS protects insert/update, and public users can only read published releases.
 - File-level rollback is best-effort on ordinary errors. Abrupt power loss during a multi-file update still needs a journaling or directory-swap design before production rollout.
 - A web release announcement is **not** an OS push message to offline users. Browser delivery requires an open site; native checks happen periodically.
+
+
+## Additional release-verification gates (2026-10-18)
+
+The signer rejects invalid semantic versions, invalid base or target hashes, and inconsistent add/delete metadata before producing a usable package. A failed signing operation removes its incomplete output. The updater preserves executable permissions for replaced files and gives newly added files non-executable permissions by default.
+
+`tools/noe-updater/end_to_end_test.go` exercises the actual offline signer executable from the updater tests, including:
+- Sign a fixture, install it in a temporary directory, and validate the receipt
+- Reject a mismatched version and the wrong Ed25519 public key
+- Reject changed payload bytes after signing
+- Preserve the prior executable file mode; prevent new files from becoming executable
+
+`tools/noe-patch-sign/main_test.go` covers invalid versions, paths, checksum conflicts and incomplete-archive cleanup. These tests run as part of `./build.sh patch-tools`.
+
+**Current verification status:** These source tests and a GitHub Actions workflow are committed, but the current GitHub Actions runs report **failure without accessible job logs**. A new successful Go test run has not been independently observed here, and full native C++ compilation is not confirmed. Run the commands below on a complete checkout and do not publish a patch until they succeed:
+
+```sh
+./build.sh patch-tools
+./build.sh check
+./build.sh linux 2 --tests
+```
+
+The first two require Go and Python; the final command requires the native toolchain and Godot/NoeEngine build dependencies. Production updates additionally require a reviewed signing-key custody process, disk-failure rollback strategy and a verified website release catalog.
