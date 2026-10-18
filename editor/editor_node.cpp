@@ -30,6 +30,7 @@
 
 #include "editor_node.h"
 #include "editor/noe_account_workspace.h"
+#include "editor/noe_update_manager.h"
 
 #include "core/config/project_settings.h"
 #include "core/input/input.h"
@@ -7722,6 +7723,7 @@ EditorNode::EditorNode() {
 
 	right_menu_hb->add_child(renderer);
 	NoeAccountWorkspace::install(gui_base, right_menu_hb);
+	NoeUpdateManager::install(gui_base, right_menu_hb);
 
 	if (can_expand) {
 		// Add spacer to avoid other controls under the window minimize/maximize/close buttons (right side).
