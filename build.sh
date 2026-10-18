@@ -55,6 +55,8 @@ if [[ "$with_tests" == 1 && "$package_only" == 1 ]]; then
   echo "ERROR: --tests requires a fresh compile." >&2
   exit 2
 fi
+echo "[NoeEngine] Applying app branding and dark editor palette"
+python3 misc/apply_noeengine_branding.py
 if [[ "$target" == check || "$package_only" == 0 ]]; then
   echo "[NoeEngine] Running offline preflight (Products/preflight.log)"
   bash misc/ci_check.sh 2>&1 | tee Products/preflight.log
