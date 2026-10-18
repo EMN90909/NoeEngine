@@ -61,6 +61,8 @@ SVG_ASSETS = {
         '<path d="M35 93V35l58 58V35" fill="none" stroke="#f1f3f5" '
         'stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/></svg>\n'
     ),
+    "editor/icons/GodotMonochrome.svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\"><path d=\"M4 12V4l8 8V4\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>\n",
+    "editor/icons/GodotFile.svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"64\" viewBox=\"0 0 64 64\"><path d=\"M13 3h27l12 12v46H13z\" fill=\"#272a2f\" stroke=\"#9da4ae\" stroke-width=\"2\"/><path d=\"M40 3v12h12\" fill=\"none\" stroke=\"#a6adb6\" stroke-width=\"2\"/><path d=\"M23 49V24l20 25V24\" fill=\"none\" stroke=\"#fff\" stroke-width=\"4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>\n",
 }
 
 
