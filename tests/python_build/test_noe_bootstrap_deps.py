@@ -19,15 +19,21 @@ class BuildDependencyBootstrapTests(unittest.TestCase):
         )
         with tempfile.TemporaryDirectory() as tmp:
             file = Path(tmp) / "os-release"
+            marker = Path(tmp) / "antix-version"
             for value in examples:
                 file.write_text(value, encoding="utf-8")
-                self.assertTrue(bootstrap.is_antix_system(file))
+                self.assertTrue(bootstrap.is_antix_system(file, marker))
             file.write_text('ID=debian\nNAME="Debian GNU/Linux"\n', encoding="utf-8")
-            self.assertFalse(bootstrap.is_antix_system(file))
+            self.assertFalse(bootstrap.is_antix_system(file, marker))
+            marker.write_text("antiX-26.1_x64-full (Debian trixie)\n", encoding="utf-8")
+            self.assertTrue(bootstrap.is_antix_system(file, marker))
+            marker.write_text("not an antiX marker\n", encoding="utf-8")
+            self.assertFalse(bootstrap.is_antix_system(file, marker))
+            marker.unlink()
             file.write_text('ID=devuan\nPRETTY_NAME="Devuan GNU/Linux"\n', encoding="utf-8")
-            self.assertFalse(bootstrap.is_antix_system(file))
+            self.assertFalse(bootstrap.is_antix_system(file, marker))
             file.unlink()
-            self.assertFalse(bootstrap.is_antix_system(file))
+            self.assertFalse(bootstrap.is_antix_system(file, marker))
 
     def test_antix_linux_bootstrap_skips_conflicting_udev(self):
         packages = bootstrap.linux_build_packages(["linux"], antix=True)
