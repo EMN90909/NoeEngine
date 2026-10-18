@@ -89,12 +89,19 @@ def install_android_tools(*, download: bool, dry_run: bool):
         subprocess.run(cmd, check=True)
     return sdk
 
-def is_antix_system(os_release: Path = Path("/etc/os-release")) -> bool:
-    """antiX replaces systemd-udev with eudev; the libudev-dev metapackage can conflict.
+def is_antix_system(os_release: Path = Path("/etc/os-release"),
+                    antix_version: Path = Path("/etc/antix-version")) -> bool:
+    """Identify antiX without misidentifying other non-systemd Debian derivatives.
 
-    Rely on the distro identity, not the presence of a particular init binary:
-    Debian or Devuan can also use non-systemd init systems.
+    antiX often leaves /etc/os-release identifying the underlying Debian
+    release. Its /etc/antix-version marker is the authoritative fallback.
     """
+    try:
+        version = antix_version.read_text(encoding="utf-8").strip().lower()
+        if version.startswith("antix"):
+            return True
+    except OSError:
+        pass
     try:
         lines = os_release.read_text(encoding="utf-8").splitlines()
     except OSError:
