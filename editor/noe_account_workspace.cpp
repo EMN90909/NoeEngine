@@ -182,7 +182,11 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
     layout->add_child(nav);
     _add_label(nav, TTR("ACCOUNT"));
     const String items[] = { TTR("Profile"), TTR("Usage & limits"), TTR("API & MCP"), TTR("Extensions"), TTR("Security") };
-    for (int i = 0; i < 5; ++i) _add_button(nav, items[i], callable_mp(this, &NoeAccountWorkspace::_show_page).bind(i));
+    for (int i = 0; i < 5; ++i) {
+        navigation_buttons[i] = _add_button(nav, items[i], callable_mp(this, &NoeAccountWorkspace::_show_page).bind(i));
+        navigation_buttons[i]->set_toggle_mode(true);
+        navigation_buttons[i]->set_text_alignment(HORIZONTAL_ALIGNMENT_LEFT);
+    }
     layout->add_child(memnew(VSeparator));
     ScrollContainer *scroll = memnew(ScrollContainer);
     scroll->set_h_size_flags(Control::SIZE_EXPAND_FILL);
@@ -197,6 +201,7 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
         pages[i]->hide();
     }
     pages[PROFILE]->show();
+    navigation_buttons[PROFILE]->set_pressed_no_signal(true);
     // Security page controls are constructed before initial URL configuration is shown.
     if (website_url_field) website_url_field->set_text(auth_base);
     welcome = memnew(ConfirmationDialog);
@@ -306,8 +311,12 @@ void NoeAccountWorkspace::_notification(int what) {
 NoeAccountWorkspace::~NoeAccountWorkspace() { _save_usage(); access_token.clear(); }
 void NoeAccountWorkspace::_show_page(int idx) {
     if (idx < 0 || idx >= 5) return;
-    for (int i = 0; i < 5; ++i) pages[i]->set_visible(i == idx);
-    if (is_inside_tree()) popup_centered_clamped(Size2i(810, 515) * EDSCALE, 0.90f);
+    for (int i = 0; i < 5; ++i) {
+        pages[i]->set_visible(i == idx);
+        navigation_buttons[i]->set_pressed_no_signal(i == idx);
+    }
+    // Switching tabs should not move or resize a settings dialog that is already open.
+    if (is_inside_tree() && !is_visible()) popup_centered_clamped(Size2i(810, 515) * EDSCALE, 0.90f);
 }
 void NoeAccountWorkspace::_account_action(int id) {
     if (id == 20) { _logout(); return; }
