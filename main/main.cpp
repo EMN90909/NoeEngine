@@ -332,7 +332,7 @@ void finalize_theme_db() {
 
 void Main::print_help(const char *p_binary) {
 	print_line(String(VERSION_NAME) + " v" + get_full_version_string() + " - " + String(VERSION_WEBSITE));
-	OS::get_singleton()->print("Free and open source software under the terms of the MIT license.\n");
+	OS::get_singleton()->print("NoeEngine is based on Godot Engine (MIT); separately licensed components may apply.\n");
 	OS::get_singleton()->print("(c) 2014-present Godot Engine contributors.\n");
 	OS::get_singleton()->print("(c) 2007-2014 Juan Linietsky, Ariel Manzur.\n");
 	OS::get_singleton()->print("\n");
