@@ -92,8 +92,8 @@ def verify_toolchain(target, package_only=False):
             raise RuntimeError("Android editor builds require Linux or macOS SDK tooling.")
         sdk = os.environ.get("ANDROID_HOME") or os.environ.get("ANDROID_SDK_ROOT") or str(Path.home() / ".local/share/noeengine/android-sdk")
         root = Path(sdk).expanduser()
-        if not (root / "ndk/28.1.13356709").is_dir():
-            raise RuntimeError("Android NDK r28b is missing; run ./build.sh android --install-deps or install SDK components.")
+        if not (root / "ndk/23.2.8568313").is_dir():
+            raise RuntimeError("Android NDK r23c is missing; run ./build.sh android --install-deps or install SDK components.")
         for tool in ("java", "scons"):
             if not package_only:
                 check_tool(tool)
@@ -121,10 +121,16 @@ def compile_editor(target, jobs, with_tests=False):
     host = host_platform()
     if target == "android":
         sdk = os.environ.get("ANDROID_HOME") or os.environ.get("ANDROID_SDK_ROOT") or str(Path.home() / ".local/share/noeengine/android-sdk")
-        os.environ["ANDROID_HOME"] = str(Path(sdk).expanduser())
+        sdk_path = str(Path(sdk).expanduser())
+        os.environ["ANDROID_HOME"] = sdk_path
+        os.environ["ANDROID_SDK_ROOT"] = sdk_path
         command(["scons", "platform=android", "target=editor", "arch=arm64", "production=yes",
                  "module_mono_enabled=no", "module_noqeri_enabled=yes",
                  "generate_android_binaries=yes", "-j" + str(jobs)])
+        # SCons produces the native library; Gradle must package the actual APK.
+        # Merely finding an old APK in bin/ is not a substitute for this step.
+        command(["./gradlew", "generateGodotEditor", "--no-daemon"],
+                cwd=ROOT / "platform/android/java")
         return
     if target == "macos" and host != "macos":
         raise RuntimeError("macOS installer requires a macOS build runner and SDK.")
