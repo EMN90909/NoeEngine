@@ -24,6 +24,8 @@ class NoeUpdateManager : public Node {
     ConfirmationDialog *release_dialog = nullptr;
     AcceptDialog *completion_dialog = nullptr;
     Timer *startup_timer = nullptr;
+    Timer *auto_timer = nullptr;
+    ConfirmationDialog *install_dialog = nullptr;
     String website_url;
     String download_url;
     String patch_sha256;
