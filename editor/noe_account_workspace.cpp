@@ -106,7 +106,7 @@ void NoeAccountWorkspace::_make_page(VBoxContainer *root, Page page) {
         mcp->set_name(TTR("MCP")); tabs->add_child(mcp);
         _add_label(mcp, TTR("My MCPs"));
         _add_button(mcp, TTR("Add custom MCP"), callable_mp(this, &NoeAccountWorkspace::_show_mcp_form));
-        _add_button(mcp, TTR("Godot MCP Marketplace"), callable_mp(this, &NoeAccountWorkspace::_open_godot_mcp));
+        _add_button(mcp, TTR("Browse MCP Marketplace"), callable_mp(this, &NoeAccountWorkspace::_show_mcp_marketplace));
         _add_button(mcp, TTR("Official MCP Registry"), callable_mp(this, &NoeAccountWorkspace::_open_registry));
         mcp_list = memnew(VBoxContainer); mcp->add_child(mcp_list);
         _add_label(mcp, TTR("Enable toggles only save configuration. No MCP process is executed or connected yet."));
@@ -201,6 +201,26 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
     mcp_error = _add_label(mf, "");
     mcp_dialog->connect("confirmed", callable_mp(this, &NoeAccountWorkspace::_save_mcp));
     add_child(mcp_dialog);
+    marketplace_dialog = memnew(AcceptDialog);
+    marketplace_dialog->set_title(TTR("Godot MCP Marketplace"));
+    VBoxContainer *marketplace_root = memnew(VBoxContainer);
+    marketplace_root->set_custom_minimum_size(Size2(560, 370) * EDSCALE);
+    marketplace_root->add_theme_constant_override("separation", 10 * EDSCALE);
+    marketplace_dialog->add_child(marketplace_root);
+    _add_label(marketplace_root, TTR("Discover Godot-related MCP servers from the official MCP Registry."));
+    ScrollContainer *marketplace_scroll = memnew(ScrollContainer);
+    marketplace_scroll->set_custom_minimum_size(Size2(535, 250) * EDSCALE);
+    marketplace_root->add_child(marketplace_scroll);
+    marketplace_results = memnew(VBoxContainer);
+    marketplace_results->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+    marketplace_scroll->add_child(marketplace_results);
+    _add_button(marketplace_root, TTR("Open Godot MCP Toolkit page"), callable_mp(this, &NoeAccountWorkspace::_open_godot_mcp));
+    add_child(marketplace_dialog);
+    registry_request = memnew(HTTPRequest);
+    registry_request->set_timeout(15.0);
+    registry_request->set_max_redirects(0);
+    registry_request->connect("request_completed", callable_mp(this, &NoeAccountWorkspace::_on_registry_response));
+    add_child(registry_request);
     auth_request = memnew(HTTPRequest);
     auth_request->set_timeout(15.0);
     auth_request->connect("request_completed", callable_mp(this, &NoeAccountWorkspace::_on_auth_response));
@@ -444,6 +464,65 @@ void NoeAccountWorkspace::_render_integrations() {
         mcp_list->add_child(cb);
     }
 }
+void NoeAccountWorkspace::_show_mcp_marketplace() {
+    for (int i = marketplace_results->get_child_count() - 1; i >= 0; --i)
+        marketplace_results->get_child(i)->queue_free();
+    _add_label(marketplace_results, TTR("Searching the official registry for Godot MCP servers..."));
+    marketplace_dialog->popup_centered(Size2i(650, 480) * EDSCALE);
+    Error status = registry_request->request(
+            "https://registry.modelcontextprotocol.io/v0.1/servers?search=godot&version=latest&limit=20");
+    if (status != OK)
+        _add_label(marketplace_results, TTR("Registry request could not start. Open the registry in a browser instead."));
+}
+void NoeAccountWorkspace::_on_registry_response(int result, int code, const PackedStringArray &headers, const PackedByteArray &body) {
+    for (int i = marketplace_results->get_child_count() - 1; i >= 0; --i)
+        marketplace_results->get_child(i)->queue_free();
+    if (result != HTTPRequest::RESULT_SUCCESS || code != 200) {
+        _add_label(marketplace_results, TTR("The registry is unavailable. Use the external marketplace link."));
+        _add_button(marketplace_results, TTR("Open MCP Registry"), callable_mp(this, &NoeAccountWorkspace::_open_registry));
+        return;
+    }
+    Variant json = JSON::parse_string(body.get_string_from_utf8());
+    if (json.get_type() != Variant::DICTIONARY) {
+        _add_label(marketplace_results, TTR("Unexpected registry response.")); return;
+    }
+    Dictionary result_data = json;
+    Array servers = result_data.get("servers", Array());
+    int shown = 0;
+    for (int i = 0; i < servers.size() && shown < 20; ++i) {
+        if (servers[i].get_type() != Variant::DICTIONARY) continue;
+        Dictionary item = servers[i];
+        Variant descriptor = item.get("server", Dictionary());
+        if (descriptor.get_type() != Variant::DICTIONARY) continue;
+        Dictionary server = descriptor;
+        const String name = server.get("title", server.get("name", ""));
+        Variant remotes = server.get("remotes", Array());
+        if (remotes.get_type() != Variant::ARRAY) continue;
+        Array endpoints = remotes;
+        for (int j = 0; j < endpoints.size(); ++j) {
+            if (endpoints[j].get_type() != Variant::DICTIONARY) continue;
+            Dictionary remote = endpoints[j];
+            const String url = remote.get("url", "");
+            if (!_is_https_url(url)) continue;
+            _add_button(marketplace_results, vformat(TTR("Configure %s"), name.left(45)),
+                    callable_mp(this, &NoeAccountWorkspace::_marketplace_select).bind(name, url));
+            ++shown;
+            break;
+        }
+    }
+    if (shown == 0) {
+        _add_label(marketplace_results, TTR("No directly configurable HTTPS Godot MCP servers found."));
+        _add_label(marketplace_results, TTR("Some registry results are local packages, which require manual installation."));
+    }
+    _add_label(marketplace_results, TTR("Always inspect a server's documentation and permissions before enabling it."));
+}
+void NoeAccountWorkspace::_marketplace_select(const String &name, const String &url) {
+    marketplace_dialog->hide();
+    _show_mcp_form();
+    mcp_name->set_text(name);
+    mcp_url->set_text(url);
+}
+
 void NoeAccountWorkspace::_open_godot_mcp() {
     OS::get_singleton()->shell_open("https://store.godotengine.org/asset/npgamedev/godot-mcp-toolkit/");
 }
