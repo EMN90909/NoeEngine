@@ -43,9 +43,20 @@ class BuildDependencyBootstrapTests(unittest.TestCase):
         self.assertNotIn("libeudev-dev", packages)
         self.assertEqual(len(packages), len(set(packages)))
 
-    def test_normal_debian_keeps_optional_udev_package(self):
+    def test_normal_debian_does_not_force_optional_udev_package(self):
         packages = bootstrap.linux_build_packages(["linux"], antix=False)
-        self.assertIn("libudev-dev", packages)
+        self.assertNotIn("libudev-dev", packages)
+        self.assertIn("libx11-dev", packages)
+
+    def test_linux_package_selection_across_distros(self):
+        # On any apt-based distro, optional hotplug must not block the build.
+        for antix in (True, False):
+            for targets in (["linux"], ["linux", "windows"], ["linux", "android"]):
+                with self.subTest(antix=antix, targets=targets):
+                    packages = bootstrap.linux_build_packages(targets, antix=antix)
+                    self.assertNotIn("libudev-dev", packages)
+                    self.assertNotIn("libeudev-dev", packages)
+                    self.assertEqual(len(packages), len(set(packages)))
 
     def test_other_platform_build_requirements_unchanged(self):
         packages = bootstrap.linux_build_packages(
