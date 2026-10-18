@@ -23,7 +23,7 @@ var releaseVersion=regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+(?:-[a-z0-9.]+)?$`
 var hexDigest=regexp.MustCompile(`^[a-f0-9]{64}$`)
 func sum(x []byte) string {d:=sha256.Sum256(x);return hex.EncodeToString(d[:])}
 func safe(p string) bool {if p==""||len(p)>512||strings.HasPrefix(p,"/")||strings.Contains(p,"\\")||filepath.Clean(p)!=p{return false};for _,v:=range strings.Split(p,"/"){if v=="."||v==".."||strings.HasPrefix(v,"."){return false}};return true}
-func run(manifest,files,key,out string)error{
+func run(manifest,files,key,out string)(returnErr error){
  raw,err:=os.ReadFile(manifest);if err!=nil{return err}
  var m Manifest;if err=json.Unmarshal(raw,&m);err!=nil{return err}
  if len(m.Changes)==0||len(m.Changes)>1000||len(m.Version)>64||len(m.Notes)>10000||
@@ -31,7 +31,10 @@ func run(manifest,files,key,out string)error{
  keyBytes,err:=os.ReadFile(key);if err!=nil{return err}
  secret,err:=base64.StdEncoding.DecodeString(strings.TrimSpace(string(keyBytes)));if err!=nil||len(secret)!=ed25519.PrivateKeySize{return fmt.Errorf("invalid private key")}
  file,err:=os.OpenFile(out,os.O_WRONLY|os.O_CREATE|os.O_EXCL,0600);if err!=nil{return err}
- defer file.Close();zipper:=zip.NewWriter(file)
+ defer file.Close()
+ // A failed signing operation must not leave an incomplete file that looks publishable.
+ defer func(){if returnErr!=nil{os.Remove(out)}}()
+ zipper:=zip.NewWriter(file)
  add:=func(name string,data []byte)error{w,err:=zipper.Create(name);if err!=nil{return err};_,err=w.Write(data);return err}
  if err=add("manifest.json",raw);err!=nil{return err}
  if err=add("manifest.sig",ed25519.Sign(ed25519.PrivateKey(secret),raw));err!=nil{return err}
