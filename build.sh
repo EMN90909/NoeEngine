@@ -9,7 +9,7 @@ mkdir -p Products
 
 usage() {
   cat <<'USAGE'
-Usage: ./build.sh [linux|windows|macos|all|check] [jobs] [--tests] [--package-only]
+Usage: ./build.sh [linux|windows|macos|all|check|patch-tools] [jobs] [--tests] [--package-only]
 
   ./build.sh                      Build and smoke-test Linux editor, make .deb
   ./build.sh linux 2              Debian/antiX -> Products/NoeEngine-setup.deb
@@ -17,6 +17,7 @@ Usage: ./build.sh [linux|windows|macos|all|check] [jobs] [--tests] [--package-on
   ./build.sh macos 2              macOS + Xcode -> Products/NoeEngine-setup.pkg
   ./build.sh all 2                Linux: Linux+Windows; macOS: macOS
   ./build.sh check                Local checks only; no C++ compilation
+  ./build.sh patch-tools          Test/build Go signed patch installer and offline signer
   ./build.sh linux 2 --tests      Build and run Noqeri native C++ tests
   ./build.sh linux 2 --package-only Package a previously built editor
 
@@ -26,7 +27,17 @@ USAGE
 }
 target="${1:-linux}"
 if [[ "$target" == "-h" || "$target" == "--help" ]]; then usage; exit 0; fi
-case "$target" in linux|windows|macos|all|check) ;; *) usage >&2; exit 2 ;; esac
+case "$target" in linux|windows|macos|all|check|patch-tools) ;; *) usage >&2; exit 2 ;; esac
+if [[ "$target" == patch-tools ]]; then
+  command -v go >/dev/null 2>&1 || { echo "ERROR: Go 1.23+ is required for patch-tools." >&2; exit 2; }
+  for tool in noe-updater noe-patch-sign; do
+    echo "[NoeEngine] Testing tools/$tool"
+    (cd "tools/$tool" && GOTOOLCHAIN=local GOPROXY=off go test ./...)
+    (cd "tools/$tool" && GOTOOLCHAIN=local GOPROXY=off go build -o "$ROOT/Products/$tool" .)
+  done
+  echo "[NoeEngine] Patch binaries saved to Products/ (signing key never stored here)."
+  exit 0
+fi
 if [[ "$#" -gt 0 ]]; then shift; fi
 jobs="${JOBS:-2}"
 if [[ "$#" -gt 0 && "$1" =~ ^[0-9]+$ ]]; then jobs="$1"; shift; fi
