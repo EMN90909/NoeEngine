@@ -395,7 +395,7 @@ void NoeAccountWorkspace::_on_auth_response(int result, int status, const Packed
     RequestKind phase = request_kind;
     request_kind = REQUEST_NONE;
     if (phase == REQUEST_NONE) return;
-    Variant parsed = JSON::parse_string(body.get_string_from_utf8());
+    Variant parsed = JSON::parse_string(String::utf8(reinterpret_cast<const char *>(body.ptr()), body.size()));
     Dictionary reply;
     if (parsed.get_type() == Variant::DICTIONARY) reply = parsed;
     if (result != HTTPRequest::RESULT_SUCCESS) {
@@ -594,7 +594,7 @@ void NoeAccountWorkspace::_on_registry_response(int result, int code, const Pack
         _add_button(marketplace_results, TTR("Open MCP Registry"), callable_mp(this, &NoeAccountWorkspace::_open_registry));
         return;
     }
-    Variant json = JSON::parse_string(body.get_string_from_utf8());
+    Variant json = JSON::parse_string(String::utf8(reinterpret_cast<const char *>(body.ptr()), body.size()));
     if (json.get_type() != Variant::DICTIONARY) {
         _add_label(marketplace_results, TTR("Unexpected registry response.")); return;
     }
@@ -742,7 +742,7 @@ void NoeAccountWorkspace::_on_collaboration_response(int result, int code, const
         _flush_collaboration_queue();
         return;
     }
-    Variant parsed = JSON::parse_string(body.get_string_from_utf8());
+    Variant parsed = JSON::parse_string(String::utf8(reinterpret_cast<const char *>(body.ptr()), body.size()));
     if (parsed.get_type() != Variant::DICTIONARY) return;
     Dictionary json = parsed;
     Variant raw = json.get("events", Array());
