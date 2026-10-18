@@ -31,20 +31,22 @@ protected:
     void _notification(int what) {
         if (what != NOTIFICATION_DRAW) return;
         const Size2 sz = get_size();
+        const Color accent = get_theme_color(SNAME("accent_color"), SNAME("Editor"));
+        const Color muted = accent.darkened(0.60f);
         const Vector2 center(sz.x * 0.25f, sz.y * 0.48f);
         const float radius = 60 * EDSCALE;
-        draw_arc(center, radius, 0, Math_TAU, 64, Color(0.36, 0.38, 0.42), 14 * EDSCALE, true);
+        draw_arc(center, radius, 0, Math_TAU, 64, muted, 14 * EDSCALE, true);
         if (total_ms > 0 && play_ms > 0) {
             draw_arc(center, radius, -Math_PI / 2, -Math_PI / 2 + Math_TAU * CLAMP(play_ms / total_ms, 0.0, 1.0),
-                    64, Color(0.77, 0.79, 0.83), 14 * EDSCALE, true);
+                    64, accent, 14 * EDSCALE, true);
         }
         const float h = sz.y * 0.56f, y = sz.y * 0.84f, w = 35 * EDSCALE, x = sz.x * 0.62f;
-        draw_rect(Rect2(x, y - h, w, h), Color(0.21, 0.22, 0.25));
-        draw_rect(Rect2(x + 2 * w, y - h, w, h), Color(0.21, 0.22, 0.25));
+        draw_rect(Rect2(x, y - h, w, h), muted);
+        draw_rect(Rect2(x + 2 * w, y - h, w, h), muted);
         if (total_ms > 0) {
-            draw_rect(Rect2(x, y - h, w, h), Color(0.77, 0.79, 0.83));
+            draw_rect(Rect2(x, y - h, w, h), accent);
             float ph = h * (float)CLAMP(play_ms / total_ms, 0.0, 1.0);
-            draw_rect(Rect2(x + 2 * w, y - ph, w, ph), Color(0.53, 0.58, 0.63));
+            draw_rect(Rect2(x + 2 * w, y - ph, w, ph), accent.darkened(0.25f));
         }
     }
 public:
