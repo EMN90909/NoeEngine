@@ -47,6 +47,7 @@ class NoeAccountWorkspace : public AcceptDialog {
     LineEdit *mcp_name = nullptr;
     LineEdit *mcp_url = nullptr;
     ConfirmationDialog *welcome = nullptr;
+    AcceptDialog *login_dialog = nullptr;
     ConfirmationDialog *api_dialog = nullptr;
     ConfirmationDialog *mcp_dialog = nullptr;
     HTTPRequest *auth_request = nullptr;
