@@ -1,180 +1,54 @@
-# NoeEngine multi-platform builds
+# Build NoeEngine for Linux, Windows, macOS and Android
 
-## Build targets
+`build.sh` builds **real native binaries** from this Godot-derived source tree. It never renames an incompatible binary into a different OS format. The build fails if required SDKs are missing or if the native compiler/package builder fails.
 
-| Command | Host | Real output in `Products/` |
+## Build matrix
+
+| Command | Supported host | `Products/` output |
 | --- | --- | --- |
-| `./build.sh linux 2` | Linux | `NoeEngine.AppDir/AppRun`, `NoeEngine-linux-x86_64.tar.gz`, and optional legacy `.deb` |
-| `./build.sh windows 2` | Windows, or Linux with MinGW-w64/NSIS | `NoeEngine-setup.exe` |
-| `./build.sh macos 2` | **macOS with Xcode only** | `NoeEngine-setup.pkg` |
-| `./build.sh android 2` | Linux/macOS with JDK and Android SDK/NDK | `NoeEngine-android-arm64.apk` (actual Android editor build) |
-| `./build.sh all 2` | Linux or macOS | Linux: Linux+Windows+Android. macOS: macOS+Android. Missing SDKs fail explicitly |
-| `./build.sh check` | Supported host | Offline lint/tests, **no** C++ compilation |
-| `./build.sh patch-tools` | Host with Go 1.23+ | Locally built and tested signed updater/signer executables |
+| `./build.sh linux 2` | Linux | `NoeEngine.AppDir/AppRun` and `NoeEngine-linux-x86_64.tar.gz`; optional `NoeEngine-setup.deb` |
+| `./build.sh windows 2` | Linux with MinGW-w64 and NSIS, or native Windows | `NoeEngine-setup.exe` |
+| `./build.sh macos 2` | **Mac with Xcode** | `NoeEngine-setup.pkg`, containing `NoeEngine.app` |
+| `./build.sh android 2` | Linux/macOS with SDK, NDK and JDK 17 | `NoeEngine-android-arm64.apk` (actual Android editor) |
+| `./build.sh all 2` | Linux: Linux/Windows/Android. Mac: macOS/Android | Available native/cross-compiled outputs only |
+| `./build.sh check` | Source checkout | Static/preflight checks, no native C++ compilation |
+| `./build.sh patch-tools` | Go 1.23+ | `noe-updater` and `noe-patch-sign` |
+ 
+Two compiler jobs (`2`) suit low-RAM machines. Native builds may take hours, tens of GB, and an internet connection for dependencies.
 
-Add `--install-deps` to explicitly download and install toolchains from trusted package repositories and, for Android, Google's official SDK ZIP with a **pinned SHA-256 checksum**. The script does not run downloaded shell scripts. Android `sdkmanager` may request license agreement acceptance, which is the user's decision. The optional installer does not accept those licenses automatically. It may require `sudo` and several gigabytes of bandwidth/storage.
+## Install dependencies automatically (opt-in)
 
 ```sh
 ./build.sh linux 2 --install-deps
 ./build.sh windows 2 --install-deps
 ./build.sh android 2 --install-deps
-./build.sh macos 2 --install-deps  # Only on a Mac with Xcode installed
+./build.sh macos 2 --install-deps  # Mac only, requires Xcode already installed
 ```
 
-For offline builds without `--install-deps`, the script checks what is installed and stops with a missing-prerequisite error. Do **not** mistake preflight, a packaging fixture, or a template APK for a compiled, tested application.
+`--install-deps` authorizes package downloads and potentially sudo actions. On apt-based Linux it uses the configured operating-system repositories for compilers, SCons, MinGW-w64, NSIS, JDK and native headers. For Android, it downloads Google's command-line ZIP **only** from the documented official host and verifies the published SHA-256 before extracting it into a local SDK. `sdkmanager` installs Android platform 35, build tools 35, CMake and NDK r28b, and prompts for license acceptance when required. No downloaded shell scripts are executed.
 
-**Linux:** The AppDir contains the real compiled editor, an executable launcher and the icon. Unpack the archive and run `NoeEngine.AppDir/AppRun`. It is a directly runnable application, but not guaranteed to be self-contained on every Linux distribution; system runtime libraries may still be required.
+If your OS does not support an automatic package setup, `build.sh` reports what needs manual installation. macOS Xcode/SDK must be installed through Apple tooling and cannot be fetched or legally bootstrapped on Linux by this script.
 
-**Windows:** Generates an NSIS `.exe` installer with an uninstaller. Cross-compile on Linux via MinGW-w64. Test the executable on Windows before release.
+On Linux the `all` target will **fail** if either Windows or Android cross-build dependencies are unavailable. Run individual targets to build only what your machine supports.
 
-**macOS:** Generates an unsigned `.pkg` with a real `NoeEngine.app` only on a Mac with Xcode/Apple SDK. Linux cannot legitimately download an Apple SDK via this script; macOS signing/notarization must be handled separately.
+## Install and run
 
-**Android:** Builds the **editor**, not a desktop binary renamed APK. Uses `scons platform=android target=editor arch=arm64 production=yes generate_android_binaries=yes` and the bundled Gradle wrapper, copies the generated release `.apk` and checks it is a real APK with `AndroidManifest.xml`. Requires Google's Android SDK tools, NDK r28b and JDK 17. A release signing configuration and installation/on-device UX tests are needed before publishing through an app store.
+- **Linux:** extract `NoeEngine-linux-x86_64.tar.gz` and run `NoeEngine.AppDir/AppRun` directly. The AppDir contains a real editor binary, launcher, icon and license notices. It is a portable archive, **not** a fully statically linked AppImage, so system libraries may still be required. On Debian/antiX, the optional `.deb` may also be installed normally.
+- **Windows:** run `NoeEngine-setup.exe`. NSIS provides the installation/uninstallation flow. This is not an MSIX package; test it on real Windows.
+- **macOS:** install `NoeEngine-setup.pkg`. It contains `NoeEngine.app`. Code signing/notarization is not provided. macOS setup must run on a Mac with Xcode and `pkgbuild`.
+- **Android:** install the arm64 Android editor APK after enabling allowed sideloading on the test device. The APK is built with SCons/Gradle and checked for `AndroidManifest.xml`. It is not an Android export template or renamed desktop executable. Production signing, security review, and touch UX validation are still required.
 
-**Branding:** The four root `icon*.png` and `icon*.svg` files use the supplied orange cobra. SVGs are self-contained SVG containers with an embedded optimized raster source, not hand-traced vector paths. Their legibility at all densities needs GUI review, especially macOS and Android launch icons.
+## Code, icons, and runtime tests
 
-## Release gate
+The native editor uses `module_noqeri_enabled=yes`. Source Noqeri features remain a restricted subset; see `modules/noqeri/README.md` and `modules/noqeri/compatibility.json`. Godot upstream source attribution and license notices are preserved.
 
-Run `./build.sh check` first, then a complete native build for each OS/architecture, execute the real binary, and inspect installation and recovery paths. The repository does not currently contain four verified cross-platform outputs; `build.sh` creates them only on hosts with the required SDKs.
+The files `icon.png`, `icon_outlined.png`, `icon.svg`, and `icon_outlined.svg` use the newly supplied NoeEngine cobra. Because the source was a PNG, the SVG wrappers are self-contained **raster-embedded SVGs**, not vectorized paths. Test their appearance in the editor and at high DPI before shipping.
 
-## Original build/package notes
+`./build.sh check` runs Python tests and shell checks and is **not evidence of a successful C++ compile**. A release must still:
 
-# NoeEngine setup installers
+1. Compile with the target toolchain and inspect the logs in `Products/build-*.log`.
+2. Run the Linux editor smoke tests (version, headless editor and Noqeri scene). On Windows/macOS/Android, manually start the produced app and test UI/interaction.
+3. Verify setup/install and clean uninstall, code-signing where relevant, and update rollback after failed patches.
+4. Test two-account Convex collaboration and Supabase realtime update notifications against dedicated, deployed NoeEngine backends before claiming those cloud features work.
 
-## One-command source build and installer
-
-From the repository root, after installing the platform dependencies below:
-
-```bash
-./build.sh                 # build/smoke Linux editor, create Products/NoeEngine-setup.deb
-./build.sh check           # run shell/Python tests only, no C++ compilation
-./build.sh linux 2 --tests # build Noqeri C++ unit tests, run .nqr scene, then package
-./build.sh all 2           # on Linux, requires MinGW-w64 + NSIS for Windows setup too
-```
-
-The script stops on failed local checks, missing toolchains, SCons errors,
-missing native Noqeri symbols, executable startup failures, and failing
-Noqeri scene callbacks. It **does not** claim the build succeeded without
-actually compiling. Results and logs go into `Products/`:
-
-- `NoeEngine-setup.deb` (Linux)
-- `NoeEngine-setup.exe` (Windows, Linux cross-compile requires MinGW-w64)
-- `NoeEngine-setup.pkg` (native macOS only)
-- `preflight.log`, `build-linux.log`, etc.
-
-Do not treat a `--package-only` build as a runtime-tested release.
-
-**Noqeri compatibility reference:** upstream source version **0.7.0
-development/unreleased**, edition **2026**, ABI **v2**, at commit
-`a577578ec48bff94bd66f133ad39349b926fedd9`. The compiler and
-game SDK are not certified for complete native execution. NoeEngine's
-`.nqr` scene bridge is deliberately a smaller, independently written
-feature subset and does not bundle the GPL compiler.
-
-
-The NoeEngine 0.1.0-dev distribution is built from an upstream Godot
-4.0.5 RC engine source tree. Original SCons source paths and binary
-filenames stay compatible; users receive NoeEngine-branded installers.
-
-## Debian / antiX / Ubuntu
-
-Install the build prerequisites:
-
-```sh
-sudo apt update
-sudo apt install -y python3 scons build-essential pkg-config dpkg-dev \
-  libx11-dev libxcursor-dev libxinerama-dev libxi-dev libxrandr-dev \
-  libxrender-dev libgl1-mesa-dev libudev-dev libasound2-dev \
-  libpulse-dev libfreetype6-dev libfontconfig1-dev libssl-dev \
-  libwayland-dev libxkbcommon-dev libvulkan-dev
-```
-
-From the repository root:
-
-```sh
-./build.sh linux 2
-```
-
-Creates `Products/NoeEngine-setup.deb`. To install:
-
-```sh
-sudo apt install ./Products/NoeEngine-setup.deb
-```
-
-The installed launch command is `noeengine`.
-
-## Windows setup from Debian
-
-For MinGW-w64 cross-compiling and NSIS installer packaging:
-
-```sh
-sudo apt install -y gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 binutils-mingw-w64-x86-64 nsis
-./build.sh windows 2
-```
-
-Creates `Products/NoeEngine-setup.exe`. The `./build.sh all 2`
-command produces both Linux and Windows installers on Linux, assuming
-both toolchains are installed. A native Windows build is also available
-through `python misc/build_products.py windows --jobs 2` with MSVC,
-Python, SCons, and NSIS installed.
-
-## macOS setup
-
-macOS requires a Mac with Xcode command-line tools, Python, SCons,
-the appropriate graphics SDK, and `pkgbuild`. Run `./build.sh macos 2`
-on macOS to create `Products/NoeEngine-setup.pkg`.
-
-**Debian by itself cannot build a macOS installer** without an Apple SDK
-and specially configured cross-compilation toolchain. GitHub Actions has
-a dedicated macOS runner for this target.
-
-## Local checks
-
-```sh
-bash misc/ci_check.sh
-```
-
-This performs shell and Python syntax checks and exercises actual Debian
-packaging with a fixture binary. It **does not** prove that the full C++
-engine compiles. A successful build requires running `./build.sh` and
-smoke-testing the produced editor on its target operating system.
-
-## Distribution notes
-
-Installers are currently **unsigned**. Production releases require
-Windows code signing and macOS signing/notarization, as well as tested
-runtime library dependencies. Original Godot upstream attribution is
-retained in `LICENSE.txt`, `COPYRIGHT.txt`, and packaged notices.
-
-## Native Noqeri game scripting
-
-The Noqeri `.nqr` scripting module is compiled into the engine by SCons
-(`module_noqeri_enabled=yes`, enabled automatically alongside the
-default GDScript module). No separate code editor, addon, or compiler binary
-installation is required for **supported scene-script features**.
-
-Scripts are edited in the existing NoeEngine Script editor and attached
-directly to scene nodes. Unsupported Noqeri language constructs currently
-produce an error instead of executing. See [native language documentation]
-(modules/noqeri/README.md).
-
-After a successful Linux build, test the native scene bridge using:
-
-```sh
-bin/godot.linuxbsd.editor.x86_64 --headless --path tests/noqeri_scene
-```
-
-The output must include `NOQERI_NATIVE_READY` with a zero exit status.
-No installer build or runtime test has been verified successful yet.
-
-## Capture the actual running editor on Debian/antiX
-
-Once you have successfully compiled and launched **NoeEngine** in a graphical X11 session, run:
-
-```sh
-bash misc/capture_editor_snapshot.sh
-```
-
-When prompted, focus the NoeEngine Script editor during the five-second countdown. This saves `Products/NoeEngine-editor-snapshot.png`. The script refuses to overwrite an existing screenshot and requires `xfce4-screenshooter` (or ImageMagick + xdotool).
-
-Reference images from upstream Godot documentation are **not** evidence that the current NoeEngine build has rendered successfully.
+No generated `Products` binaries are committed to this repository. Running the build locally creates those artifacts; GitHub commits are source only.
