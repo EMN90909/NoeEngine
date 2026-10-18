@@ -50,3 +50,20 @@ func TestSymlinkEscapesRejected(t *testing.T){
  pkg,pub:=fixture(t,change,[]byte("hello"))
  if apply(root,pkg,"",pub)==nil{t.Fatal("symlink bypass")}
 }
+
+func TestUpdatePreservesExecutableModeAndSafeDefaultForNewFiles(t *testing.T){
+ root:=t.TempDir()
+ binary:=filepath.Join(root,"noeengine")
+ if err:=os.WriteFile(binary,[]byte("old binary"),0750);err!=nil{t.Fatal(err)}
+ if err:=os.Chmod(binary,0750);err!=nil{t.Fatal(err)}
+ change:=Change{Path:"noeengine",Op:"replace",Before:digest([]byte("old binary")),After:digest([]byte("new binary"))}
+ pkg,pub:=fixture(t,change,[]byte("new binary"))
+ if err:=apply(root,pkg,"",pub);err!=nil{t.Fatal(err)}
+ info,err:=os.Stat(binary);if err!=nil{t.Fatal(err)}
+ if info.Mode().Perm()!=0750{t.Fatalf("lost installed executable permissions: %v",info.Mode().Perm())}
+ added:=Change{Path:"notes.txt",Op:"add",After:digest([]byte("hello"))}
+ pkg2,pub2:=fixture(t,added,[]byte("hello"))
+ if err:=apply(root,pkg2,"",pub2);err!=nil{t.Fatal(err)}
+ info,err=os.Stat(filepath.Join(root,"notes.txt"));if err!=nil{t.Fatal(err)}
+ if info.Mode().Perm()&0111!=0{t.Fatalf("untrusted new file was executable: %v",info.Mode().Perm())}
+}
