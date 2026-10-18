@@ -100,7 +100,7 @@ class NoeAccountWorkspace : public AcceptDialog {
     void _open_registry();
     void _refresh_profile();
     bool _is_https_url(const String &p_url) const;
-    void _make_page(VBoxContainer *p_root, Page p_page);
+    void _make_page(Page p_page);
     Label *_add_label(VBoxContainer *p_root, const String &p_text);
     Button *_add_button(VBoxContainer *p_root, const String &p_text, const Callable &p_action);
 
