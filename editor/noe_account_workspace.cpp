@@ -513,7 +513,7 @@ void NoeAccountWorkspace::_logout() {
     request_kind = REQUEST_NONE;
     if (collab_request) collab_request->cancel_request();
     queued_collaboration_paths.clear(); queued_collaboration_ids.clear();
-    access_token.clear(); device_code.clear(); email.clear(); display_name.clear();
+    access_token.clear(); bridge_event_token.clear(); device_code.clear(); email.clear(); display_name.clear();
     config->erase_section_key("account", "last_name");
     config->erase_section_key("account", "last_email");
     _save_usage();
@@ -841,6 +841,7 @@ void NoeAccountWorkspace::_on_bridge_response(int result, int code, const Packed
             return;
         }
         bridge_endpoint_id = endpoint;
+        bridge_event_token = String(reply.get("event_token", ""));
         bridge_public_url = reply.get("endpoint_url", "");
         config->set_value("bridge", "endpoint_id", endpoint); // Public handle only.
         config->set_value("bridge", "endpoint_url", bridge_public_url);
@@ -880,7 +881,7 @@ void NoeAccountWorkspace::_on_resource_saved(const Ref<Resource> &resource) {
     if (resource.is_valid()) _send_collaboration_event(resource->get_path());
 }
 void NoeAccountWorkspace::_send_collaboration_event(const String &file) {
-    if (!online_session || access_token.is_empty() || collaboration_url.is_empty() || !collab_project) return;
+    if (!online_session || access_token.is_empty() || bridge_event_token.is_empty() || collaboration_url.is_empty() || !collab_project) return;
     const String project = String(config->get_value("collaboration", "project_id", ""));
     if (project.is_empty() || !file.begins_with("res://")) return;
     const String relative_path = file.trim_prefix("res://");
@@ -911,12 +912,14 @@ void NoeAccountWorkspace::_flush_collaboration_queue() {
     PackedStringArray headers;
     headers.push_back("Content-Type: application/json");
     headers.push_back("Authorization: Bearer " + access_token);
+    headers.push_back("X-Noe-Session: " + bridge_event_token);
+    headers.push_back("X-Noe-Endpoint: " + bridge_endpoint_id);
     if (collab_request->request(collaboration_url + "/v1/collaboration/events", headers,
             HTTPClient::METHOD_POST, JSON::stringify(payload)) != OK)
         collab_status->set_text(TTR("Team activity queued. Reconnecting on next check."));
 }
 void NoeAccountWorkspace::_poll_collaboration_activity() {
-    if (!online_session || access_token.is_empty() || collaboration_url.is_empty() || !collab_project ||
+    if (!online_session || access_token.is_empty() || bridge_event_token.is_empty() || collaboration_url.is_empty() || !collab_project ||
             String(config->get_value("collaboration", "project_id", "")).is_empty()) return;
     // Saves take priority over the feed poll; retry using the same request ID.
     if (!queued_collaboration_paths.is_empty()) {
@@ -926,6 +929,8 @@ void NoeAccountWorkspace::_poll_collaboration_activity() {
     if (collab_request->get_http_client_status() != HTTPClient::STATUS_DISCONNECTED) return;
     PackedStringArray headers;
     headers.push_back("Authorization: Bearer " + access_token);
+    headers.push_back("X-Noe-Session: " + bridge_event_token);
+    headers.push_back("X-Noe-Endpoint: " + bridge_endpoint_id);
     collaboration_polling = true;
     const String project = String(config->get_value("collaboration", "project_id", "")).uri_encode();
     if (collab_request->request(collaboration_url + "/v1/collaboration/activity?projectId=" + project, headers) != OK)
