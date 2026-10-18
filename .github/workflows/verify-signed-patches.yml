@@ -1,0 +1,36 @@
+name: Verify signed update tools
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/noe-updater/**'
+      - 'tools/noe-patch-sign/**'
+      - '.github/workflows/verify-signed-patches.yml'
+  pull_request:
+    paths:
+      - 'tools/noe-updater/**'
+      - 'tools/noe-patch-sign/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  signed-patches:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - name: Verify signer builds and tests
+        working-directory: tools/noe-patch-sign
+        run: |
+          GOTOOLCHAIN=local GOPROXY=off go test -race ./...
+          GOTOOLCHAIN=local GOPROXY=off go vet ./...
+          GOTOOLCHAIN=local GOPROXY=off go build ./...
+      - name: Verify updater and signed integration flow
+        working-directory: tools/noe-updater
+        run: |
+          GOTOOLCHAIN=local GOPROXY=off go test -race -count=1 ./...
+          GOTOOLCHAIN=local GOPROXY=off go vet ./...
+          GOTOOLCHAIN=local GOPROXY=off go build ./...
