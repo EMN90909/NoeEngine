@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Copyright (c) 2026 Noethric.
 # SPDX-License-Identifier: LicenseRef-Noethric-Proprietary
-# Build the editor and native setup installer in Products/.
+# Build native NoeEngine app releases, do not fabricate cross-platform binaries.
 set -Eeuo pipefail
 ROOT="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
@@ -9,113 +9,119 @@ mkdir -p Products
 
 usage() {
   cat <<'USAGE'
-Usage: ./build.sh [linux|windows|macos|all|check|patch-tools] [jobs] [--tests] [--package-only]
+Usage: ./build.sh [linux|windows|macos|android|all|check|patch-tools] [jobs]
+                  [--install-deps] [--tests] [--package-only]
 
-  ./build.sh                      Build and smoke-test Linux editor, make .deb
-  ./build.sh linux 2              Debian/antiX -> Products/NoeEngine-setup.deb
-  ./build.sh windows 2            MinGW-w64 + NSIS -> Products/NoeEngine-setup.exe
-  ./build.sh macos 2              macOS + Xcode -> Products/NoeEngine-setup.pkg
-  ./build.sh all 2                Linux: Linux+Windows; macOS: macOS
-  ./build.sh check                Local checks only; no C++ compilation
-  ./build.sh patch-tools          Test/build Go signed patch installer and offline signer
-  ./build.sh linux 2 --tests      Build and run Noqeri native C++ tests
-  ./build.sh linux 2 --package-only Package a previously built editor
+  ./build.sh linux 2                 Linux runnable AppDir and .tar.gz (+ .deb if available)
+  ./build.sh windows 2               Windows .exe setup using MinGW-w64 and NSIS
+  ./build.sh macos 2                 macOS .pkg setup using Xcode on a Mac
+  ./build.sh android 2               Actual Android arm64 editor .apk, via NDK + Gradle
+  ./build.sh all 2                   Available targets on this host; no fake builds
+  ./build.sh android 2 --install-deps
+                                    Install supported OS packages + verified Android SDK
+  ./build.sh check                   Offline preflight, Python tests, no C++ compilation
+  ./build.sh patch-tools             Build and test local signed patch tools
+  ./build.sh linux 2 --tests         Compile editor + native Noqeri tests
 
-  Two compiler jobs is the low-RAM default. Logs and installers: Products/.
-  Required toolchains: BUILD_PRODUCTS.md. Linux cannot natively build macOS.
+  --install-deps explicitly authorizes system package downloads and installs.
+  Android SDK license acceptance is NOT automatic; sdkmanager prompts as needed.
+  macOS requires Xcode and Apple SDK: cannot be downloaded on Linux by this script.
+  Linux AppDir runs in place; the .tar.gz is a portable archive, not an AppImage.
+  Android generates a mobile editor APK (not a desktop GUI running on Android).
+  Results and build logs are placed in Products/.
 USAGE
 }
+
 target="${1:-linux}"
-if [[ "$target" == "-h" || "$target" == "--help" ]]; then usage; exit 0; fi
-case "$target" in linux|windows|macos|all|check|patch-tools) ;; *) usage >&2; exit 2 ;; esac
-if [[ "$target" == patch-tools ]]; then
-  command -v go >/dev/null 2>&1 || { echo "ERROR: Go 1.23+ is required for patch-tools." >&2; exit 2; }
-  for tool in noe-updater noe-patch-sign; do
-    echo "[NoeEngine] Testing tools/$tool"
-    (cd "tools/$tool" && GOTOOLCHAIN=local GOPROXY=off go test ./...)
-    (cd "tools/$tool" && GOTOOLCHAIN=local GOPROXY=off go build -o "$ROOT/Products/$tool" .)
-  done
-  echo "[NoeEngine] Patch binaries saved to Products/ (signing key never stored here)."
-  exit 0
-fi
-if [[ "$#" -gt 0 ]]; then shift; fi
+if [[ "$target" == -h || "$target" == --help ]]; then usage; exit 0; fi
+case "$target" in linux|windows|macos|android|all|check|patch-tools) ;; *) usage >&2; exit 2 ;; esac
+if [[ $# -gt 0 ]]; then shift; fi
 jobs="${JOBS:-2}"
-if [[ "$#" -gt 0 && "$1" =~ ^[0-9]+$ ]]; then jobs="$1"; shift; fi
-[[ "$jobs" =~ ^[1-9][0-9]*$ ]] || { echo "ERROR: jobs must be positive" >&2; exit 2; }
+if [[ $# -gt 0 && "$1" =~ ^[0-9]+$ ]]; then jobs="$1"; shift; fi
+[[ "$jobs" =~ ^[1-9][0-9]*$ ]] || { echo "jobs must be positive" >&2; exit 2; }
 with_tests=0
 package_only=0
-while [[ "$#" -gt 0 ]]; do
+install_deps=0
+while [[ $# -gt 0 ]]; do
   case "$1" in
     --tests) with_tests=1 ;;
     --package-only) package_only=1 ;;
+    --install-deps) install_deps=1 ;;
     -h|--help) usage; exit 0 ;;
-    *) echo "Unknown option: $1" >&2; usage >&2; exit 2 ;;
+    *) echo "Unknown argument: $1" >&2; exit 2 ;;
   esac
   shift
 done
-command -v python3 >/dev/null 2>&1 || { echo "ERROR: Python 3 required." >&2; exit 2; }
+
+if [[ "$target" == patch-tools ]]; then
+  command -v go >/dev/null || { echo "Go 1.23 or newer is required" >&2; exit 2; }
+  for tool in noe-updater noe-patch-sign; do
+    (cd "tools/$tool" && GOTOOLCHAIN=local GOPROXY=off go test ./...)
+    (cd "tools/$tool" && GOTOOLCHAIN=local GOPROXY=off go build -o "$ROOT/Products/$tool" .)
+  done
+  echo "Patch tools created in Products/"
+  exit 0
+fi
+command -v python3 >/dev/null || { echo "Python 3 is required" >&2; exit 2; }
 if [[ ! -f SConstruct || ! -f modules/noqeri/noqeri_script.cpp || ! -f LICENSE.txt ]]; then
-  echo "ERROR: Run from a complete NoeEngine source checkout." >&2
+  echo "Run from a complete NoeEngine checkout" >&2
   exit 2
 fi
-if [[ "$target" == check && "$package_only" == 1 ]]; then
-  echo "ERROR: --package-only does not apply to check." >&2
-  exit 2
+if [[ "$package_only" == 1 && ( "$target" == check || "$with_tests" == 1 ) ]]; then
+  echo "package-only cannot run checks/native tests" >&2; exit 2
 fi
-if [[ "$with_tests" == 1 && "$package_only" == 1 ]]; then
-  echo "ERROR: --tests requires a fresh compile." >&2
-  exit 2
+if [[ "$with_tests" == 1 && "$target" != linux ]]; then
+  echo "Native unit tests require the Linux target" >&2; exit 2
 fi
-echo "[NoeEngine] Applying app branding and dark editor palette"
+
+case "$(uname -s):$target" in
+  Linux:all) targets=(linux windows android) ;;
+  Darwin:all) targets=(macos android) ;;
+  MINGW*:all|MSYS*:all|CYGWIN*:all) targets=(windows) ;;
+  *) targets=("$target") ;;
+esac
+if [[ "$install_deps" == 1 ]]; then
+  echo "[NoeEngine] Installing requested toolchains (network and privileged packages)"
+  python3 misc/bootstrap_build_deps.py "${targets[@]}" --install-deps
+fi
+if [[ "$target" == android || "$target" == all ]]; then
+  sdk_default="$HOME/.local/share/noeengine/android-sdk"
+  if [[ -z "${ANDROID_HOME:-}" && -z "${ANDROID_SDK_ROOT:-}" ]]; then
+    export ANDROID_HOME="$sdk_default"
+  elif [[ -z "${ANDROID_HOME:-}" ]]; then
+    export ANDROID_HOME="$ANDROID_SDK_ROOT"
+  fi
+fi
+
+echo "[NoeEngine] Preparing branding"
 python3 misc/apply_noeengine_branding.py
 if [[ "$target" == check || "$package_only" == 0 ]]; then
-  echo "[NoeEngine] Running offline preflight (Products/preflight.log)"
   bash misc/ci_check.sh 2>&1 | tee Products/preflight.log
 fi
 if [[ "$target" == check ]]; then
-  echo "[NoeEngine] Preflight passed; no C++ compilation requested."
+  echo "Static/preflight checks passed; editor C++ was not compiled"
   exit 0
 fi
-if [[ "$with_tests" == 1 && "$target" != linux && "$target" != all ]]; then
-  echo "ERROR: --tests is supported for native Linux builds only." >&2
-  exit 2
-fi
-case "$target" in
-  all)
-    case "$(uname -s)" in
-      Linux) targets=(linux windows) ;;
-      Darwin) targets=(macos) ;;
-      *) echo "ERROR: all requires Linux or macOS." >&2; exit 2 ;;
-    esac
-    ;;
-  *) targets=("$target") ;;
-esac
-if [[ "$with_tests" == 1 && "${targets[0]}" != linux ]]; then
-  echo "ERROR: --tests requires a native Linux target." >&2
-  exit 2
-fi
 
-# Check all target toolchains *before* beginning any lengthy compilation.
+# Refuse to start expensive compilation unless all host SDKs are present.
 for platform in "${targets[@]}"; do
   python3 misc/build_products.py "$platform" --preflight
 done
 for platform in "${targets[@]}"; do
   args=("$platform" --jobs "$jobs")
-  if [[ "$with_tests" == 1 && "$platform" == linux ]]; then args+=(--tests); fi
-  if [[ "$package_only" == 1 ]]; then args+=(--package-only); fi
-  case "$platform" in linux) suffix=deb ;; windows) suffix=exe ;; macos) suffix=pkg ;; esac
-  output="Products/NoeEngine-setup.$suffix"
-  rm -f -- "$output"
-  echo "[NoeEngine] Building $platform (Products/build-$platform.log)"
+  [[ "$with_tests" == 1 ]] && args+=(--tests)
+  [[ "$package_only" == 1 ]] && args+=(--package-only)
+  echo "[NoeEngine] Building $platform"
   python3 misc/build_products.py "${args[@]}" 2>&1 | tee "Products/build-$platform.log"
-  if [[ ! -s "$output" ]]; then
-    echo "ERROR: Setup installer missing or empty: $output" >&2
-    exit 1
+  case "$platform" in
+    linux) artifact="Products/NoeEngine-linux-x86_64.tar.gz" ;;
+    windows) artifact="Products/NoeEngine-setup.exe" ;;
+    macos) artifact="Products/NoeEngine-setup.pkg" ;;
+    android) artifact="Products/NoeEngine-android-arm64.apk" ;;
+  esac
+  if [[ ! -s "$artifact" ]]; then
+    echo "Build did not generate expected artifact: $artifact" >&2; exit 1
   fi
-  echo "[NoeEngine] Created $output"
+  printf 'Generated %s (%s bytes)\n' "$artifact" "$(wc -c < "$artifact")"
 done
-printf '\n[NoeEngine] Setup installers:\n'
-for platform in "${targets[@]}"; do
-  case "$platform" in linux) suffix=deb ;; windows) suffix=exe ;; macos) suffix=pkg ;; esac
-  ls -lh -- "Products/NoeEngine-setup.$suffix"
-done
+echo "[NoeEngine] Completed available targets. Artifacts: Products/"
