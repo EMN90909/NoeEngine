@@ -62,7 +62,7 @@ class NativeNoqeriContractTests(unittest.TestCase):
         self.assertEqual(len(metadata["compiler_source_commit"]), 40)
         self.assertFalse(metadata["compiler_embedded"])
         self.assertFalse(metadata["verified_full_runtime"])
-        self.assertIn("LANGUAGE_VERSION = \\"0.7.0\\"", header)
+        self.assertIn('LANGUAGE_VERSION = "0.7.0"', header)
         self.assertIn("ABI_VERSION = 2", header)
         self.assertIn(metadata["compiler_source_commit"], header)
 
