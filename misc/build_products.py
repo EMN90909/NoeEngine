@@ -125,6 +125,11 @@ def compile_editor(target, jobs, with_tests=False):
 def smoke_test_linux(binary, with_tests=False):
     """Verify the compiled editor and the real native .nqr scene before shipping."""
     command([binary, "--headless", "--version"])
+    # The product title must be branded, not only the .deb installer filename.
+    help_output = subprocess.run([str(binary), "--headless", "--help"], cwd=ROOT,
+                                 capture_output=True, text=True, check=True)
+    if "NoeEngine v" not in help_output.stdout:
+        raise RuntimeError("Compiled editor still identifies as an upstream engine.")
     if with_tests:
         command([binary, "--headless", "--test", "--test-case=[Noqeri]*"])
     project = ROOT / "tests/noqeri_scene"
