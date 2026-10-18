@@ -19,50 +19,8 @@ import (
 )
 type Change struct {Path string `json:"path"`; Op string `json:"op"`; Before string `json:"before"`; After string `json:"after"`}
 type Manifest struct {Version string `json:"version"`; BaseVersion string `json:"base_version"`; Notes string `json:"notes"`; Changes []Change `json:"changes"`}
-var releaseVersion=regexp.MustCompile(`^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[a-z0-9.]+)?package main
-
-// Build offline: go run ./tools/noe-patch-sign -manifest changes.json -files patch-files -key signing-key -out release.noepatch
-// A signing key must NEVER be uploaded to Supabase, GitHub, or a browser.
-import (
- "archive/zip"
- "crypto/ed25519"
- "crypto/rand"
- "crypto/sha256"
- "encoding/base64"
- "encoding/hex"
- "encoding/json"
- "flag"
- "fmt"
- "os"
- "path/filepath"
- "regexp"
- "strings"
-)
-type Change struct {Path string `json:"path"`; Op string `json:"op"`; Before string `json:"before"`; After string `json:"after"`}
-type Manifest struct {Version string `json:"version"`; BaseVersion string `json:"base_version"`; Notes string `json:"notes"`; Changes []Change `json:"changes"`}
-)
-var hexDigest=regexp.MustCompile(`^[a-f0-9]{64}package main
-
-// Build offline: go run ./tools/noe-patch-sign -manifest changes.json -files patch-files -key signing-key -out release.noepatch
-// A signing key must NEVER be uploaded to Supabase, GitHub, or a browser.
-import (
- "archive/zip"
- "crypto/ed25519"
- "crypto/rand"
- "crypto/sha256"
- "encoding/base64"
- "encoding/hex"
- "encoding/json"
- "flag"
- "fmt"
- "os"
- "path/filepath"
- "regexp"
- "strings"
-)
-type Change struct {Path string `json:"path"`; Op string `json:"op"`; Before string `json:"before"`; After string `json:"after"`}
-type Manifest struct {Version string `json:"version"`; BaseVersion string `json:"base_version"`; Notes string `json:"notes"`; Changes []Change `json:"changes"`}
-)
+var releaseVersion=regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+(?:-[a-z0-9.]+)?$`)
+var hexDigest=regexp.MustCompile(`^[a-f0-9]{64}$`)
 func sum(x []byte) string {d:=sha256.Sum256(x);return hex.EncodeToString(d[:])}
 func safe(p string) bool {if p==""||len(p)>512||strings.HasPrefix(p,"/")||strings.Contains(p,"\\")||filepath.Clean(p)!=p{return false};for _,v:=range strings.Split(p,"/"){if v=="."||v==".."||strings.HasPrefix(v,"."){return false}};return true}
 func run(manifest,files,key,out string)error{
