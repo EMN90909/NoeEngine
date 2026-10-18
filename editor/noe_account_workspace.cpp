@@ -234,11 +234,14 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
     add_child(marketplace_dialog);
     registry_request = memnew(HTTPRequest);
     registry_request->set_timeout(15.0);
+    registry_request->set_body_size_limit(1024 * 1024);
     registry_request->set_max_redirects(0);
     registry_request->connect("request_completed", callable_mp(this, &NoeAccountWorkspace::_on_registry_response));
     add_child(registry_request);
     auth_request = memnew(HTTPRequest);
     auth_request->set_timeout(15.0);
+    auth_request->set_body_size_limit(65536);
+    auth_request->set_max_redirects(0); // Never forward bearer tokens to redirected origins.
     auth_request->connect("request_completed", callable_mp(this, &NoeAccountWorkspace::_on_auth_response));
     add_child(auth_request);
     poll_timer = memnew(Timer);
