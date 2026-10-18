@@ -199,9 +199,9 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
     af->set_custom_minimum_size(Size2(440, 165) * EDSCALE);
     api_dialog->add_child(af);
     _add_label(af, TTR("Name"));
-    api_name = memnew(LineEdit); af->add_child(api_name);
+    api_name = memnew(LineEdit); api_name->set_max_length(64); api_name->set_tooltip_text(TTR("API name")); af->add_child(api_name);
     _add_label(af, TTR("HTTPS endpoint"));
-    api_url = memnew(LineEdit); api_url->set_placeholder("https://api.example.com/v1"); af->add_child(api_url);
+    api_url = memnew(LineEdit); api_url->set_max_length(2048); api_url->set_tooltip_text(TTR("HTTPS API endpoint")); api_url->set_placeholder("https://api.example.com/v1"); af->add_child(api_url);
     api_error = _add_label(af, "");
     api_dialog->connect("confirmed", callable_mp(this, &NoeAccountWorkspace::_save_api));
     add_child(api_dialog);
@@ -211,9 +211,9 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
     mf->set_custom_minimum_size(Size2(440, 165) * EDSCALE);
     mcp_dialog->add_child(mf);
     _add_label(mf, TTR("Name"));
-    mcp_name = memnew(LineEdit); mf->add_child(mcp_name);
+    mcp_name = memnew(LineEdit); mcp_name->set_max_length(64); mcp_name->set_tooltip_text(TTR("MCP name")); mf->add_child(mcp_name);
     _add_label(mf, TTR("HTTPS MCP endpoint"));
-    mcp_url = memnew(LineEdit); mcp_url->set_placeholder("https://mcp.example.com/mcp"); mf->add_child(mcp_url);
+    mcp_url = memnew(LineEdit); mcp_url->set_max_length(2048); mcp_url->set_tooltip_text(TTR("HTTPS MCP endpoint")); mcp_url->set_placeholder("https://mcp.example.com/mcp"); mf->add_child(mcp_url);
     mcp_error = _add_label(mf, "");
     mcp_dialog->connect("confirmed", callable_mp(this, &NoeAccountWorkspace::_save_mcp));
     add_child(mcp_dialog);
@@ -430,6 +430,7 @@ void NoeAccountWorkspace::_tick_usage() {
 void NoeAccountWorkspace::_show_api_form() {
     api_name->clear(); api_url->clear(); api_error->set_text("");
     api_dialog->popup_centered(Size2i(485, 300) * EDSCALE);
+    api_name->grab_focus();
 }
 void NoeAccountWorkspace::_save_api() {
     String name = api_name->get_text().strip_edges(), url = api_url->get_text().strip_edges();
@@ -447,6 +448,7 @@ void NoeAccountWorkspace::_save_api() {
 void NoeAccountWorkspace::_show_mcp_form() {
     mcp_name->clear(); mcp_url->clear(); mcp_error->set_text("");
     mcp_dialog->popup_centered(Size2i(485, 300) * EDSCALE);
+    mcp_name->grab_focus();
 }
 void NoeAccountWorkspace::_save_mcp() {
     String name = mcp_name->get_text().strip_edges(), url = mcp_url->get_text().strip_edges();
