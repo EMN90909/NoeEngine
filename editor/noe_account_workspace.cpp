@@ -72,7 +72,7 @@ bool NoeAccountWorkspace::_is_https_url(const String &url) const {
     return url.begins_with("https://") && url.length() > 10 &&
         !url.contains(" ") && !url.contains("\n") && !url.contains("\r") && !url.contains("@");
 }
-void NoeAccountWorkspace::_make_page(VBoxContainer *root, Page page) {
+void NoeAccountWorkspace::_make_page(Page page) {
     VBoxContainer *p = pages[page];
     p->add_theme_constant_override("separation", 10 * EDSCALE);
     if (page == PROFILE) {
@@ -150,8 +150,8 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
     nav->set_custom_minimum_size(Size2(170, 0) * EDSCALE);
     layout->add_child(nav);
     _add_label(nav, TTR("ACCOUNT"));
-    const char *items[] = { "Profile", "Usage & limits", "API & MCP", "Extensions", "Security" };
-    for (int i = 0; i < 5; ++i) _add_button(nav, TTR(items[i]), callable_mp(this, &NoeAccountWorkspace::_show_page).bind(i));
+    const String items[] = { TTR("Profile"), TTR("Usage & limits"), TTR("API & MCP"), TTR("Extensions"), TTR("Security") };
+    for (int i = 0; i < 5; ++i) _add_button(nav, items[i], callable_mp(this, &NoeAccountWorkspace::_show_page).bind(i));
     layout->add_child(memnew(VSeparator));
     ScrollContainer *scroll = memnew(ScrollContainer);
     scroll->set_h_size_flags(Control::SIZE_EXPAND_FILL);
@@ -162,7 +162,7 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
     for (int i = 0; i < 5; ++i) {
         pages[i] = memnew(VBoxContainer);
         body->add_child(pages[i]);
-        _make_page(body, (Page)i);
+        _make_page((Page)i);
         pages[i]->hide();
     }
     pages[PROFILE]->show();
