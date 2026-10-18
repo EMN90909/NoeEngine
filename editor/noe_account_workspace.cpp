@@ -5,6 +5,11 @@
 #include "editor/editor_paths.h"
 #include "editor/editor_scale.h"
 #include "core/io/http_client.h"
+#include "core/io/file_access.h"
+#include "core/io/file_access_encrypted.h"
+#include "core/crypto/crypto.h"
+#include "core/config/project_settings.h"
+#include "core/io/dir_access.h"
 #include "core/io/json.h"
 #include "core/io/resource.h"
 #include "core/os/os.h"
@@ -22,6 +27,7 @@
 #include "scene/gui/separator.h"
 #include "scene/gui/tab_container.h"
 #include "scene/main/http_request.h"
+#include "scene/main/node.h"
 #include "scene/main/timer.h"
 
 class NoeAccountButton : public MenuButton {
@@ -125,7 +131,7 @@ void NoeAccountWorkspace::_make_page(Page page) {
         p->add_child(tabs);
         VBoxContainer *api = memnew(VBoxContainer);
         api->set_name(TTR("API")); tabs->add_child(api);
-        _add_label(api, TTR("Custom endpoints (configuration only; no requests or secrets stored)."));
+        _add_label(api, TTR("Configure API providers. Keys are encrypted in a local passphrase-protected vault, never in regular editor settings."));
         _add_button(api, TTR("Add API"), callable_mp(this, &NoeAccountWorkspace::_show_api_form));
         api_list = memnew(VBoxContainer); api->add_child(api_list);
         VBoxContainer *mcp = memnew(VBoxContainer);
@@ -135,25 +141,27 @@ void NoeAccountWorkspace::_make_page(Page page) {
         _add_button(mcp, TTR("Browse MCP Marketplace"), callable_mp(this, &NoeAccountWorkspace::_show_mcp_marketplace));
         _add_button(mcp, TTR("Official MCP Registry"), callable_mp(this, &NoeAccountWorkspace::_open_registry));
         mcp_list = memnew(VBoxContainer); mcp->add_child(mcp_list);
-        _add_label(mcp, TTR("Enable toggles only save configuration. No MCP process is executed or connected yet."));
+        _add_label(mcp, TTR("Remote paired editor supports read-only MCP tools. Custom endpoints are saved as preferences until a transport is implemented."));
     } else if (page == EXTENSIONS) {
         _add_label(p, TTR("Extensions"));
         _add_label(p, TTR("Godot-compatible editor extensions install per project via Project Settings > Plugins."));
         _add_button(p, TTR("Discover Godot MCP Toolkit"), callable_mp(this, &NoeAccountWorkspace::_open_godot_mcp));
         _add_label(p, TTR("Extension installation and permissions are not managed by this panel yet."));
         _add_label(p, TTR("Team collaboration"));
-        _add_label(p, TTR("Enter the Convex project ID shared by your team. Scene/resource saves publish activity, not file contents."));
+        _add_label(p, TTR("Paste the one-time 64-character pairing key from the website at Account > Remote MCP access. Sign in to the same account first."));
         collab_project = memnew(LineEdit);
-        collab_project->set_placeholder(TTR("Team project ID"));
-        collab_project->set_max_length(128);
+        collab_project->set_placeholder(TTR("64-character pairing key"));
+        collab_project->set_max_length(64);
+        collab_project->set_secret(true);
         p->add_child(collab_project);
-        _add_button(p, TTR("Save collaboration project"), callable_mp(this, &NoeAccountWorkspace::_save_collaboration_project));
-        collab_status = _add_label(p, TTR("No collaboration project configured."));
+        _add_button(p, TTR("Pair team and remote MCP"), callable_mp(this, &NoeAccountWorkspace::_save_collaboration_project));
+        collab_status = _add_label(p, TTR("No connected remote MCP endpoint."));
+        _add_label(p, TTR("Endpoint URL identifies the editor; the external AI must also provide a separate private bearer key from the website."));
         collab_activity = _add_label(p, TTR("Team activity will appear here."));
     } else if (page == SECURITY) {
         _add_label(p, TTR("Security"));
         security_label = _add_label(p, TTR("Offline. No active access token."));
-        _add_label(p, TTR("HTTPS device authorization. Tokens are only held in memory, not in settings."));
+        _add_label(p, TTR("HTTPS device authorization. Expiring access tokens are memory-only; your last verified profile is remembered locally without implying an active session."));
         _add_label(p, TTR("Account website URL (HTTPS)"));
         website_url_field = memnew(LineEdit);
         website_url_field->set_placeholder("https://your-noeengine-site.onrender.com");
@@ -218,7 +226,9 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
     collaboration_url = OS::get_singleton()->get_environment("NOEENGINE_COLLAB_URL").strip_edges();
     if (!_is_https_url(collaboration_url)) collaboration_url = "";
     if (collaboration_url.ends_with("/")) collaboration_url = collaboration_url.substr(0, collaboration_url.length() - 1);
-    if (collab_project) collab_project->set_text(String(config->get_value("collaboration", "project_id", "")));
+    bridge_endpoint_id = String(config->get_value("bridge", "endpoint_id", ""));
+    bridge_public_url = String(config->get_value("bridge", "endpoint_url", ""));
+    if (collab_project) collab_project->clear();
     welcome = memnew(ConfirmationDialog);
     welcome->set_title(TTR("Welcome to NoeEngine"));
     welcome->set_text(TTR("Sign in to connect your account, or use NoeEngine offline."));
@@ -236,12 +246,18 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
     api_dialog = memnew(ConfirmationDialog);
     api_dialog->set_title(TTR("Add API"));
     VBoxContainer *af = memnew(VBoxContainer);
-    af->set_custom_minimum_size(Size2(440, 165) * EDSCALE);
+    af->set_custom_minimum_size(Size2(470, 360) * EDSCALE);
     api_dialog->add_child(af);
     _add_label(af, TTR("Name"));
     api_name = memnew(LineEdit); api_name->set_max_length(64); api_name->set_tooltip_text(TTR("API name")); af->add_child(api_name);
+    _add_label(af, TTR("API key (encrypted on this device)"));
+    api_key = memnew(LineEdit); api_key->set_secret(true); api_key->set_max_length(4096); af->add_child(api_key);
     _add_label(af, TTR("HTTPS endpoint"));
     api_url = memnew(LineEdit); api_url->set_max_length(2048); api_url->set_tooltip_text(TTR("HTTPS API endpoint")); api_url->set_placeholder("https://api.example.com/v1"); af->add_child(api_url);
+    _add_label(af, TTR("Model (optional)"));
+    api_model = memnew(LineEdit); api_model->set_max_length(128); af->add_child(api_model);
+    _add_label(af, TTR("Vault passphrase (minimum 16 characters, required to save or add keys)"));
+    api_vault_passphrase = memnew(LineEdit); api_vault_passphrase->set_secret(true); api_vault_passphrase->set_max_length(256); af->add_child(api_vault_passphrase);
     api_error = _add_label(af, "");
     api_dialog->connect("confirmed", callable_mp(this, &NoeAccountWorkspace::_save_api));
     add_child(api_dialog);
@@ -353,7 +369,7 @@ void NoeAccountWorkspace::_account_action(int id) {
     _show_page(id);
 }
 void NoeAccountWorkspace::_show_welcome() {
-    if ((bool)config->get_value("account", "welcome_seen", false)) return;
+    if ((bool)config->get_value("account", "welcome_seen", false) || online_session || !String(config->get_value("account", "last_email", "")).is_empty()) return;
     config->set_value("account", "welcome_seen", true);
     _save_usage();
     welcome->popup_centered();
@@ -444,15 +460,18 @@ void NoeAccountWorkspace::_on_auth_response(int result, int status, const Packed
         display_name = reply.get("name", "");
         if (display_name.is_empty()) display_name = email.get_slice("@", 0);
         online_session = true;
+        config->set_value("account", "last_name", display_name);
+        config->set_value("account", "last_email", email);
+        _save_usage();
         login_dialog->hide();
         _refresh_profile();
         _show_page(PROFILE);
     }
 }
 void NoeAccountWorkspace::_refresh_profile() {
-    name_label->set_text(TTR("Name: ") + (online_session ? display_name : TTR("Not signed in")));
-    email_label->set_text(TTR("Email: ") + (online_session ? email : TTR("Not signed in")));
-    account_status->set_text(online_session ? TTR("Verified session") : TTR("Offline / unverified"));
+    name_label->set_text(TTR("Name: ") + (online_session ? display_name : String(config->get_value("account", "last_name", TTR("Not signed in")))));
+    email_label->set_text(TTR("Email: ") + (online_session ? email : String(config->get_value("account", "last_email", TTR("Not signed in")))));
+    account_status->set_text(online_session ? TTR("Verified session") : TTR("Offline. Reconnect to restore verified access."));
     security_label->set_text(online_session ? TTR("Signed in; token is in memory only.") : TTR("Offline; no token stored."));
     if (website_url_status) website_url_status->set_text(auth_base.is_empty() ?
             TTR("No account website configured. Set an HTTPS origin to connect.") : TTR("Account website: ") + auth_base);
@@ -460,7 +479,7 @@ void NoeAccountWorkspace::_refresh_profile() {
         profile_avatar_label->set_text(online_session && !display_name.is_empty() ?
                 display_name.left(1).to_upper() : String("N"));
     }
-    if (avatar_button) avatar_button->set_text(online_session ? display_name.left(14) : TTR("Account"));
+    if (avatar_button) avatar_button->set_text(online_session ? display_name.left(14) : String(config->get_value("account", "last_name", TTR("Account"))).left(14));
 }
 void NoeAccountWorkspace::_save_website_url() {
     String site = website_url_field->get_text().strip_edges();
@@ -483,6 +502,9 @@ void NoeAccountWorkspace::_logout() {
     if (collab_request) collab_request->cancel_request();
     queued_collaboration_paths.clear(); queued_collaboration_ids.clear();
     access_token.clear(); device_code.clear(); email.clear(); display_name.clear();
+    config->erase_section_key("account", "last_name");
+    config->erase_section_key("account", "last_email");
+    _save_usage();
     online_session = false; awaiting_login = false; poll_timer->stop();
     if (collab_request) collab_request->cancel_request();
     collaboration_polling = false;
