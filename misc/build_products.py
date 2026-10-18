@@ -16,6 +16,7 @@ from pathlib import Path
 import platform
 import shutil
 import subprocess
+import tarfile
 import sys
 import tempfile
 
@@ -86,6 +87,19 @@ def verify_toolchain(target, package_only=False):
         raise RuntimeError("macOS builds require Xcode and a Mac.")
     if target == "windows" and host not in ("windows", "linux"):
         raise RuntimeError("Windows builds require Windows or Linux with MinGW-w64.")
+    if target == "android":
+        if host not in ("linux", "macos"):
+            raise RuntimeError("Android editor builds require Linux or macOS SDK tooling.")
+        sdk = os.environ.get("ANDROID_HOME") or os.environ.get("ANDROID_SDK_ROOT") or str(Path.home() / ".local/share/noeengine/android-sdk")
+        root = Path(sdk).expanduser()
+        if not (root / "ndk/28.1.13356709").is_dir():
+            raise RuntimeError("Android NDK r28b is missing; run ./build.sh android --install-deps or install SDK components.")
+        for tool in ("java", "scons"):
+            if not package_only:
+                check_tool(tool)
+        if not (ROOT / "platform/android/java/gradlew").is_file():
+            raise RuntimeError("Missing Android Gradle wrapper")
+        return
     check_tool({"linux": "dpkg-deb", "windows": "makensis", "macos": "pkgbuild"}[target])
     if package_only:
         return
@@ -104,6 +118,13 @@ def verify_toolchain(target, package_only=False):
 def compile_editor(target, jobs, with_tests=False):
     check_tool("scons")
     host = host_platform()
+    if target == "android":
+        sdk = os.environ.get("ANDROID_HOME") or os.environ.get("ANDROID_SDK_ROOT") or str(Path.home() / ".local/share/noeengine/android-sdk")
+        os.environ["ANDROID_HOME"] = str(Path(sdk).expanduser())
+        command(["scons", "platform=android", "target=editor", "arch=arm64", "production=yes",
+                 "module_mono_enabled=no", "module_noqeri_enabled=yes",
+                 "generate_android_binaries=yes", "-j" + str(jobs)])
+        return
     if target == "macos" and host != "macos":
         raise RuntimeError("macOS installer requires a macOS build runner and SDK.")
     if target == "linux" and host != "linux":
@@ -253,9 +274,43 @@ def write_macos(binary):
     return destination
 
 
+
+def find_android_editor_apk():
+    candidates = sorted((ROOT / "bin/android_editor_builds").glob("android_editor*release*.apk"))
+    if not candidates:
+        raise RuntimeError("Real Android editor APK was not generated; check SCons/Gradle logs.")
+    return max(candidates, key=lambda candidate: candidate.stat().st_mtime)
+
+
+def write_linux_app(binary):
+    """A directly runnable AppDir and a portable tarball, not just a Debian installer."""
+    import tarfile
+    app_dir = PRODUCTS / "NoeEngine.AppDir"
+    if app_dir.exists():
+        shutil.rmtree(app_dir)
+    exe = app_dir / "usr/bin/noeengine"
+    exe.parent.mkdir(parents=True)
+    shutil.copy2(binary, exe)
+    exe.chmod(0o755)
+    app_run = app_dir / "AppRun"
+    app_run.write_text('#!/bin/sh\nHERE="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"\nexec "$HERE/usr/bin/noeengine" "$@"\n')
+    app_run.chmod(0o755)
+    desktop = app_dir / "NoeEngine.desktop"
+    desktop.write_text("[Desktop Entry]\nType=Application\nName=NoeEngine\nExec=AppRun\nIcon=NoeEngine\nTerminal=false\nCategories=Development;IDE;\n")
+    icon = ROOT / "icon.png"
+    if icon.is_file():
+        shutil.copy2(icon, app_dir / "NoeEngine.png")
+    for name in ("LICENSE.txt", "NOTICE.md", "NOETHRIC-PROPRIETARY-LICENSE.txt"):
+        shutil.copy2(ROOT / name, app_dir / name)
+    tar_path = PRODUCTS / "NoeEngine-linux-x86_64.tar.gz"
+    with tarfile.open(tar_path, "w:gz") as archive:
+        archive.add(app_dir, arcname="NoeEngine.AppDir")
+    return tar_path
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("platform", choices=("linux", "windows", "macos"),
+    parser.add_argument("platform", choices=("linux", "windows", "macos", "android"),
                         help="Target platform for this build")
     parser.add_argument("--package-only", action="store_true",
                         help="Package a previously compiled editor (without runtime verification)")
@@ -276,13 +331,28 @@ def main(argv=None):
     PRODUCTS.mkdir(exist_ok=True)
     if not args.package_only:
         compile_editor(args.platform, args.jobs, with_tests=args.tests)
+    if args.platform == "android":
+        source = find_android_editor_apk()
+        output = PRODUCTS / "NoeEngine-android-arm64.apk"
+        shutil.copy2(source, output)
+        if output.stat().st_size < 1024 * 1024:
+            raise RuntimeError("Android APK is too small to be an editor build.")
+        import zipfile
+        with zipfile.ZipFile(output) as apk:
+            if "AndroidManifest.xml" not in apk.namelist():
+                raise RuntimeError("Not a valid Android APK: AndroidManifest.xml missing.")
+        print("Android editor APK:", output)
+        return
     binary = find_binary(args.platform)
     if not args.package_only and args.platform == "linux":
         smoke_test_linux(binary, with_tests=args.tests)
     elif args.package_only:
         print("Packaging prebuilt binary; runtime verification is not performed.", flush=True)
     if args.platform == "linux":
-        result = write_debian(binary)
+        result = write_linux_app(binary)
+        # Keep legacy .deb setup for supported Debian distributions.
+        if shutil.which("dpkg-deb"):
+            write_debian(binary)
     elif args.platform == "windows":
         result = write_windows(binary)
     else:
