@@ -22,6 +22,17 @@
 #include "scene/main/http_request.h"
 #include "scene/main/timer.h"
 
+class NoeAccountButton : public MenuButton {
+    GDCLASS(NoeAccountButton, MenuButton);
+protected:
+    static void _bind_methods() {}
+    void _notification(int what) {
+        if (what == NOTIFICATION_ENTER_TREE || what == NOTIFICATION_THEME_CHANGED) {
+            set_icon(get_theme_icon(SNAME("Godot"), SNAME("EditorIcons")));
+        }
+    }
+};
+
 class NoeUsageCharts : public Control {
     GDCLASS(NoeUsageCharts, Control);
     double total_ms = 0;
@@ -243,13 +254,11 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
 NoeAccountWorkspace *NoeAccountWorkspace::install(Control *parent, HBoxContainer *toolbar) {
     NoeAccountWorkspace *w = memnew(NoeAccountWorkspace);
     parent->add_child(w);
-    MenuButton *b = memnew(MenuButton);
+    MenuButton *b = memnew(NoeAccountButton);
     b->set_text(TTR("Account"));
     b->set_tooltip_text(TTR("Account, usage and integration settings"));
     b->set_flat(true);
     toolbar->add_child(b);
-    // The editor icon was rebranded to the NoeEngine monogram. Reuse it as avatar fallback.
-    b->set_icon(b->get_theme_icon(SNAME("Godot"), SNAME("EditorIcons")));
     w->avatar_button = b;
     PopupMenu *menu = b->get_popup();
     menu->add_item(TTR("Profile settings"), PROFILE);
