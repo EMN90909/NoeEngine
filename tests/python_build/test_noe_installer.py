@@ -98,7 +98,7 @@ class InstallerPackagingTests(unittest.TestCase):
                 build.verify_toolchain("linux")
 
     def test_cli_preflight_does_not_start_compiler(self):
-        with mock.patch.object(build, "verify_toolchain") as verify, \\
+        with mock.patch.object(build, "verify_toolchain") as verify, \
                 mock.patch.object(build, "compile_editor") as compile_editor:
             build.main(["linux", "--preflight"])
             verify.assert_called_once_with("linux", package_only=False)
@@ -111,7 +111,7 @@ class InstallerPackagingTests(unittest.TestCase):
         editor = self.root / "bin/godot.linuxbsd.editor.x86_64"
         editor.write_bytes(b"fixture executable")
         good = SimpleNamespace(returncode=0,
-            stdout="NOQERI_NATIVE_READY\\nNOQERI_REPEAT_STEP\\nNOQERI_REPEAT_STEP\\nNOQERI_NATIVE_PROCESS\\n",
+            stdout="NOQERI_NATIVE_READY\nNOQERI_REPEAT_STEP\nNOQERI_REPEAT_STEP\nNOQERI_NATIVE_PROCESS\n",
             stderr="")
         with mock.patch.object(build, "command"), \
                 mock.patch.object(build.subprocess, "run", return_value=good):
