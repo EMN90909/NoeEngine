@@ -41,10 +41,12 @@ class NoeMultiPlatformTests(unittest.TestCase):
     def test_android_sdk_archive_is_sha256_pinned_and_safe(self):
         self.assertEqual(len(bootstrap.ANDROID_TOOLS["linux"][1]), 64)
         self.assertEqual(bootstrap.TOOLS_VERSION, "15859902")
-        with self.assertRaises(RuntimeError):
-            with zipfile.ZipFile(io.BytesIO(self._zip("../escape"))) as archive:
-                bootstrap.checked_zip_extract_from_archive(archive, ROOT) if hasattr(
-                    bootstrap, "checked_zip_extract_from_archive") else self._unsafe_zip_check(archive)
+        import tempfile
+        with tempfile.TemporaryDirectory() as work:
+            archive = pathlib.Path(work) / "sdk.zip"
+            archive.write_bytes(self._zip("../escape"))
+            with self.assertRaises(RuntimeError):
+                bootstrap.checked_zip_extract(archive, pathlib.Path(work) / "install")
 
     @staticmethod
     def _zip(filename):
@@ -52,13 +54,6 @@ class NoeMultiPlatformTests(unittest.TestCase):
         with zipfile.ZipFile(buf, "w") as zip_file:
             zip_file.writestr(filename, b"danger")
         return buf.getvalue()
-
-    @staticmethod
-    def _unsafe_zip_check(archive):
-        for info in archive.infolist():
-            if ".." in info.filename.split("/"):
-                raise RuntimeError("unsafe archive")
-        raise AssertionError("test guard failed")
 
     def test_android_real_apk_and_host_restrictions(self):
         source = (ROOT / "misc/build_products.py").read_text()
