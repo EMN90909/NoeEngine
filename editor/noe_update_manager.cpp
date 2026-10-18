@@ -189,7 +189,7 @@ void NoeUpdateManager::_on_manifest(int result, int status, const PackedStringAr
     release_notes = notes;
     download_url = url;
     update_button->set_text(TTR("Update available"));
-    release_dialog->set_text(vformat(TTR("NoeEngine %s is available.\n\nWhat's new:\n%s\n\nDownload and verify the patch? Installation requires your system package manager."), version, notes));
+    release_dialog->set_text(vformat(TTR("NoeEngine %s is available.\n\nWhat's new:\n%s\n\nDownload and verify this patch? Installing and restarting requires a trusted, preinstalled signed-patch helper."), version, notes));
     release_dialog->popup_centered(Size2i(580, 370) * EDSCALE);
 }
 void NoeUpdateManager::_download() {
