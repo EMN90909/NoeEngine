@@ -74,11 +74,12 @@ func verifyZip(path string,pub ed25519.PublicKey)(Manifest,map[string][]byte,err
  if len(expected)!=len(files){return m,nil,errors.New("unexpected patch files")}
  return m,files,nil
 }
-func apply(root,pkg,receipt string,pub ed25519.PublicKey)error{
+func apply(root,pkg,receipt string,pub ed25519.PublicKey,expectedVersion ...string)error{
  if len(pub)!=ed25519.PublicKeySize{return errors.New("missing trusted public key")}
  root,err:=filepath.Abs(root);if err!=nil{return err}
  if info,e:=os.Lstat(root);e!=nil||!info.IsDir()||info.Mode()&os.ModeSymlink!=0{return errors.New("install root not a directory")}
  m,files,err:=verifyZip(pkg,pub);if err!=nil{return err}
+ if len(expectedVersion)>0 && expectedVersion[0]!="" && m.Version!=expectedVersion[0]{return errors.New("release version mismatch")}
  for _,c:=range m.Changes {
   target,e:=safeTarget(root,c.Path);if e!=nil{return e}
   _,e=os.Lstat(target)
@@ -117,6 +118,7 @@ func apply(root,pkg,receipt string,pub ed25519.PublicKey)error{
 func main(){
  root:=flag.String("root","","writable installation directory")
  pkg:=flag.String("package","","signed .noepatch bundle")
+ expectedVersion:=flag.String("expect-version","","expected released version")
  pub:=flag.String("public-key","","base64 trusted Ed25519 public key")
  receipt:=flag.String("receipt","","post-install notice path")
  restart:=flag.String("restart","","installed NoeEngine binary")
@@ -133,7 +135,7 @@ func main(){
   }
   if !stopped{fmt.Fprintln(os.Stderr,"editor did not exit; refusing to patch running process");os.Exit(1)}
  }
- if err:=apply(*root,*pkg,*receipt,ed25519.PublicKey(key));err!=nil{fmt.Fprintln(os.Stderr,"update failed:",err);os.Exit(1)}
+ if err:=apply(*root,*pkg,*receipt,ed25519.PublicKey(key),*expectedVersion);err!=nil{fmt.Fprintln(os.Stderr,"update failed:",err);os.Exit(1)}
  if *restart!=""{
   if !strings.HasPrefix(*restart,filepath.Clean(*root)+string(os.PathSeparator)){fmt.Fprintln(os.Stderr,"unsafe restart executable");os.Exit(2)}
   cmd:=exec.Command(*restart);cmd.Stdout=os.Stdout;cmd.Stderr=os.Stderr
