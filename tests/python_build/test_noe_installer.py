@@ -9,6 +9,8 @@ import sys
 import tempfile
 import unittest
 from unittest import mock
+from types import SimpleNamespace
+import json
 
 
 SCRIPT = Path(__file__).resolve().parents[2] / "misc/build_products.py"
@@ -60,6 +62,65 @@ class InstallerPackagingTests(unittest.TestCase):
         self.assertIn("noeengine", (extract / "usr/bin/noeengine").read_text())
         self.assertIn("NoeEngine", (extract / "usr/share/applications/noeengine.desktop").read_text())
 
+
+    def _native_source_fixture(self):
+        (self.root / "SConstruct").write_text("# fixture")
+        module = self.root / "modules/noqeri"
+        module.mkdir(parents=True)
+        (module / "noqeri_script.cpp").write_text("// fixture")
+        (module / "noqeri_translator.cpp").write_text("// fixture")
+        manifest = module / "compatibility.json"
+        manifest.write_text(json.dumps({
+            "language_version": "0.7.0",
+            "abi_version": 2,
+            "release_status": "development-unreleased",
+        }))
+        return manifest
+
+    def test_preflight_detects_expected_native_toolchain(self):
+        manifest = self._native_source_fixture()
+        with mock.patch.object(build, "NOQERI_COMPAT", manifest), \
+                mock.patch.object(build, "host_platform", return_value="linux"), \
+                mock.patch.object(build, "check_tool") as check:
+            build.verify_toolchain("linux")
+            for tool in ("scons", "dpkg-deb", "g++", "pkg-config"):
+                check.assert_any_call(tool)
+
+    def test_preflight_fails_closed_on_missing_scons(self):
+        manifest = self._native_source_fixture()
+        def missing(tool):
+            if tool == "scons":
+                raise RuntimeError("Required tool not found: scons")
+        with mock.patch.object(build, "NOQERI_COMPAT", manifest), \
+                mock.patch.object(build, "host_platform", return_value="linux"), \
+                mock.patch.object(build, "check_tool", side_effect=missing):
+            with self.assertRaisesRegex(RuntimeError, "scons"):
+                build.verify_toolchain("linux")
+
+    def test_cli_preflight_does_not_start_compiler(self):
+        with mock.patch.object(build, "verify_toolchain") as verify, \\
+                mock.patch.object(build, "compile_editor") as compile_editor:
+            build.main(["linux", "--preflight"])
+            verify.assert_called_once_with("linux", package_only=False)
+            compile_editor.assert_not_called()
+
+    def test_native_scene_smoke_checks_callbacks_and_repeat(self):
+        project = self.root / "tests/noqeri_scene"
+        project.mkdir(parents=True)
+        (project / "project.godot").write_text("config_version=5")
+        editor = self.root / "bin/godot.linuxbsd.editor.x86_64"
+        editor.write_bytes(b"fixture executable")
+        good = SimpleNamespace(returncode=0,
+            stdout="NOQERI_NATIVE_READY\\nNOQERI_REPEAT_STEP\\nNOQERI_REPEAT_STEP\\nNOQERI_NATIVE_PROCESS\\n",
+            stderr="")
+        with mock.patch.object(build, "command"), \
+                mock.patch.object(build.subprocess, "run", return_value=good):
+            build.smoke_test_linux(editor)
+        bad = SimpleNamespace(returncode=0, stdout="NOQERI_NATIVE_READY", stderr="")
+        with mock.patch.object(build, "command"), \
+                mock.patch.object(build.subprocess, "run", return_value=bad):
+            with self.assertRaisesRegex(RuntimeError, "NOQERI_NATIVE_PROCESS"):
+                build.smoke_test_linux(editor)
 
     def test_windows_installer_recipe_has_uninstall_and_credits(self):
         binary = self.root / "bin/godot.windows.editor.x86_64.exe"
