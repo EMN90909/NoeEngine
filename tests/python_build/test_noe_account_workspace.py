@@ -57,6 +57,18 @@ class TestNoeAccountWorkspace(unittest.TestCase):
         self.assertIn("GPU rendering hours not instrumented", self.source)
         self.assertIn("Provider quota unavailable", self.source)
 
+    def test_collaboration_save_notifications_are_bounded_and_deduplicated(self):
+        self.assertIn('Vector<String> queued_collaboration_paths;', self.header)
+        self.assertIn('Vector<String> queued_collaboration_ids;', self.header)
+        self.assertIn('queued_collaboration_paths.size() >= 64', self.source)
+        self.assertIn('payload["requestId"] = queued_collaboration_ids[0]', self.source)
+        self.assertIn('queued_collaboration_paths.remove_at(0)', self.source)
+        self.assertIn('void NoeAccountWorkspace::_flush_collaboration_queue()', self.source)
+        self.assertIn('HTTPClient::METHOD_POST, JSON::stringify(payload)', self.source)
+        self.assertIn('if (collab_request) collab_request->cancel_request()', self.source)
+        self.assertIn('code == 400 || code == 401 || code == 403', self.source)
+        self.assertIn('queued_collaboration_paths.clear()', self.source)
+
     def test_mcp_registry_discovery_does_not_launch_tools(self):
         self.assertIn("registry.modelcontextprotocol.io/v0.1/servers?search=godot", self.source)
         self.assertIn("No MCP process is executed or connected yet.", self.source)
