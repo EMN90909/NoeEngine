@@ -224,6 +224,7 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
     // Security page controls are constructed before initial URL configuration is shown.
     if (website_url_field) website_url_field->set_text(auth_base);
     collaboration_url = OS::get_singleton()->get_environment("NOEENGINE_COLLAB_URL").strip_edges();
+    if (collaboration_url.is_empty()) collaboration_url = "https://noeengine-bridge.onrender.com";
     if (!_is_https_url(collaboration_url)) collaboration_url = "";
     if (collaboration_url.ends_with("/")) collaboration_url = collaboration_url.substr(0, collaboration_url.length() - 1);
     bridge_endpoint_id = String(config->get_value("bridge", "endpoint_id", ""));
@@ -313,7 +314,17 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
     collab_timer->set_wait_time(15.0);
     collab_timer->connect("timeout", callable_mp(this, &NoeAccountWorkspace::_poll_collaboration_activity));
     add_child(collab_timer);
-    metrics_timer = memnew(Timer);
+    bridge_request = memnew(HTTPRequest);
+    bridge_request->set_timeout(12.0);
+    bridge_request->set_max_redirects(0);
+    bridge_request->set_body_size_limit(16384);
+    bridge_request->connect("request_completed", callable_mp(this, &NoeAccountWorkspace::_on_bridge_response));
+    add_child(bridge_request);
+    bridge_timer = memnew(Timer);
+    bridge_timer->set_wait_time(5.0);
+    bridge_timer->connect("timeout", callable_mp(this, &NoeAccountWorkspace::_poll_bridge));
+    add_child(bridge_timer);
+        metrics_timer = memnew(Timer);
     metrics_timer->set_wait_time(1);
     metrics_timer->connect("timeout", callable_mp(this, &NoeAccountWorkspace::_tick_usage));
     add_child(metrics_timer);
@@ -342,6 +353,7 @@ void NoeAccountWorkspace::_notification(int what) {
     if (what == NOTIFICATION_READY) {
         metrics_timer->start();
         collab_timer->start();
+        bridge_timer->start();
         if (EditorNode::get_singleton()) {
             EditorNode::get_singleton()->connect("scene_saved", callable_mp(this, &NoeAccountWorkspace::_on_scene_saved));
             EditorNode::get_singleton()->connect("resource_saved", callable_mp(this, &NoeAccountWorkspace::_on_resource_saved));
@@ -665,21 +677,130 @@ void NoeAccountWorkspace::_open_registry() {
 }
 
 void NoeAccountWorkspace::_save_collaboration_project() {
-    if (!collab_project) return;
-    const String candidate = collab_project->get_text().strip_edges();
-    if (!candidate.is_empty() && (candidate.length() < 3 || candidate.length() > 128 ||
-            candidate.contains("/") || candidate.contains(" ") || candidate.contains("\\") ||
-            candidate.contains("?") || candidate.contains("#"))) {
-        collab_status->set_text(TTR("Invalid project ID."));
+    const String code = collab_project->get_text().strip_edges().to_lower();
+    if (!online_session || access_token.is_empty()) {
+        collab_status->set_text(TTR("Sign into your NoeEngine account before pairing this editor."));
         return;
     }
-    queued_collaboration_paths.clear();
-    queued_collaboration_ids.clear();
-    config->set_value("collaboration", "project_id", candidate);
-    _save_usage();
-    collab_status->set_text(candidate.is_empty() ? TTR("Collaboration disabled.") :
-            TTR("Project selected. Requires a verified session and HTTPS collaboration service."));
+    if (code.length() != 64 || !code.is_valid_hex_number(false)) {
+        collab_status->set_text(TTR("Enter the complete 64-character hexadecimal pairing code from the website."));
+        return;
+    }
+    if (bridge_kind != BRIDGE_NONE || !_is_https_url(collaboration_url)) {
+        collab_status->set_text(TTR("Pairing service unavailable or busy."));
+        return;
+    }
+    Dictionary payload;
+    payload["code"] = code;
+    PackedStringArray headers;
+    headers.push_back("Content-Type: application/json");
+    headers.push_back("Authorization: Bearer " + access_token);
+    if (bridge_request->request(collaboration_url + "/v1/editor/pair", headers,
+            HTTPClient::METHOD_POST, JSON::stringify(payload)) != OK) {
+        collab_status->set_text(TTR("Cannot connect to the editor bridge."));
+        return;
+    }
+    bridge_kind = BRIDGE_PAIR;
+    collab_project->clear(); // The pairing key must never be saved in regular settings.
+    collab_status->set_text(TTR("Pairing with the verified website account..."));
 }
+void NoeAccountWorkspace::_poll_bridge() {
+    if (!online_session || access_token.is_empty() || bridge_endpoint_id.is_empty() ||
+            collaboration_url.is_empty() || bridge_kind != BRIDGE_NONE) return;
+    PackedStringArray headers;
+    headers.push_back("Authorization: Bearer " + access_token);
+    if (bridge_request->request(collaboration_url + "/v1/editor/pending?endpoint_id=" + bridge_endpoint_id, headers) == OK)
+        bridge_kind = BRIDGE_POLL;
+}
+Dictionary NoeAccountWorkspace::_read_scene_tree() const {
+    Dictionary response;
+    response["online"] = true;
+    if (!EditorNode::get_singleton()) {
+        response["scene"] = "Project Manager";
+        response["nodes"] = Array();
+        return response;
+    }
+    Node *scene = EditorNode::get_singleton()->get_edited_scene();
+    if (!scene) {
+        response["scene"] = "No scene open";
+        response["nodes"] = Array();
+        return response;
+    }
+    response["scene"] = String(scene->get_name());
+    Array nodes;
+    Vector<Node *> pending;
+    pending.push_back(scene);
+    while (!pending.is_empty() && nodes.size() < 120) {
+        Node *node = pending[0];
+        pending.remove_at(0);
+        Dictionary row;
+        row["name"] = String(node->get_name()).left(120);
+        row["type"] = String(node->get_class()).left(120);
+        nodes.push_back(row);
+        for (int i = 0; i < node->get_child_count() && pending.size() < 130; ++i)
+            pending.push_back(node->get_child(i));
+    }
+    response["nodes"] = nodes;
+    response["truncated"] = !pending.is_empty();
+    return response;
+}
+void NoeAccountWorkspace::_on_bridge_response(int result, int code, const PackedStringArray &headers,
+        const PackedByteArray &body) {
+    const BridgeKind phase = bridge_kind;
+    bridge_kind = BRIDGE_NONE;
+    if (phase == BRIDGE_NONE) return;
+    if (result != HTTPRequest::RESULT_SUCCESS) {
+        if (phase == BRIDGE_PAIR) collab_status->set_text(TTR("Pairing bridge network error."));
+        return;
+    }
+    Variant parsed = JSON::parse_string(String::utf8(reinterpret_cast<const char *>(body.ptr()), body.size()));
+    Dictionary reply;
+    if (parsed.get_type() == Variant::DICTIONARY) reply = parsed;
+    if (code == 401 || code == 403) {
+        collab_status->set_text(TTR("Bridge access denied. Reconnect your account or regenerate the pairing code."));
+        return;
+    }
+    if (phase == BRIDGE_PAIR) {
+        const String endpoint = reply.get("endpoint_id", "");
+        if (code != 200 || endpoint.length() != 32 || !endpoint.is_valid_hex_number(false)) {
+            collab_status->set_text(TTR("Pairing failed or code expired. Generate another code on the website."));
+            return;
+        }
+        bridge_endpoint_id = endpoint;
+        bridge_public_url = reply.get("endpoint_url", "");
+        config->set_value("bridge", "endpoint_id", endpoint); // Public handle only.
+        config->set_value("bridge", "endpoint_url", bridge_public_url);
+        const String project = reply.get("project_id", "");
+        if (!project.is_empty()) config->set_value("collaboration", "project_id", project);
+        _save_usage();
+        collab_status->set_text(TTR("Paired. MCP endpoint: ") + bridge_public_url +
+            TTR("\nExternal clients also require the private bearer key shown on the website."));
+        _poll_bridge();
+    } else if (phase == BRIDGE_POLL && code == 200) {
+        Variant raw = reply.get("tasks", Array());
+        if (raw.get_type() != Variant::ARRAY) return;
+        Array tasks = raw;
+        if (tasks.is_empty() || tasks[0].get_type() != Variant::DICTIONARY) return;
+        Dictionary task = tasks[0];
+        String id = task.get("task_id", "");
+        String tool = task.get("tool", "");
+        if (id.is_empty() || id.length() > 80) return;
+        Dictionary outcome;
+        if (tool == "noeengine_scene_tree") outcome = _read_scene_tree();
+        else outcome["error"] = "Unknown or unauthorized tool";
+        Dictionary payload;
+        payload["task_id"] = id;
+        payload["endpoint_id"] = bridge_endpoint_id;
+        payload["result"] = outcome;
+        PackedStringArray http_headers;
+        http_headers.push_back("Content-Type: application/json");
+        http_headers.push_back("Authorization: Bearer " + access_token);
+        if (bridge_request->request(collaboration_url + "/v1/editor/result", http_headers,
+                HTTPClient::METHOD_POST, JSON::stringify(payload)) == OK)
+            bridge_kind = BRIDGE_REPLY;
+    }
+}
+
 void NoeAccountWorkspace::_on_scene_saved(const String &path) { _send_collaboration_event(path); }
 void NoeAccountWorkspace::_on_resource_saved(const Ref<Resource> &resource) {
     if (resource.is_valid()) _send_collaboration_event(resource->get_path());
