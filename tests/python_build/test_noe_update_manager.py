@@ -31,13 +31,14 @@ class TestNoeUpdater(unittest.TestCase):
         self.assertIn('get_sha256(saved_path).to_lower() == patch_sha256', self.cpp)
         self.assertIn('file->get_length() == patch_size', self.cpp)
         self.assertIn('Download and verify the patch?', self.cpp)
+        self.assertIn('install_dialog->connect("confirmed"', self.cpp)
         self.assertNotIn('OS::execute(', self.cpp)
         self.assertNotIn('chmod ', self.cpp)
 
     def test_release_notes_and_continue_state(self):
         self.assertIn('TTR("Continue")', self.cpp)
         self.assertIn("What's new:", self.cpp)
-        self.assertIn('Installation requires your system package manager.', self.cpp)
+        self.assertIn('NoeEngine updated successfully', self.cpp)
 
     def test_no_secret_key_embedded(self):
         self.assertNotIn('SUPABASE_SERVICE_ROLE_KEY', self.cpp)
