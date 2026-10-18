@@ -130,6 +130,8 @@ def smoke_test_linux(binary, with_tests=False):
     project = ROOT / "tests/noqeri_scene"
     if not (project / "project.godot").is_file():
         raise RuntimeError("Noqeri runtime smoke project is missing.")
+    # Check that the editor, not only the bare game runtime, starts correctly.
+    command([binary, "--headless", "--editor", "--path", project, "--quit"])
     print("+", binary, "--headless --path", project, flush=True)
     try:
         run = subprocess.run(
