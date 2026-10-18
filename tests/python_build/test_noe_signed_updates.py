@@ -7,7 +7,8 @@ HEADER=(ROOT/'editor/noe_update_manager.h').read_text()
 GO=(ROOT/'tools/noe-updater/main.go').read_text()
 class NativeSignedUpdateContracts(unittest.TestCase):
     def test_periodic_fetch_and_user_consent(self):
-        self.assertIn('auto_timer->set_wait_time(300.0)',CPP)
+        self.assertIn('auto_timer->set_wait_time(5.0 * 60.0 * 60.0)',CPP)
+        self.assertIn('startup_timer->set_wait_time(8)',CPP)
         self.assertIn('download_url',CPP)
         self.assertIn('install_dialog->set_ok_button_text',CPP)
         self.assertIn('popup_centered',CPP)
