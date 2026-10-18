@@ -259,7 +259,7 @@ private:
 				}
 
 			} else if (valid_path.ends_with("zip")) {
-				set_message(TTR("This directory already contains a Godot project."), MESSAGE_ERROR, INSTALL_PATH);
+				set_message(TTR("This directory already contains a NoeEngine-compatible project."), MESSAGE_ERROR, INSTALL_PATH);
 				get_ok_button()->set_disabled(true);
 				return "";
 			}
@@ -507,7 +507,7 @@ private:
 					if (!is_folder_empty) {
 						ConfirmationDialog *cd = memnew(ConfirmationDialog);
 						cd->set_title(TTR("Warning: This folder is not empty"));
-						cd->set_text(TTR("You are about to create a Godot project in a non-empty folder.\nThe entire contents of this folder will be imported as project resources!\n\nAre you sure you wish to continue?"));
+						cd->set_text(TTR("You are about to create a NoeEngine project in a non-empty folder.\nThe entire contents of this folder will be imported as project resources!\n\nAre you sure you wish to continue?"));
 						cd->get_ok_button()->connect("pressed", callable_mp(this, &ProjectDialog::_nonempty_confirmation_ok_pressed));
 						get_parent()->add_child(cd);
 						cd->popup_centered();
@@ -2313,11 +2313,11 @@ void ProjectManager::_open_selected_projects_ask() {
 		for (int i = 0; i < unsupported_features.size(); i++) {
 			String feature = unsupported_features[i];
 			if (feature == "Double Precision") {
-				warning_message += TTR("Warning: This project uses double precision floats, but this version of\nGodot uses single precision floats. Opening this project may cause data loss.\n\n");
+				warning_message += TTR("Warning: This project uses double precision floats, but this version of\nNoeEngine uses single precision floats. Opening this project may cause data loss.\n\n");
 				unsupported_features.remove_at(i);
 				i--;
 			} else if (feature == "C#") {
-				warning_message += TTR("Warning: This project uses C#, but this build of Godot does not have\nthe Mono module. If you proceed you will not be able to use any C# scripts.\n\n");
+				warning_message += TTR("Warning: This project uses C#, but this build of NoeEngine does not have\nthe Mono module. If you proceed you will not be able to use any C# scripts.\n\n");
 				unsupported_features.remove_at(i);
 				i--;
 			} else if (feature.substr(0, 3).is_numeric()) {
@@ -2328,7 +2328,7 @@ void ProjectManager::_open_selected_projects_ask() {
 		}
 		if (!unsupported_features.is_empty()) {
 			String unsupported_features_str = String(", ").join(unsupported_features);
-			warning_message += vformat(TTR("Warning: This project uses the following features not supported by this build of Godot:\n\n%s\n\n"), unsupported_features_str);
+			warning_message += vformat(TTR("Warning: This project uses the following features not supported by this build of NoeEngine:\n\n%s\n\n"), unsupported_features_str);
 		}
 		warning_message += TTR("Open anyway? Project will be modified.");
 		ask_update_label->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
@@ -2568,7 +2568,7 @@ void ProjectManager::_files_dropped(PackedStringArray p_files) {
 			multi_scan_ask->get_ok_button()->disconnect("pressed", callable_mp(this, &ProjectManager::_scan_multiple_folders));
 			multi_scan_ask->get_ok_button()->connect("pressed", callable_mp(this, &ProjectManager::_scan_multiple_folders).bind(folders));
 			multi_scan_ask->set_text(
-					vformat(TTR("Are you sure to scan %s folders for existing Godot projects?\nThis could take a while."), folders.size()));
+					vformat(TTR("Are you sure to scan %s folders for existing NoeEngine-compatible projects?\nThis could take a while."), folders.size()));
 			multi_scan_ask->popup_centered();
 		} else {
 			_scan_multiple_folders(folders);
