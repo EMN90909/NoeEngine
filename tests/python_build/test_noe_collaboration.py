@@ -13,7 +13,8 @@ class CollaborationContracts(unittest.TestCase):
     def test_secure_device_identity_and_minimal_event(self):
         self.assertIn('Authorization: Bearer ',SOURCE)
         self.assertIn('if (!online_session || access_token.is_empty()',SOURCE)
-        self.assertIn('payload["path"] = relative_path;',SOURCE)
+        self.assertIn('payload["path"] = queued_collaboration_paths[0];',SOURCE)
+        self.assertIn('queued_collaboration_paths.push_back(relative_path)',SOURCE)
         self.assertNotIn('payload["actorId"]',SOURCE)
         self.assertNotIn('payload["fileContents"]',SOURCE)
     def test_activity_feed_is_member_scoped_on_backend(self):
