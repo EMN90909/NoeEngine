@@ -14,6 +14,7 @@
 #include "scene/gui/button.h"
 #include "scene/gui/dialogs.h"
 #include "scene/main/http_request.h"
+#include "scene/main/scene_tree.h"
 #include "scene/main/timer.h"
 
 static const char *NOE_PRODUCT_VERSION = "0.1.0-dev";
@@ -124,6 +125,7 @@ void NoeUpdateManager::_check() {
     if (downloading || update_button->is_disabled()) return;
     _read_website();
     if (website_url.is_empty()) {
+        if (quiet_check) return;
         _show_notice(TTR("Configure update source"),
                 TTR("First set your trusted HTTPS NoeEngine website in Account > Security."));
         return;
@@ -248,6 +250,7 @@ void NoeUpdateManager::_install_and_restart() {
     List<String> args;
     args.push_back("-root"); args.push_back(root);
     args.push_back("-package"); args.push_back(saved_path);
+    args.push_back("-expect-version"); args.push_back(release_version);
     args.push_back("-public-key"); args.push_back(pub);
     args.push_back("-receipt"); args.push_back(receipt);
     args.push_back("-wait-pid"); args.push_back(itos(OS::get_singleton()->get_process_id()));
