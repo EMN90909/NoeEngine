@@ -31,6 +31,9 @@ class NoeUpdateManager : public Node {
     String release_version;
     String release_notes;
     String saved_path;
+    String installed_version;
+    String trusted_helper;
+    String signing_public_key;
     int64_t patch_size = 0;
     bool available = false;
     bool downloading = false;
@@ -43,9 +46,11 @@ class NoeUpdateManager : public Node {
     void _startup_check();
     void _on_manifest(int p_result, int p_status, const PackedStringArray &p_headers, const PackedByteArray &p_body);
     void _download();
+    void _install_and_restart();
+    void _show_post_restart_notice();
     void _on_patch(int p_result, int p_status, const PackedStringArray &p_headers, const PackedByteArray &p_body);
     void _show_notice(const String &p_title, const String &p_message);
-    static bool _version_newer(const String &p_version);
+    bool _version_newer(const String &p_version) const;
     static bool _valid_download_url(const String &p_url);
 
 protected:
