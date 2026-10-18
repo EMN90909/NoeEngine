@@ -52,7 +52,9 @@ func main(){
  flag.Parse()
  if *keygen!=""{
   pub,priv,err:=ed25519.GenerateKey(rand.Reader);if err!=nil{panic(err)}
-  if err=os.WriteFile(*keygen,[]byte(base64.StdEncoding.EncodeToString(priv)),0600);err!=nil{panic(err)}
+  file,openErr:=os.OpenFile(*keygen,os.O_WRONLY|os.O_CREATE|os.O_EXCL,0600);if openErr!=nil{panic(openErr)}
+  if _,err=file.WriteString(base64.StdEncoding.EncodeToString(priv));err!=nil{file.Close();panic(err)}
+  if err=file.Close();err!=nil{panic(err)}
   fmt.Println("ED25519 PUBLIC KEY:",base64.StdEncoding.EncodeToString(pub));return
  }
  if *manifest==""||*key==""||*out==""||*files==""{fmt.Fprintln(os.Stderr,"usage: -manifest -files -key -out");os.Exit(2)}
