@@ -71,6 +71,7 @@ class NoeAccountWorkspace : public AcceptDialog {
     Label *collab_activity = nullptr;
     String collaboration_url;
     String bridge_endpoint_id;
+    String bridge_event_token; // One-hour ephemeral event session, never persisted.
     String bridge_public_url;
     enum BridgeKind { BRIDGE_NONE, BRIDGE_PAIR, BRIDGE_POLL, BRIDGE_REPLY };
     BridgeKind bridge_kind = BRIDGE_NONE;
