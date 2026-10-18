@@ -6,6 +6,7 @@
 #include "editor/editor_scale.h"
 #include "core/io/http_client.h"
 #include "core/io/json.h"
+#include "core/io/resource.h"
 #include "core/os/os.h"
 #include "core/os/time.h"
 #include "core/string/translation.h"
@@ -140,6 +141,15 @@ void NoeAccountWorkspace::_make_page(Page page) {
         _add_label(p, TTR("Godot-compatible editor extensions install per project via Project Settings > Plugins."));
         _add_button(p, TTR("Discover Godot MCP Toolkit"), callable_mp(this, &NoeAccountWorkspace::_open_godot_mcp));
         _add_label(p, TTR("Extension installation and permissions are not managed by this panel yet."));
+        _add_label(p, TTR("Team collaboration"));
+        _add_label(p, TTR("Enter the Convex project ID shared by your team. Scene/resource saves publish activity, not file contents."));
+        collab_project = memnew(LineEdit);
+        collab_project->set_placeholder(TTR("Team project ID"));
+        collab_project->set_max_length(128);
+        p->add_child(collab_project);
+        _add_button(p, TTR("Save collaboration project"), callable_mp(this, &NoeAccountWorkspace::_save_collaboration_project));
+        collab_status = _add_label(p, TTR("No collaboration project configured."));
+        collab_activity = _add_label(p, TTR("Team activity will appear here."));
     } else if (page == SECURITY) {
         _add_label(p, TTR("Security"));
         security_label = _add_label(p, TTR("Offline. No active access token."));
@@ -204,6 +214,10 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
     navigation_buttons[PROFILE]->set_pressed_no_signal(true);
     // Security page controls are constructed before initial URL configuration is shown.
     if (website_url_field) website_url_field->set_text(auth_base);
+    collaboration_url = OS::get_singleton()->get_environment("NOEENGINE_COLLAB_URL").strip_edges();
+    if (!_is_https_url(collaboration_url)) collaboration_url = "";
+    if (collaboration_url.ends_with("/")) collaboration_url = collaboration_url.substr(0, collaboration_url.length() - 1);
+    if (collab_project) collab_project->set_text(String(config->get_value("collaboration", "project_id", "")));
     welcome = memnew(ConfirmationDialog);
     welcome->set_title(TTR("Welcome to NoeEngine"));
     welcome->set_text(TTR("Sign in to connect your account, or use NoeEngine offline."));
@@ -272,6 +286,16 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
     poll_timer = memnew(Timer);
     poll_timer->connect("timeout", callable_mp(this, &NoeAccountWorkspace::_poll_device_flow));
     add_child(poll_timer);
+    collab_request = memnew(HTTPRequest);
+    collab_request->set_timeout(10.0);
+    collab_request->set_body_size_limit(65536);
+    collab_request->set_max_redirects(0);
+    collab_request->connect("request_completed", callable_mp(this, &NoeAccountWorkspace::_on_collaboration_response));
+    add_child(collab_request);
+    collab_timer = memnew(Timer);
+    collab_timer->set_wait_time(15.0);
+    collab_timer->connect("timeout", callable_mp(this, &NoeAccountWorkspace::_poll_collaboration_activity));
+    add_child(collab_timer);
     metrics_timer = memnew(Timer);
     metrics_timer->set_wait_time(1);
     metrics_timer->connect("timeout", callable_mp(this, &NoeAccountWorkspace::_tick_usage));
@@ -300,6 +324,11 @@ NoeAccountWorkspace *NoeAccountWorkspace::install(Control *parent, HBoxContainer
 void NoeAccountWorkspace::_notification(int what) {
     if (what == NOTIFICATION_READY) {
         metrics_timer->start();
+        collab_timer->start();
+        if (EditorNode::get_singleton()) {
+            EditorNode::get_singleton()->connect("scene_saved", callable_mp(this, &NoeAccountWorkspace::_on_scene_saved));
+            EditorNode::get_singleton()->connect("resource_saved", callable_mp(this, &NoeAccountWorkspace::_on_resource_saved));
+        }
         Timer *intro = memnew(Timer);
         add_child(intro);
         intro->set_one_shot(true);
@@ -452,6 +481,8 @@ void NoeAccountWorkspace::_logout() {
     request_kind = REQUEST_NONE;
     access_token.clear(); device_code.clear(); email.clear(); display_name.clear();
     online_session = false; awaiting_login = false; poll_timer->stop();
+    if (collab_request) collab_request->cancel_request();
+    collaboration_polling = false;
     _refresh_profile();
 }
 void NoeAccountWorkspace::_save_usage() {
@@ -606,4 +637,85 @@ void NoeAccountWorkspace::_open_godot_mcp() {
 }
 void NoeAccountWorkspace::_open_registry() {
     OS::get_singleton()->shell_open("https://registry.modelcontextprotocol.io/");
+}
+
+void NoeAccountWorkspace::_save_collaboration_project() {
+    if (!collab_project) return;
+    const String candidate = collab_project->get_text().strip_edges();
+    if (!candidate.is_empty() && (candidate.length() < 3 || candidate.length() > 128 ||
+            candidate.contains("/") || candidate.contains(" ") || candidate.contains("\\") ||
+            candidate.contains("?") || candidate.contains("#"))) {
+        collab_status->set_text(TTR("Invalid project ID."));
+        return;
+    }
+    config->set_value("collaboration", "project_id", candidate);
+    _save_usage();
+    collab_status->set_text(candidate.is_empty() ? TTR("Collaboration disabled.") :
+            TTR("Project selected. Requires a verified session and HTTPS collaboration service."));
+}
+void NoeAccountWorkspace::_on_scene_saved(const String &path) { _send_collaboration_event(path); }
+void NoeAccountWorkspace::_on_resource_saved(const Ref<Resource> &resource) {
+    if (resource.is_valid()) _send_collaboration_event(resource->get_path());
+}
+void NoeAccountWorkspace::_send_collaboration_event(const String &file) {
+    if (!online_session || access_token.is_empty() || collaboration_url.is_empty() || !collab_project ||
+            collab_request->get_http_client_status() != HTTPClient::STATUS_DISCONNECTED) return;
+    const String project = collab_project->get_text().strip_edges();
+    if (project.is_empty() || !file.begins_with("res://")) return;
+    const String relative_path = file.trim_prefix("res://");
+    if (relative_path.is_empty() || relative_path.length() > 512 || relative_path.contains("..") ||
+            relative_path.contains("\\") || relative_path.contains("\n")) return;
+    Dictionary payload;
+    payload["projectId"] = project;
+    payload["path"] = relative_path;
+    payload["action"] = "saved";
+    payload["requestId"] = itos((int64_t)Time::get_singleton()->get_ticks_usec());
+    PackedStringArray headers;
+    headers.push_back("Content-Type: application/json");
+    headers.push_back("Authorization: Bearer " + access_token);
+    Error err = collab_request->request(collaboration_url + "/v1/collaboration/events", headers,
+            HTTPClient::METHOD_POST, JSON::stringify(payload));
+    if (err != OK) collab_status->set_text(TTR("Could not publish file activity."));
+}
+void NoeAccountWorkspace::_poll_collaboration_activity() {
+    if (!online_session || access_token.is_empty() || collaboration_url.is_empty() || !collab_project ||
+            collab_project->get_text().strip_edges().is_empty() ||
+            collab_request->get_http_client_status() != HTTPClient::STATUS_DISCONNECTED) return;
+    PackedStringArray headers;
+    headers.push_back("Authorization: Bearer " + access_token);
+    collaboration_polling = true;
+    const String project = collab_project->get_text().strip_edges().uri_encode();
+    if (collab_request->request(collaboration_url + "/v1/collaboration/activity?projectId=" + project, headers) != OK)
+        collaboration_polling = false;
+}
+void NoeAccountWorkspace::_on_collaboration_response(int result, int code, const PackedStringArray &headers,
+        const PackedByteArray &body) {
+    if (!online_session) return;
+    if (result != HTTPRequest::RESULT_SUCCESS || code != 200) {
+        collab_status->set_text(TTR("Team service unavailable or project access denied."));
+        collaboration_polling = false;
+        return;
+    }
+    if (!collaboration_polling) {
+        collab_status->set_text(TTR("File save shared with authorized teammates."));
+        return;
+    }
+    collaboration_polling = false;
+    Variant parsed = JSON::parse_string(body.get_string_from_utf8());
+    if (parsed.get_type() != Variant::DICTIONARY) return;
+    Dictionary json = parsed;
+    Variant raw = json.get("events", Array());
+    if (raw.get_type() != Variant::ARRAY) return;
+    Array activity = raw;
+    if (activity.is_empty()) { collab_activity->set_text(TTR("No teammate changes yet.")); return; }
+    String summary;
+    for (int i = 0; i < MIN(activity.size(), 8); ++i) {
+        if (activity[i].get_type() != Variant::DICTIONARY) continue;
+        Dictionary item = activity[i];
+        String actor = item.get("actorEmail", "");
+        String path = item.get("path", "");
+        String action = item.get("action", "");
+        summary += actor.left(80) + " " + action.left(12) + " " + path.left(120) + "\n";
+    }
+    collab_activity->set_text(summary.strip_edges());
 }
