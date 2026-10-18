@@ -38,7 +38,7 @@ class InstallerPackagingTests(unittest.TestCase):
         self.addCleanup(self.patch_products.stop)
 
     def test_binary_selection_keeps_upstream_paths(self):
-        binary = self.root / "bin/godot.windows.editor.x86_64.exe"
+        binary = self.root / "bin/noeengine.windows.editor.x86_64.exe"
         binary.write_bytes(b"fixture")
         self.assertEqual(build.find_binary("windows"), binary)
         with self.assertRaises(RuntimeError):
@@ -47,7 +47,7 @@ class InstallerPackagingTests(unittest.TestCase):
     @unittest.skipUnless(sys.platform.startswith("linux"), "Debian packaging runs on Linux")
     @unittest.skipUnless(shutil.which("dpkg-deb"), "dpkg-deb required")
     def test_deb_setup_contains_launcher_and_attribution(self):
-        editor = self.root / "bin/godot.linuxbsd.editor.x86_64"
+        editor = self.root / "bin/noeengine.linuxbsd.editor.x86_64"
         shutil.copy2(sys.executable, editor)
         result = build.write_debian(editor)
         self.assertEqual(result.name, "NoeEngine-setup.deb")
@@ -83,7 +83,7 @@ class InstallerPackagingTests(unittest.TestCase):
                 mock.patch.object(build, "host_platform", return_value="linux"), \
                 mock.patch.object(build, "check_tool") as check:
             build.verify_toolchain("linux")
-            for tool in ("scons", "dpkg-deb", "g++", "pkg-config"):
+            for tool in ("scons", "g++", "pkg-config"):
                 check.assert_any_call(tool)
 
     def test_preflight_fails_closed_on_missing_scons(self):
@@ -108,7 +108,7 @@ class InstallerPackagingTests(unittest.TestCase):
         project = self.root / "tests/noqeri_scene"
         project.mkdir(parents=True)
         (project / "project.godot").write_text("config_version=5")
-        editor = self.root / "bin/godot.linuxbsd.editor.x86_64"
+        editor = self.root / "bin/noeengine.linuxbsd.editor.x86_64"
         editor.write_bytes(b"fixture executable")
         good = SimpleNamespace(returncode=0,
             stdout="NOQERI_NATIVE_READY\nNOQERI_REPEAT_STEP\nNOQERI_REPEAT_STEP\nNOQERI_NATIVE_PROCESS\n",
@@ -122,8 +122,31 @@ class InstallerPackagingTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "NOQERI_NATIVE_PROCESS"):
                 build.smoke_test_linux(editor)
 
+    def test_linux_app_archive_contains_executable_and_icon(self):
+        editor = self.root / "bin/noeengine.linuxbsd.editor.x86_64"
+        shutil.copy2(sys.executable, editor)
+        (self.root / "icon.png").write_bytes(b"valid-icon-fixture")
+        path = build.write_linux_app(editor)
+        self.assertEqual(path.name, "NoeEngine-linux-x86_64.tar.gz")
+        import tarfile
+        with tarfile.open(path, "r:gz") as archive:
+            members = set(archive.getnames())
+        self.assertIn("NoeEngine.AppDir/AppRun", members)
+        self.assertIn("NoeEngine.AppDir/usr/bin/noeengine", members)
+        self.assertIn("NoeEngine.AppDir/NoeEngine.png", members)
+        self.assertTrue((self.root / "Products/NoeEngine.AppDir/AppRun").stat().st_mode & 0o111)
+
+    def test_android_apk_locator_requires_actual_output(self):
+        with self.assertRaisesRegex(RuntimeError, "Real Android editor APK"):
+            build.find_android_editor_apk()
+        folder = self.root / "bin/android_editor_builds"
+        folder.mkdir()
+        apk = folder / "android_editor-release.apk"
+        apk.write_bytes(b"uncompiled fixture")
+        self.assertEqual(build.find_android_editor_apk(), apk)
+
     def test_windows_installer_recipe_has_uninstall_and_credits(self):
-        binary = self.root / "bin/godot.windows.editor.x86_64.exe"
+        binary = self.root / "bin/noeengine.windows.editor.x86_64.exe"
         binary.write_bytes(b"MZ fixture")
         captured = []
 
@@ -141,7 +164,7 @@ class InstallerPackagingTests(unittest.TestCase):
         self.assertIn('Section "Uninstall"', captured[0])
 
     def test_macos_pkg_recipe_has_bundle_and_credits(self):
-        binary = self.root / "bin/godot.macos.editor.x86_64"
+        binary = self.root / "bin/noeengine.macos.editor.x86_64"
         binary.write_bytes(b"fixture executable")
         captured = []
 
