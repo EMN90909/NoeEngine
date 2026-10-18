@@ -48,9 +48,9 @@ def check_tool(name):
 
 def find_binary(target):
     patterns = {
-        "linux": "godot.linuxbsd.editor.x86_64*",
-        "windows": "godot.windows.editor.x86_64.exe",
-        "macos": "godot.macos.editor.*",
+        "linux": "noeengine.linuxbsd.editor.x86_64*",
+        "windows": "noeengine.windows.editor.x86_64.exe",
+        "macos": "noeengine.macos.editor.*",
     }
     candidates = sorted((ROOT / "bin").glob(patterns[target]))
     candidates = [p for p in candidates if p.is_file() and not p.name.endswith(".console.exe")]
