@@ -469,15 +469,16 @@ Ref<Theme> create_editor_theme(const Ref<Theme> p_theme) {
 		// A negative contrast rate looks better for light themes, since it better follows the natural order of UI "elevation".
 		preset_contrast = -0.08;
 	} else if (preset == "Black (OLED)") {
-		preset_accent_color = Color(0.45, 0.75, 1.0);
+		preset_accent_color = Color(0.72, 0.75, 0.80);
 		preset_base_color = Color(0, 0, 0);
 		// The contrast rate value is irrelevant on a fully black theme.
 		preset_contrast = 0.0;
 		preset_draw_extra_borders = true;
-	} else { // Default
-		preset_accent_color = Color(0.44, 0.73, 0.98);
-		preset_base_color = Color(0.21, 0.24, 0.29);
-		preset_contrast = default_contrast;
+	} else { // NoeEngine Dark and legacy Default presets.
+		preset_accent_color = Color(0.72, 0.75, 0.80);
+		preset_base_color = Color(0.075, 0.08, 0.09);
+		preset_contrast = 0.18;
+		preset_draw_extra_borders = true;
 	}
 
 	if (preset != "Custom") {
