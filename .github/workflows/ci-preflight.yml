@@ -5,10 +5,10 @@ on:
     paths:
       - 'build.sh'
       - 'misc/build_products.py'
+      - 'misc/bootstrap_build_deps.py'
       - 'misc/ci_check.sh'
       - 'misc/capture_editor_snapshot.sh'
-      - 'tests/python_build/test_noe_installer.py'
-      - 'tests/python_build/test_noqeri_integration.py'
+      - 'tests/python_build/**'
       - 'modules/noqeri/**'
       - 'tests/noqeri_scene/**'
       - 'NOTICE.md'
