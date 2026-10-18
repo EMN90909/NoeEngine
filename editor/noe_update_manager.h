@@ -34,10 +34,13 @@ class NoeUpdateManager : public Node {
     int64_t patch_size = 0;
     bool available = false;
     bool downloading = false;
+    bool quiet_check = false;
 
     static void _bind_methods() {}
     void _read_website();
     void _check();
+    void _manual_check();
+    void _startup_check();
     void _on_manifest(int p_result, int p_status, const PackedStringArray &p_headers, const PackedByteArray &p_body);
     void _download();
     void _on_patch(int p_result, int p_status, const PackedStringArray &p_headers, const PackedByteArray &p_body);
