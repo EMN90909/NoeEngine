@@ -51,6 +51,9 @@ class NoeAccountWorkspace : public AcceptDialog {
     Label *website_url_status = nullptr;
     LineEdit *api_name = nullptr;
     LineEdit *api_url = nullptr;
+    LineEdit *api_key = nullptr;
+    LineEdit *api_model = nullptr;
+    LineEdit *api_vault_passphrase = nullptr;
     LineEdit *mcp_name = nullptr;
     LineEdit *mcp_url = nullptr;
     ConfirmationDialog *welcome = nullptr;
@@ -67,6 +70,12 @@ class NoeAccountWorkspace : public AcceptDialog {
     Label *collab_status = nullptr;
     Label *collab_activity = nullptr;
     String collaboration_url;
+    String bridge_endpoint_id;
+    String bridge_public_url;
+    enum BridgeKind { BRIDGE_NONE, BRIDGE_PAIR, BRIDGE_POLL, BRIDGE_REPLY };
+    BridgeKind bridge_kind = BRIDGE_NONE;
+    HTTPRequest *bridge_request = nullptr;
+    Timer *bridge_timer = nullptr;
     bool collaboration_polling = false;
     Vector<String> queued_collaboration_paths;
     Vector<String> queued_collaboration_ids;
@@ -108,6 +117,10 @@ class NoeAccountWorkspace : public AcceptDialog {
     void _flush_collaboration_queue();
     void _on_collaboration_response(int p_result, int p_code, const PackedStringArray &p_headers, const PackedByteArray &p_body);
     void _save_collaboration_project();
+    void _poll_bridge();
+    void _on_bridge_response(int p_result, int p_code, const PackedStringArray &p_headers, const PackedByteArray &p_body);
+    Dictionary _read_scene_tree() const;
+    bool _store_api_secret(const String &p_name, const String &p_key, const String &p_password);
     void _tick_usage();
     void _logout();
     void _save_website_url();
