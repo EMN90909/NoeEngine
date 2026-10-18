@@ -1,3 +1,44 @@
+# NoeEngine multi-platform builds
+
+## Build targets
+
+| Command | Host | Real output in `Products/` |
+| --- | --- | --- |
+| `./build.sh linux 2` | Linux | `NoeEngine.AppDir/AppRun`, `NoeEngine-linux-x86_64.tar.gz`, and optional legacy `.deb` |
+| `./build.sh windows 2` | Windows, or Linux with MinGW-w64/NSIS | `NoeEngine-setup.exe` |
+| `./build.sh macos 2` | **macOS with Xcode only** | `NoeEngine-setup.pkg` |
+| `./build.sh android 2` | Linux/macOS with JDK and Android SDK/NDK | `NoeEngine-android-arm64.apk` (actual Android editor build) |
+| `./build.sh all 2` | Linux or macOS | Linux: Linux+Windows+Android. macOS: macOS+Android. Missing SDKs fail explicitly |
+| `./build.sh check` | Supported host | Offline lint/tests, **no** C++ compilation |
+| `./build.sh patch-tools` | Host with Go 1.23+ | Locally built and tested signed updater/signer executables |
+
+Add `--install-deps` to explicitly download and install toolchains from trusted package repositories and, for Android, Google's official SDK ZIP with a **pinned SHA-256 checksum**. The script does not run downloaded shell scripts. Android `sdkmanager` may request license agreement acceptance, which is the user's decision. The optional installer does not accept those licenses automatically. It may require `sudo` and several gigabytes of bandwidth/storage.
+
+```sh
+./build.sh linux 2 --install-deps
+./build.sh windows 2 --install-deps
+./build.sh android 2 --install-deps
+./build.sh macos 2 --install-deps  # Only on a Mac with Xcode installed
+```
+
+For offline builds without `--install-deps`, the script checks what is installed and stops with a missing-prerequisite error. Do **not** mistake preflight, a packaging fixture, or a template APK for a compiled, tested application.
+
+**Linux:** The AppDir contains the real compiled editor, an executable launcher and the icon. Unpack the archive and run `NoeEngine.AppDir/AppRun`. It is a directly runnable application, but not guaranteed to be self-contained on every Linux distribution; system runtime libraries may still be required.
+
+**Windows:** Generates an NSIS `.exe` installer with an uninstaller. Cross-compile on Linux via MinGW-w64. Test the executable on Windows before release.
+
+**macOS:** Generates an unsigned `.pkg` with a real `NoeEngine.app` only on a Mac with Xcode/Apple SDK. Linux cannot legitimately download an Apple SDK via this script; macOS signing/notarization must be handled separately.
+
+**Android:** Builds the **editor**, not a desktop binary renamed APK. Uses `scons platform=android target=editor arch=arm64 production=yes generate_android_binaries=yes` and the bundled Gradle wrapper, copies the generated release `.apk` and checks it is a real APK with `AndroidManifest.xml`. Requires Google's Android SDK tools, NDK r28b and JDK 17. A release signing configuration and installation/on-device UX tests are needed before publishing through an app store.
+
+**Branding:** The four root `icon*.png` and `icon*.svg` files use the supplied orange cobra. SVGs are self-contained SVG containers with an embedded optimized raster source, not hand-traced vector paths. Their legibility at all densities needs GUI review, especially macOS and Android launch icons.
+
+## Release gate
+
+Run `./build.sh check` first, then a complete native build for each OS/architecture, execute the real binary, and inspect installation and recovery paths. The repository does not currently contain four verified cross-platform outputs; `build.sh` creates them only on hosts with the required SDKs.
+
+## Original build/package notes
+
 # NoeEngine setup installers
 
 ## One-command source build and installer
