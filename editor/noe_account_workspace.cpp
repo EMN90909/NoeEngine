@@ -584,7 +584,9 @@ bool NoeAccountWorkspace::_store_api_secret(const String &name, const String &se
         Ref<FileAccessEncrypted> encrypted = Ref<FileAccessEncrypted>(memnew(FileAccessEncrypted));
         if (encrypted->open_and_parse(base, aes, FileAccessEncrypted::MODE_READ) != OK ||
                 encrypted->get_length() > 512 * 1024) return false;
-        Vector<uint8_t> bytes = encrypted->get_buffer(encrypted->get_length());
+        Vector<uint8_t> bytes;
+        bytes.resize((int)encrypted->get_length());
+        if (encrypted->get_buffer(bytes.ptrw(), bytes.size()) != (uint64_t)bytes.size()) return false;
         if (bytes.is_empty()) return false;
         Variant parsed = JSON::parse_string(String::utf8(reinterpret_cast<const char *>(bytes.ptr()), bytes.size()));
         if (parsed.get_type() != Variant::DICTIONARY) return false;
