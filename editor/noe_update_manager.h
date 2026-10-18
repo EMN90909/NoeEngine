@@ -34,6 +34,7 @@ class NoeUpdateManager : public Node {
     String release_notes;
     String saved_path;
     String installed_version;
+    String notified_version;
     String trusted_helper;
     String signing_public_key;
     int64_t patch_size = 0;
