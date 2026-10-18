@@ -136,8 +136,8 @@ Vector<ScriptLanguage::ScriptTemplate> NoqeriLanguage::get_built_in_templates(St
 }
 
 Ref<Script> NoqeriLanguage::make_template(const String &p_template, const String &p_class_name, const String &p_base_class_name) const {
-    Ref<NoqeriScript> script;
-    script.instantiate();
+    Ref<NoqeriScript> noqeri_script;
+    noqeri_script.instantiate();
     String base = p_base_class_name;
     if (!ClassDB::class_exists(base) ||
             (base != "Node" && !ClassDB::is_parent_class(base, "Node"))) {
@@ -147,9 +147,9 @@ Ref<Script> NoqeriLanguage::make_template(const String &p_template, const String
     if (body.is_empty()) {
         body = "function _ready(): void {\n    \n}";
     }
-    script->set_source_code("// noeengine:extends " + base + "\n" + body + "\n");
-    script->reload();
-    return script;
+    noqeri_script->set_source_code("// noeengine:extends " + base + "\n" + body + "\n");
+    noqeri_script->reload();
+    return noqeri_script;
 }
 
 Script *NoqeriLanguage::create_script() const {
@@ -218,7 +218,9 @@ void NoqeriLanguage::reload_all_scripts() {
 }
 void NoqeriLanguage::reload_tool_script(const Ref<Script> &p_script, bool p_soft_reload) {
     if (p_script.is_valid()) {
-        p_script->reload(p_soft_reload);
+        // The const Ref exposes a const Script*. Copy it before calling a mutating method.
+        Ref<Script> reloadable_script = p_script;
+        reloadable_script->reload(p_soft_reload);
     }
 }
 void NoqeriLanguage::get_public_functions(List<MethodInfo> *p_functions) const {
@@ -251,27 +253,27 @@ Ref<Resource> ResourceFormatLoaderNoqeri::load(const String &p_path, const Strin
         }
         return Ref<Resource>();
     }
-    Ref<NoqeriScript> script;
-    script.instantiate();
-    script->set_path(p_original_path.is_empty() ? p_path : p_original_path, true);
-    script->set_source_code(source->get_as_utf8_string());
+    Ref<NoqeriScript> noqeri_script;
+    noqeri_script.instantiate();
+    noqeri_script->set_path(p_original_path.is_empty() ? p_path : p_original_path, true);
+    noqeri_script->set_source_code(source->get_as_utf8_string());
     // Keep invalid code loadable so the native editor can correct it.
-    script->reload();
+    noqeri_script->reload();
     if (r_error) {
         *r_error = OK;
     }
-    return script;
+    return noqeri_script;
 }
 
 Error ResourceFormatSaverNoqeri::save(const Ref<Resource> &p_resource, const String &p_path, uint32_t p_flags) {
-    Ref<NoqeriScript> script = p_resource;
-    ERR_FAIL_COND_V(script.is_null(), ERR_INVALID_PARAMETER);
+    Ref<NoqeriScript> noqeri_script = p_resource;
+    ERR_FAIL_COND_V(noqeri_script.is_null(), ERR_INVALID_PARAMETER);
     Error err = OK;
     Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE, &err);
     if (file.is_null()) {
         return err;
     }
-    file->store_string(script->get_source_code());
+    file->store_string(noqeri_script->get_source_code());
     return file->get_error() == OK ? OK : ERR_CANT_CREATE;
 }
 
@@ -281,6 +283,6 @@ void ResourceFormatSaverNoqeri::get_recognized_extensions(const Ref<Resource> &p
     }
 }
 bool ResourceFormatSaverNoqeri::recognize(const Ref<Resource> &p_resource) const {
-    Ref<NoqeriScript> script = p_resource;
-    return script.is_valid();
+    Ref<NoqeriScript> noqeri_script = p_resource;
+    return noqeri_script.is_valid();
 }
