@@ -19,8 +19,8 @@
 static const char *NOE_PRODUCT_VERSION = "0.1.0-dev";
 static const int64_t MAX_NOE_PATCH = 104857600;
 
-bool NoeUpdateManager::_version_newer(const String &next) {
-    String old_version = NOE_PRODUCT_VERSION;
+bool NoeUpdateManager::_version_newer(const String &next) const {
+    String old_version = installed_version.is_empty() ? String(NOE_PRODUCT_VERSION) : installed_version;
     const bool next_dev = next.contains("-");
     const bool old_dev = old_version.contains("-");
     const String n = next.get_slice("-", 0), o = old_version.get_slice("-", 0);
@@ -47,7 +47,6 @@ void NoeUpdateManager::_read_website() {
         if (cfg->load(EditorPaths::get_singleton()->get_config_dir().path_join("noeengine_account.cfg")) == OK)
             website_url = String(cfg->get_value("account", "website_url", ""));
     }
-    if (website_url.is_empty()) website_url = "https://noeengine-web.onrender.com";
     if (!website_url.begins_with("https://") || website_url.contains("@") ||
             website_url.contains("?") || website_url.contains("#") ||
             website_url.contains("\n") || website_url.contains(" ")) {
@@ -78,6 +77,16 @@ NoeUpdateManager::NoeUpdateManager() {
     completion_dialog->set_title(TTR("NoeEngine update"));
     completion_dialog->get_ok_button()->set_text(TTR("Continue"));
     add_child(completion_dialog);
+    install_dialog = memnew(ConfirmationDialog);
+    install_dialog->set_title(TTR("Install signed update"));
+    install_dialog->set_ok_button_text(TTR("Install and restart"));
+    install_dialog->set_cancel_button_text(TTR("Not now"));
+    install_dialog->connect("confirmed", callable_mp(this, &NoeUpdateManager::_install_and_restart));
+    add_child(install_dialog);
+    auto_timer = memnew(Timer);
+    auto_timer->set_wait_time(300.0);
+    auto_timer->connect("timeout", callable_mp(this, &NoeUpdateManager::_startup_check));
+    add_child(auto_timer);
     startup_timer = memnew(Timer);
     startup_timer->set_one_shot(true);
     startup_timer->set_wait_time(8);
@@ -100,6 +109,8 @@ NoeUpdateManager *NoeUpdateManager::install(Control *parent, HBoxContainer *tool
 void NoeUpdateManager::_notification(int what) {
     if (what == NOTIFICATION_READY) {
         startup_timer->start();
+        auto_timer->start();
+        _show_post_restart_notice();
     }
 }
 void NoeUpdateManager::_show_notice(const String &title, const String &message) {
