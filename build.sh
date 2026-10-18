@@ -7,11 +7,26 @@ ROOT="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 mkdir -p Products
 
+# With no arguments, execute the exact requested release pipeline in order.
+# Each stage is a separate invocation. set -e makes the pipeline fail fast:
+# a broken preflight/build cannot produce a misleading success message.
+if [[ $# -eq 0 ]]; then
+  printf '%s\n' '[NoeEngine] Full default build: check → Linux → Windows → Android'
+  "$ROOT/build.sh" check
+  "$ROOT/build.sh" linux 2 --install-deps
+  "$ROOT/build.sh" windows 2 --install-deps
+  "$ROOT/build.sh" android 2 --install-deps
+  printf '%s\n' '[NoeEngine] All four stages completed successfully. See Products/.'
+  exit 0
+fi
+
 usage() {
   cat <<'USAGE'
 Usage: ./build.sh [linux|windows|macos|android|all|check|patch-tools] [jobs]
                   [--install-deps] [--tests] [--package-only]
 
+  ./build.sh                         check, linux 2 --install-deps,
+                                     windows 2 --install-deps, android 2 --install-deps
   ./build.sh linux 2                 Linux runnable AppDir and .tar.gz (+ .deb if available)
   ./build.sh windows 2               Windows .exe setup using MinGW-w64 and NSIS
   ./build.sh macos 2                 macOS .pkg setup using Xcode on a Mac
