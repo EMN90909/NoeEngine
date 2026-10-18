@@ -436,7 +436,7 @@ void NoeAccountWorkspace::_render_integrations() {
         CheckBox *cb = memnew(CheckBox);
         cb->set_text(String(config->get_value("mcp", "name_" + itos(i), "")) + " · " +
                      String(config->get_value("mcp", "url_" + itos(i), "")));
-        cb->set_button_pressed((bool)config->get_value("mcp", "enabled_" + itos(i), false));
+        cb->set_pressed((bool)config->get_value("mcp", "enabled_" + itos(i), false));
         cb->set_tooltip_text(TTR("Saves a preference; does not launch the server."));
         cb->connect("toggled", callable_mp(this, &NoeAccountWorkspace::_toggle_mcp).bind(i));
         mcp_list->add_child(cb);
