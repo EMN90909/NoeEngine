@@ -547,24 +547,96 @@ void NoeAccountWorkspace::_tick_usage() {
             (int)ai_local, (int)ai_cloud));
     if (now >= next_save_msec) { _save_usage(); next_save_msec = now + 60000; }
 }
+// The vault requires a locally entered passphrase for each edit. Neither the key
+// nor the passphrase is put in ConfigFile, command line arguments or cloud storage.
+bool NoeAccountWorkspace::_store_api_secret(const String &name, const String &secret, const String &password) {
+    if (password.length() < 16 || secret.is_empty() || config_path.is_empty()) return false;
+    const String vault_path = EditorPaths::get_singleton()->get_config_dir().path_join("noeengine_api.vault");
+    const bool existing = FileAccess::exists(vault_path);
+    Ref<Crypto> crypto = Ref<Crypto>(Crypto::create());
+    if (crypto.is_null()) return false;
+    PackedByteArray salt = config->get_value("vault", "salt", PackedByteArray());
+    if (salt.size() != 16) {
+        if (existing) return false; // Never overwrite an existing vault without its salt.
+        salt = crypto->generate_random_bytes(16);
+    }
+    // PBKDF2-HMAC-SHA256, 120000 iterations, distinct salt per installation.
+    // The native encrypted file uses AES-256. Salt is public; the passphrase isn't.
+    PackedByteArray pass = password.to_utf8_buffer();
+    PackedByteArray msg = salt;
+    msg.push_back(0); msg.push_back(0); msg.push_back(0); msg.push_back(1);
+    PackedByteArray u = crypto->hmac_digest(HashingContext::HASH_SHA256, pass, msg);
+    if (u.size() != 32) return false;
+    PackedByteArray result = u;
+    for (int round = 1; round < 120000; ++round) {
+        u = crypto->hmac_digest(HashingContext::HASH_SHA256, pass, u);
+        if (u.size() != 32) return false;
+        for (int j = 0; j < 32; ++j) result.set(j, result[j] ^ u[j]);
+    }
+    Vector<uint8_t> aes;
+    aes.resize(32);
+    for (int j = 0; j < 32; ++j) aes.write[j] = result[j];
+    Dictionary secrets;
+    if (existing) {
+        Error err = OK;
+        Ref<FileAccess> base = FileAccess::open(vault_path, FileAccess::READ, &err);
+        if (base.is_null() || err != OK) return false;
+        Ref<FileAccessEncrypted> encrypted = Ref<FileAccessEncrypted>(memnew(FileAccessEncrypted));
+        if (encrypted->open_and_parse(base, aes, FileAccessEncrypted::MODE_READ) != OK ||
+                encrypted->get_length() > 512 * 1024) return false;
+        Vector<uint8_t> bytes = encrypted->get_buffer(encrypted->get_length());
+        if (bytes.is_empty()) return false;
+        Variant parsed = JSON::parse_string(String::utf8(reinterpret_cast<const char *>(bytes.ptr()), bytes.size()));
+        if (parsed.get_type() != Variant::DICTIONARY) return false;
+        secrets = parsed;
+    }
+    if (secrets.has(name)) return false; // Do not accidentally overwrite another credential.
+    secrets[name] = secret;
+    const PackedByteArray encoded = JSON::stringify(secrets).to_utf8_buffer();
+    if (encoded.size() > 512 * 1024) return false;
+    const String tmp_path = vault_path + ".tmp";
+    Error err = OK;
+    Ref<FileAccess> target = FileAccess::open(tmp_path, FileAccess::WRITE, &err);
+    if (target.is_null() || err != OK) return false;
+    Ref<FileAccessEncrypted> encrypted = Ref<FileAccessEncrypted>(memnew(FileAccessEncrypted));
+    if (encrypted->open_and_parse(target, aes, FileAccessEncrypted::MODE_WRITE_AES256) != OK) return false;
+    encrypted->store_buffer(encoded.ptr(), encoded.size());
+    encrypted.unref(); // Flush encrypted bytes before moving into place.
+    target.unref();
+    if (DirAccess::rename_absolute(tmp_path, vault_path) != OK) return false;
+    config->set_value("vault", "salt", salt);
+    return true;
+}
 void NoeAccountWorkspace::_show_api_form() {
-    api_name->clear(); api_url->clear(); api_error->set_text("");
-    api_dialog->popup_centered(Size2i(485, 300) * EDSCALE);
+    api_name->clear(); api_url->clear(); api_key->clear(); api_model->clear();
+    api_vault_passphrase->clear(); api_error->set_text("");
+    api_dialog->popup_centered(Size2i(555, 565) * EDSCALE);
     api_name->grab_focus();
 }
 void NoeAccountWorkspace::_save_api() {
-    String name = api_name->get_text().strip_edges(), url = api_url->get_text().strip_edges();
-    if (name.is_empty() || !_is_https_url(url)) {
-        api_error->set_text(TTR("Name and HTTPS endpoint required."));
+    const String name = api_name->get_text().strip_edges();
+    const String url = api_url->get_text().strip_edges();
+    const String model = api_model->get_text().strip_edges();
+    const String key = api_key->get_text().strip_edges();
+    const String passphrase = api_vault_passphrase->get_text();
+    if (name.is_empty() || !_is_https_url(url) || key.is_empty() || passphrase.length() < 16) {
+        api_error->set_text(TTR("Name, HTTPS URL, API key, and vault passphrase (16+ characters) required."));
         api_dialog->popup_centered(); return;
     }
     int count = CLAMP((int)config->get_value("api", "count", 0), 0, 128);
-    if (count == 128) return;
+    if (count == 128 || !_store_api_secret(name, key, passphrase)) {
+        api_error->set_text(TTR("Vault could not be unlocked or saved, or API name already exists. Verify the passphrase."));
+        api_dialog->popup_centered(); return;
+    }
+    // Non-sensitive provider metadata only; API credentials are in the encrypted vault.
     config->set_value("api", "count", count + 1);
     config->set_value("api", "name_" + itos(count), name);
     config->set_value("api", "url_" + itos(count), url);
+    config->set_value("api", "model_" + itos(count), model);
+    api_key->clear(); api_vault_passphrase->clear();
     _save_usage(); _render_integrations();
 }
+
 void NoeAccountWorkspace::_show_mcp_form() {
     mcp_name->clear(); mcp_url->clear(); mcp_error->set_text("");
     mcp_dialog->popup_centered(Size2i(485, 300) * EDSCALE);
@@ -597,7 +669,9 @@ void NoeAccountWorkspace::_render_integrations() {
     if (!count) _add_label(api_list, TTR("No APIs added."));
     for (int i = 0; i < count; ++i)
         _add_label(api_list, String(config->get_value("api", "name_" + itos(i), "")) + " · " +
-                String(config->get_value("api", "url_" + itos(i), "")));
+                String(config->get_value("api", "url_" + itos(i), "")) +
+                " · " + String(config->get_value("api", "model_" + itos(i), "")) +
+                TTR(" · Key encrypted in local vault"));
     count = CLAMP((int)config->get_value("mcp", "count", 0), 0, 128);
     if (!count) _add_label(mcp_list, TTR("No MCPs added."));
     for (int i = 0; i < count; ++i) {
