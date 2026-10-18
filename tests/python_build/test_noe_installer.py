@@ -113,13 +113,20 @@ class InstallerPackagingTests(unittest.TestCase):
         good = SimpleNamespace(returncode=0,
             stdout="NOQERI_NATIVE_READY\nNOQERI_REPEAT_STEP\nNOQERI_REPEAT_STEP\nNOQERI_NATIVE_PROCESS\n",
             stderr="")
+        branded_help = SimpleNamespace(returncode=0,
+            stdout="NoeEngine v0.1.0-dev\\nUsage: noeengine [options]\\n", stderr="")
         with mock.patch.object(build, "command"), \
-                mock.patch.object(build.subprocess, "run", return_value=good):
+                mock.patch.object(build.subprocess, "run", side_effect=[branded_help, good]):
             build.smoke_test_linux(editor)
         bad = SimpleNamespace(returncode=0, stdout="NOQERI_NATIVE_READY", stderr="")
         with mock.patch.object(build, "command"), \
-                mock.patch.object(build.subprocess, "run", return_value=bad):
+                mock.patch.object(build.subprocess, "run", side_effect=[branded_help, bad]):
             with self.assertRaisesRegex(RuntimeError, "NOQERI_NATIVE_PROCESS"):
+                build.smoke_test_linux(editor)
+        upstream_help = SimpleNamespace(returncode=0, stdout="Godot Engine v4", stderr="")
+        with mock.patch.object(build, "command"), \
+                mock.patch.object(build.subprocess, "run", return_value=upstream_help):
+            with self.assertRaisesRegex(RuntimeError, "upstream engine"):
                 build.smoke_test_linux(editor)
 
     def test_linux_app_archive_contains_executable_and_icon(self):
