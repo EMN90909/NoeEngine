@@ -91,3 +91,7 @@ The website's Node API implements `POST /device/start`, `POST /device/poll`, and
 **Deployment still needs explicit connection:** The accessible Supabase projects are named Aroeno. No production NoeEngine Supabase project, deployed URL, or confirmed Render workspace has been supplied. Do not point the engine at a guessed `onrender.com` hostname and never install NoeEngine SQL in Aroeno. Follow the web repository's `DEPLOYMENT.md` only after a dedicated project and Render service are identified.
 
 UI consistency measures: native `Button` controls, keyboard-focusable sidebar, default editor theme tokens, `EDSCALE` spacing, clamp-to-window account dialog, clear loading/error/offline states, and dynamic profile monogram. Static code inspection and source-level test coverage are not a substitute for a real Linux C++ compilation, visual screenshots, keyboard navigation, or authenticated integration testing.
+
+## Verified default identity and update endpoint (2026-10-18)
+
+The Render Node web service deployed from `EMN90909/NoeEngine-web` is live at `https://noeengine-web.onrender.com`, with the account backend reporting configured status. New editor installations use that origin by default for browser device authorization and the release feed. An explicit `NOEENGINE_AUTH_URL` or locally saved account URL takes precedence. The independent collaboration gateway still requires `NOEENGINE_COLLAB_URL` and backend configuration. The native engine contains **no Convex production deploy key or database service-role credential**.
