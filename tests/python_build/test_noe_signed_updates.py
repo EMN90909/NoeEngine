@@ -29,6 +29,6 @@ class NativeSignedUpdateContracts(unittest.TestCase):
         self.assertNotIn('website_url = "https://noeengine-web.onrender.com"',CPP)
         self.assertIn('if (quiet_check) return;',CPP)
     def test_logo_is_real_png(self):
-        self.assertTrue((ROOT/'logo.png').read_bytes().startswith(b'\\x89PNG\\r\\n\\x1a\\n'))
+        self.assertTrue((ROOT/'logo.png').read_bytes().startswith(bytes.fromhex('89504e470d0a1a0a')))
 if __name__=='__main__':
     unittest.main()
