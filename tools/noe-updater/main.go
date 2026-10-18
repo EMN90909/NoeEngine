@@ -80,11 +80,14 @@ func apply(root,pkg,receipt string,pub ed25519.PublicKey,expectedVersion ...stri
  if info,e:=os.Lstat(root);e!=nil||!info.IsDir()||info.Mode()&os.ModeSymlink!=0{return errors.New("install root not a directory")}
  m,files,err:=verifyZip(pkg,pub);if err!=nil{return err}
  if len(expectedVersion)>0 && expectedVersion[0]!="" && m.Version!=expectedVersion[0]{return errors.New("release version mismatch")}
+ modes:=map[string]os.FileMode{}
  for _,c:=range m.Changes {
   target,e:=safeTarget(root,c.Path);if e!=nil{return e}
   _,e=os.Lstat(target)
   if c.Op=="add" {if !os.IsNotExist(e){return fmt.Errorf("file exists: %s",c.Path)};continue}
   if e!=nil{return e}
+  info,e:=os.Stat(target);if e!=nil||!info.Mode().IsRegular(){return fmt.Errorf("not a regular target: %s",c.Path)}
+  modes[c.Path]=info.Mode().Perm()
   sum,e:=fileHash(target);if e!=nil||sum!=c.Before{return fmt.Errorf("base mismatch: %s",c.Path)}
  }
  backup,err:=os.MkdirTemp(root,".noe-rollback-");if err!=nil{return err}
@@ -103,7 +106,10 @@ func apply(root,pkg,receipt string,pub ed25519.PublicKey,expectedVersion ...stri
   applied=append(applied,c)
   if c.Op!="delete" {
    if e=os.MkdirAll(filepath.Dir(target),0755);e!=nil{rollback();return e}
-   if e=os.WriteFile(target,files["files/"+c.Path],0755);e!=nil{rollback();return e}
+   mode:=os.FileMode(0644)
+   if c.Op!="add"{mode=modes[c.Path]}
+   if e=os.WriteFile(target,files["files/"+c.Path],mode);e!=nil{rollback();return e}
+   if e=os.Chmod(target,mode);e!=nil{rollback();return e}
    if got,e:=fileHash(target);e!=nil||got!=c.After{rollback();return errors.New("post-write checksum mismatch")}
   }
  }
