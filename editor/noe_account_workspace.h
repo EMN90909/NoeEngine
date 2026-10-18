@@ -48,6 +48,9 @@ class NoeAccountWorkspace : public AcceptDialog {
     LineEdit *mcp_url = nullptr;
     ConfirmationDialog *welcome = nullptr;
     AcceptDialog *login_dialog = nullptr;
+    AcceptDialog *marketplace_dialog = nullptr;
+    VBoxContainer *marketplace_results = nullptr;
+    HTTPRequest *registry_request = nullptr;
     ConfirmationDialog *api_dialog = nullptr;
     ConfirmationDialog *mcp_dialog = nullptr;
     HTTPRequest *auth_request = nullptr;
@@ -89,6 +92,9 @@ class NoeAccountWorkspace : public AcceptDialog {
     void _save_mcp();
     void _toggle_mcp(bool p_enabled, int p_index);
     void _render_integrations();
+    void _show_mcp_marketplace();
+    void _on_registry_response(int p_result, int p_code, const PackedStringArray &p_headers, const PackedByteArray &p_body);
+    void _marketplace_select(const String &p_name, const String &p_url);
     void _open_godot_mcp();
     void _open_registry();
     void _refresh_profile();
