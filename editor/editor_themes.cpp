@@ -731,7 +731,12 @@ Ref<Theme> create_editor_theme(const Ref<Theme> p_theme) {
 	style_popup->set_border_color(contrast_color_1);
 	const Color shadow_color = Color(0, 0, 0, dark_theme ? 0.3 : 0.1);
 	style_popup->set_shadow_color(shadow_color);
-	style_popup->set_shadow_size(4 * EDSCALE);
+	// Use affordable native StyleBoxFlat surfaces instead of GPU effects.
+	// The soft UI gets a subtle elevated popup; low-RAM Dark has no drop shadow.
+	style_popup->set_shadow_size(noe_soft_ui ? 4 * EDSCALE : 0);
+	if (noe_soft_ui) {
+		style_popup->set_bg_color(dark_color_2);
+	}
 	// Popups are separate windows by default in the editor. Windows currently don't support per-pixel transparency
 	// in 4.0, and even if it was, it may not always work in practice (e.g. running with compositing disabled).
 	style_popup->set_corner_radius_all(0);
