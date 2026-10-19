@@ -21,6 +21,7 @@ class EditorProfiler : public VBoxContainer {
 public:
 	struct Metric {
 		bool valid = false;
+		bool is_aggregate = false;
 
 		int frame_number = 0;
 		float frame_time = 0;
@@ -67,6 +68,9 @@ public:
 private:
 	Button *activate = nullptr;
 	Button *clear_button = nullptr;
+	Button *next_spike_button = nullptr;
+	SpinBox *spike_threshold = nullptr;
+	Label *spike_summary = nullptr;
 	TextureRect *graph = nullptr;
 	Ref<ImageTexture> graph_texture;
 	Vector<uint8_t> graph_image;
@@ -102,6 +106,9 @@ private:
 
 	void _activate_pressed();
 	void _clear_pressed();
+	void _next_spike_pressed();
+	void _spike_threshold_changed(double p_value);
+	void _update_spike_summary(const Metric &p_metric);
 
 	String _get_time_as_text(const Metric &m, float p_time, int p_calls);
 
