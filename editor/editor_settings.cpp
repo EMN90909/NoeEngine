@@ -575,7 +575,7 @@ void EditorSettings::_load_defaults(Ref<ConfigFile> p_extra_config) {
 
 	// Behavior: Files
 	_initial_set("text_editor/behavior/files/trim_trailing_whitespace_on_save", false);
-	_initial_set("text_editor/behavior/files/autosave_interval_secs", 0);
+	_initial_set("text_editor/behavior/files/autosave_interval_secs", 120);
 	_initial_set("text_editor/behavior/files/restore_scripts_on_load", true);
 	_initial_set("text_editor/behavior/files/convert_indent_on_save", true);
 	_initial_set("text_editor/behavior/files/auto_reload_scripts_on_external_change", false);
@@ -723,6 +723,10 @@ void EditorSettings::_load_defaults(Ref<ConfigFile> p_extra_config) {
 
 	// Auto save
 	_initial_set("run/auto_save/save_before_running", true);
+	// NoeEngine: independently configurable, conservative periodic scene backups.
+	// Existing unsaved/untitled scenes are never assigned filenames silently.
+	_initial_set("run/auto_save/save_modified_scenes_periodically", true);
+	EDITOR_SETTING(Variant::INT, PROPERTY_HINT_RANGE, "run/auto_save/interval_seconds", 120, "30,1800,10")
 
 	// Output
 	EDITOR_SETTING(Variant::INT, PROPERTY_HINT_RANGE, "run/output/font_size", 13, "8,48,1")
