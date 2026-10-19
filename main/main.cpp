@@ -2060,6 +2060,10 @@ Error Main::setup2(Thread::ID p_main_tid_override) {
 					rendering_method = "gl_compatibility";
 					OS::get_singleton()->set_current_rendering_driver_name(rendering_driver);
 					OS::get_singleton()->set_current_rendering_method(rendering_method);
+					// The quality preset was resolved before DisplayServer initialization.
+					// Refresh game-only graphics settings to remove Vulkan-only FSR
+					// after an actual WSI recovery; never touch serialized renderer IDs.
+					NoeRender::configure(globals, rendering_method, editor || project_manager);
 					print_line("NoeRender: recovered using OpenGL Compatibility. Project settings were not modified.");
 					break;
 				}

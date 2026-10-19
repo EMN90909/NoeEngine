@@ -122,6 +122,23 @@ void EditorResourcePreview::_preview_ready(const String &p_str, const Ref<Textur
 		item.modified_time = modified_time;
 
 		cache[path] = item;
+		// Bounded LRU thumbnail cache only in opt-in low-resource editor mode.
+		// Evicting decoded previews is safe: file thumbnails can be regenerated,
+		// and this does not touch the user's project resources or save state.
+		if (bool(EDITOR_GET("interface/noe_render/low_resource_mode"))) {
+			const int limit = CLAMP(int(EDITOR_GET("interface/noe_render/preview_cache_limit")), 32, 1024);
+			if (cache.size() > uint32_t(limit)) {
+				String oldest_path;
+				uint64_t oldest_order = UINT64_MAX;
+				for (const KeyValue<String, Item> &entry : cache) {
+					if (entry.value.order < oldest_order) {
+						oldest_order = entry.value.order;
+						oldest_path = entry.key;
+					}
+				}
+				if (!oldest_path.is_empty()) cache.erase(oldest_path);
+			}
+		}
 	}
 
 	MessageQueue::get_singleton()->push_call(id, p_func, path, p_texture, p_small_texture, p_ud);
@@ -140,6 +157,18 @@ void EditorResourcePreview::_generate_preview(Ref<ImageTexture> &r_texture, Ref<
 		r_texture = Ref<ImageTexture>();
 		r_small_texture = Ref<ImageTexture>();
 		return; //could not guess type
+	}
+
+	// Opt-in: avoid the costly 3D/material/shader thumbnail renderers on slow
+	// hardware. Callers still get an ordinary file icon through the normal
+	// null-preview callback; images/textures remain previewable.
+	if (bool(EDITOR_GET("interface/noe_render/low_resource_mode")) &&
+			bool(EDITOR_GET("interface/noe_render/suppress_complex_previews")) &&
+			(type == "PackedScene" || type == "Mesh" || type == "Shader" ||
+			 type == "ShaderMaterial" || type == "StandardMaterial3D" || type == "ParticleProcessMaterial")) {
+		r_texture = Ref<ImageTexture>();
+		r_small_texture = Ref<ImageTexture>();
+		return;
 	}
 
 	int thumbnail_size = EDITOR_GET("filesystem/file_dialog/thumbnail_size");

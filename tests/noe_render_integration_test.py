@@ -30,6 +30,17 @@ class NoeRenderTests(unittest.TestCase):
         self.assertIn("interface/noe_render/low_resource_mode",settings)
         self.assertIn("interface/noe_render/focused_sleep_usec",editor)
         self.assertIn("rendering/noe_render/debug/print_frame_diagnostics",scene)
+    def test_late_fallback_refreshes_graphics_profile(self):
+        source=(ROOT/"main/main.cpp").read_text()
+        block=source[source.index("Vulkan DisplayServer failed, trying OpenGL Compatibility"):]
+        self.assertIn("NoeRender::configure(globals, rendering_method, editor || project_manager)",block)
+    def test_low_resource_previews_have_controls(self):
+        settings=(ROOT/"editor/editor_settings.cpp").read_text()
+        previews=(ROOT/"editor/editor_resource_preview.cpp").read_text()
+        for key in ("suppress_complex_previews","preview_cache_limit"):
+            self.assertIn("interface/noe_render/"+key,settings)
+            self.assertIn("interface/noe_render/"+key,previews)
+        self.assertIn('type == "PackedScene"',previews)
     def test_runtime_affects_3d_only(self):
         code=(ROOT/"scene/main/scene_tree.cpp").read_text()
         self.assertIn("root->set_scaling_3d_scale(next_scale)",code)

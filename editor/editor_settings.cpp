@@ -426,6 +426,8 @@ void EditorSettings::_load_defaults(Ref<ConfigFile> p_extra_config) {
 	EDITOR_SETTING(Variant::STRING, PROPERTY_HINT_GLOBAL_FILE, "interface/editor/code_font", "", "*.ttf,*.otf,*.woff,*.woff2,*.pfb,*.pfm")
 	// Opt-in NoeRender low-resource editor mode keeps input, saving and debugger active.
 	EDITOR_SETTING(Variant::BOOL, PROPERTY_HINT_NONE, "interface/noe_render/low_resource_mode", false, "")
+	EDITOR_SETTING(Variant::BOOL, PROPERTY_HINT_NONE, "interface/noe_render/suppress_complex_previews", false, "")
+	EDITOR_SETTING(Variant::INT, PROPERTY_HINT_RANGE, "interface/noe_render/preview_cache_limit", 192, "32,1024,1")
 	EDITOR_SETTING(Variant::INT, PROPERTY_HINT_RANGE, "interface/noe_render/focused_sleep_usec", 16000, "7000,33000,500")
 	EDITOR_SETTING_USAGE(Variant::FLOAT, PROPERTY_HINT_RANGE, "interface/editor/low_processor_mode_sleep_usec", 6900, "1,100000,1", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_RESTART_IF_CHANGED)
 	// Default unfocused usec sleep is for 10 FPS. Allow an unfocused FPS limit

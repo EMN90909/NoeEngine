@@ -9,7 +9,7 @@
 1. Vulkan loader and real physical-device enumeration (vendor/device IDs, device name, Vulkan API version, local memory heaps and graphics/compute queue support). Apple MoltenVK enumeration deliberately defers to the native backend.
 2. Preserves explicit CLI rendering selections, offers automatic OpenGL fallback for missing Vulkan loader/ICD or recoverable DisplayServer startup failure. Presentation support remains the backend's responsibility; fallback is not a guarantee against driver crashes.
 3. Auto/Lite/Balanced/High/Ultra/Custom graphics policies and opt-in adaptive game-only 3D scaling. Mobile/GL are feature-gated.
-4. Editor settings `interface/noe_render/low_resource_mode` and `interface/noe_render/focused_sleep_usec` use existing low-processor rendering mechanism without disabling project saves, debugger or input.
+4. Editor settings `interface/noe_render/low_resource_mode`, `focused_sleep_usec`, `suppress_complex_previews` and bounded `preview_cache_limit` reduce background work and optional complex preview creation without disabling project saves, debugger or input.
 5. Opt-in `rendering/noe_render/debug/print_frame_diagnostics` prints local backend, frame-time, rendering counters and memory estimates.
 6. Guarded stale descriptor cache pruning after viewport resize or scene teardown (no forced eviction of valid render RIDs). Shader-cache and clustered-light optimizations require profiler evidence before unsafe rewrites.
 7. 3D rendered benchmark suite in `tests/noe_render_benchmark`, optional screenshot comparison using preapproved same-GPU/driver reference images and a manual GPU runner workflow.
