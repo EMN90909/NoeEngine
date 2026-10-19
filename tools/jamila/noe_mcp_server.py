@@ -231,7 +231,7 @@ class ProjectTools:
             if not self.engine or not self.engine.is_file():
                 raise ValueError("NoeEngine executable unavailable; cannot claim validation passed")
             try:
-                run = subprocess.run([str(self.engine), "--headless", "--path", str(self.root), "--editor", "--quit"],
+                run = subprocess.run([str(self.engine), "--headless", "--path", str(self.root), "--editor", "--quit-after", "2"],
                                      cwd=self.root, capture_output=True, text=True, timeout=90, shell=False)
                 log = (run.stdout + "\n" + run.stderr)[-12000:]
                 ok = run.returncode == 0 and not any(x in log for x in ("SCRIPT ERROR:", "Parse Error:", "ERROR:"))
