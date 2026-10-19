@@ -635,6 +635,9 @@ void EditorNode::_notification(int p_what) {
 
 		case NOTIFICATION_ENTER_TREE: {
 			Engine::get_singleton()->set_editor_hint(true);
+			if (noe_autosave_timer) {
+				noe_autosave_timer->start();
+			}
 
 			Window *window = get_window();
 			if (window) {
@@ -7276,7 +7279,7 @@ EditorNode::EditorNode() {
 	noe_autosave_timer->set_one_shot(false);
 	add_child(noe_autosave_timer);
 	noe_autosave_timer->connect("timeout", callable_mp(this, &EditorNode::_noe_autosave_tick));
-	noe_autosave_timer->start();
+
 
 	top_split = memnew(VSplitContainer);
 	center_split->add_child(top_split);
