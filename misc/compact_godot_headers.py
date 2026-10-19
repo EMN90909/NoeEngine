@@ -23,7 +23,7 @@ def transform(text: str) -> str:
         return text
     positions = []
     start = 0
-    for _ in range(5):
+    for _ in range(4):
         position = text.find(BORDER, start)
         if position < 0 or position > 3000:
             return text

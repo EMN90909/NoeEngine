@@ -22,7 +22,7 @@ def fixture(lines=None):
             "/*                        https://godotengine.org                         */",
             SEP]
     banner.extend("/* " + x + " */" for x in lines)
-    banner.extend([SEP,
+    banner.extend([
         "/* Permission is hereby granted, free of charge, to any person obtaining a copy */",
         "/* The above copyright notice and this permission notice shall be included */",
         "/* THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND,        */",
