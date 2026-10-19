@@ -1,0 +1,57 @@
+name: NoeRender real-render GPU benchmark (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: "Select software Mesa CI or a configured GPU self-hosted runner"
+        required: true
+        type: choice
+        options: [software, hardware]
+      engine_path:
+        description: "Path to a previously compiled NoeEngine editor on hardware runner"
+        required: false
+        default: "./bin/noeengine.linuxbsd.editor.x86_64"
+      renderer:
+        description: "Graphics backend"
+        type: choice
+        required: true
+        options: [gl_compatibility, forward_plus]
+permissions:
+  contents: read
+jobs:
+  software:
+    if: inputs.runner == 'software'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Prepare Mesa software renderer and compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb mesa-utils libgl1-mesa-dri scons g++ pkg-config libx11-dev libxcursor-dev libxinerama-dev libxi-dev libxrandr-dev libxrender-dev libasound2-dev libpulse-dev libudev-dev libfreetype6-dev libfontconfig1-dev libssl-dev libwayland-dev libxkbcommon-dev libvulkan-dev
+          ./build.sh linux 2
+      - name: Record software rasterizer identity and rendered scene
+        run: |
+          xvfb-run -a sh -c 'glxinfo -B; LIBGL_ALWAYS_SOFTWARE=1 python3 tests/noe_render_benchmark/runner.py --engine ./bin/noeengine.linuxbsd.editor.x86_64 --renderer gl_compatibility --output Products/noe-render-software'
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: noe-render-software-evidence
+          path: Products/noe-render-software/
+          if-no-files-found: warn
+  physical_gpu:
+    if: inputs.runner == 'hardware'
+    runs-on: [self-hosted, linux, x64, noe-render-gpu]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Run on physically attached GPU with working display
+        run: |
+          glxinfo -B | tee gpu-identity.log
+          python3 tests/noe_render_benchmark/runner.py --engine "${{ inputs.engine_path }}" --renderer "${{ inputs.renderer }}" --output Products/noe-render-hardware
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: noe-render-hardware-evidence
+          path: |
+            gpu-identity.log
+            Products/noe-render-hardware/
+          if-no-files-found: warn
