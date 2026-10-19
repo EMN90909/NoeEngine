@@ -18,6 +18,11 @@ class NoePlusTests(unittest.TestCase):
         code=(ROOT/"main/noe_render_quality.h").read_text()
         self.assertNotIn('"editor/noe_hardware_profile.h"',code)
         self.assertNotIn("<windows.h>",code)
+    def test_platform_header_isolation(self):
+        header=(ROOT/"editor/noe_hardware_profile.h").read_text()
+        impl=(ROOT/"editor/noe_hardware_profile.cpp").read_text()
+        self.assertNotIn("<windows.h>",header)
+        self.assertIn("#include <windows.h>",impl)
     def test_editor_isolation(self):
         code=(ROOT/"main/noe_render_quality.h").read_text()
         self.assertIn("if (editor_or_project_manager) return;",code)
