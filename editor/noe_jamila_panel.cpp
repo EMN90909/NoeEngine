@@ -216,7 +216,7 @@ bool NoeJamilaPanel::_launch_agent() {
         status_label->set_text("Failed to initialize secure local agent.");
         return false;
     }
-    server_token = secret.hex_encode();
+    server_token = String::hex_encode_buffer(secret.ptr(), secret.size());
     const int port = 24000 + ((int)port_seed[0] * 256 + (int)port_seed[1]) % 16000;
     server_url = "http://127.0.0.1:" + itos(port);
     List<String> args;
