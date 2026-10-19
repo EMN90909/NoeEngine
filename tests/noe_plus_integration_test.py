@@ -3,21 +3,26 @@
 from pathlib import Path
 import unittest
 ROOT=Path(__file__).resolve().parents[1]
-class NoePlusTests(unittest.TestCase):
+class NoeRenderTests(unittest.TestCase):
     def test_quality_initializes_after_renderer_selection(self):
         code=(ROOT/"main/main.cpp").read_text()
-        self.assertLess(code.index('rendering_method = GLOBAL_GET("rendering/renderer/rendering_method")'),code.index("NoePlus::configure("))
+        self.assertLess(code.index('rendering_method = GLOBAL_GET("rendering/renderer/rendering_method")'),code.index("NoeRender::configure("))
     def test_preserves_serialized_renderer_ids(self):
         code=(ROOT/"main/main.cpp").read_text()
         for name in ["forward_plus","mobile","gl_compatibility"]:
             self.assertIn(f'rendering_method == "{name}"',code)
     def test_new_project_persists_quality_and_backend_separately(self):
         code=(ROOT/"editor/project_manager.cpp").read_text()
-        self.assertIn('initial_settings["rendering/noe_plus/quality/preset"]',code)
+        self.assertIn('initial_settings["rendering/noe_render/quality/preset"]',code)
         self.assertIn('initial_settings["rendering/renderer/rendering_method"]',code)
     def test_fsr_restricted_to_forward_plus(self):
         code=(ROOT/"main/noe_render_quality.h").read_text()
         self.assertIn('renderer != "forward_plus"',code)
+    def test_native_vulkan_probe_and_fallback(self):
+        main=(ROOT/"main/main.cpp").read_text()
+        self.assertIn("NoeRender::probe_vulkan()",main)
+        self.assertIn("Vulkan DisplayServer failed, trying OpenGL Compatibility",main)
+        self.assertIn("!noe_render_cli_override",main)
     def test_runtime_affects_3d_only(self):
         code=(ROOT/"scene/main/scene_tree.cpp").read_text()
         self.assertIn("root->set_scaling_3d_scale(next_scale)",code)

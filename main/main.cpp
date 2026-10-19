@@ -57,6 +57,7 @@
 #include "main/app_icon.gen.h"
 #include "main/main_timer_sync.h"
 #include "main/noe_render_quality.h"
+#include "main/noe_render_gpu_probe.h"
 #include "main/performance.h"
 #include "main/splash.gen.h"
 #include "modules/register_module_types.h"
@@ -155,6 +156,7 @@ String tablet_driver = "";
 String text_driver = "";
 String rendering_driver = "";
 String rendering_method = "";
+static bool noe_render_cli_override = false;
 static int text_driver_idx = -1;
 static int display_driver_idx = -1;
 static int audio_driver_idx = -1;
@@ -914,6 +916,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 		} else if (I->get() == "--rendering-method") {
 			if (I->next()) {
 				rendering_method = I->next()->get();
+				noe_render_cli_override = true;
 				N = I->next()->next();
 			} else {
 				OS::get_singleton()->print("Missing renderer name argument, aborting.\n");
@@ -922,6 +925,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 		} else if (I->get() == "--rendering-driver") {
 			if (I->next()) {
 				rendering_driver = I->next()->get();
+				noe_render_cli_override = true;
 				N = I->next()->next();
 			} else {
 				OS::get_singleton()->print("Missing rendering driver argument, aborting.\n");
@@ -1671,9 +1675,26 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 		}
 	}
 
-	// Resolve Noe+ game graphics quality while preserving legacy renderer IDs.
+	// Probe real Vulkan device queues before selecting a display backend. This
+	// cannot prove presentation support, so the normal DisplayServer still
+	// validates Vulkan swapchains/extensions during initialization.
+	const bool allow_fallback = GLOBAL_DEF_BASIC("rendering/noe_render/backend/allow_fallback", true);
+	if (!noe_render_cli_override && allow_fallback && rendering_driver == "vulkan") {
+		const NoeRender::GpuCapabilities caps = NoeRender::probe_vulkan();
+		print_line("NoeRender Vulkan probe: " + caps.reason +
+				(caps.render_device_candidate ? " | " + caps.device_name : ""));
+#ifdef GLES3_ENABLED
+		if (caps.probed && !caps.render_device_candidate) {
+			WARN_PRINT("NoeRender: Vulkan unavailable, selecting OpenGL Compatibility for this run.");
+			rendering_method = "gl_compatibility";
+			rendering_driver = "opengl3";
+		}
+#endif
+	}
+
+	// Resolve NoeRender game graphics quality while preserving legacy renderer IDs.
 	// SceneTree subsequently consumes the resulting settings at initialization.
-	NoePlus::configure(globals, rendering_method, editor || project_manager);
+	NoeRender::configure(globals, rendering_method, editor || project_manager);
 
 	// note this is the desired rendering driver, it doesn't mean we will get it.
 	// TODO - make sure this is updated in the case of fallbacks, so that the user interface
@@ -2019,6 +2040,29 @@ Error Main::setup2(Thread::ID p_main_tid_override) {
 			}
 		}
 
+		// Last chance: a Vulkan loader can enumerate a GPU yet fail WSI or
+		// swapchain setup. Only automatic selection may recover to OpenGL.
+#ifdef GLES3_ENABLED
+		if ((err != OK || display_server == nullptr) && !noe_render_cli_override &&
+				GLOBAL_GET("rendering/noe_render/backend/allow_fallback") &&
+				rendering_driver == "vulkan") {
+			print_line("NoeRender: Vulkan DisplayServer failed, trying OpenGL Compatibility.");
+			for (int i = 0; i < DisplayServer::get_create_function_count() - 1; ++i) {
+				if (display_driver_idx >= 0 && i != display_driver_idx) continue;
+				const Vector<String> possible = DisplayServer::get_create_function_rendering_drivers(i);
+				if (possible.find("opengl3") == -1) continue;
+				display_server = DisplayServer::create(i, "opengl3", window_mode, window_vsync_mode, window_flags, window_position, window_size, init_screen, err);
+				if (err == OK && display_server != nullptr) {
+					rendering_driver = "opengl3";
+					rendering_method = "gl_compatibility";
+					OS::get_singleton()->set_current_rendering_driver_name(rendering_driver);
+					OS::get_singleton()->set_current_rendering_method(rendering_method);
+					print_line("NoeRender: recovered using OpenGL Compatibility. Project settings were not modified.");
+					break;
+				}
+			}
+		}
+#endif
 		if (err != OK || display_server == nullptr) {
 			ERR_PRINT("Unable to create DisplayServer, all display drivers failed.");
 			return err;

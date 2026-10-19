@@ -451,9 +451,9 @@ bool SceneTree::process(double p_time) {
 
 	// Use smoothed main-loop frame times as a conservative scaling signal.
 	// Only the 3D root viewport is affected, never editor/2D UI resolution.
-	if (noe_plus_adaptive_active && root != nullptr) {
+	if (noe_render_adaptive_active && root != nullptr) {
 		float next_scale = 1.0f;
-		if (noe_plus_scaler.sample(p_time * 1000.0, &next_scale)) {
+		if (noe_render_scaler.sample(p_time * 1000.0, &next_scale)) {
 			root->set_scaling_3d_scale(next_scale);
 		}
 	}
@@ -1449,11 +1449,11 @@ SceneTree::SceneTree() {
 	if (!Engine::get_singleton()->is_editor_hint()) {
 		root->set_scaling_3d_mode(Viewport::Scaling3DMode(noe_scale_mode));
 		root->set_scaling_3d_scale(noe_scale);
-		const bool adaptive = GLOBAL_DEF_BASIC("rendering/noe_plus/quality/adaptive_active", false);
-		noe_plus_adaptive_active = adaptive && noe_scale_mode == 1;
-		if (noe_plus_adaptive_active) {
-			const float target_ms = GLOBAL_GET("rendering/noe_plus/quality/target_frame_ms");
-			noe_plus_scaler.reset(noe_scale, 0.65f, 1.0f, target_ms);
+		const bool adaptive = GLOBAL_DEF_BASIC("rendering/noe_render/quality/adaptive_active", false);
+		noe_render_adaptive_active = adaptive && noe_scale_mode == 1;
+		if (noe_render_adaptive_active) {
+			const float target_ms = GLOBAL_GET("rendering/noe_render/quality/target_frame_ms");
+			noe_render_scaler.reset(noe_scale, 0.65f, 1.0f, target_ms);
 		}
 	}
 

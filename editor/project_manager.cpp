@@ -536,7 +536,7 @@ private:
 					// and "gl_compatibility" for the web override.
 					String renderer_type = renderer_button_group->get_pressed_button()->get_meta(SNAME("rendering_method"));
 					initial_settings["rendering/renderer/rendering_method"] = renderer_type;
-					initial_settings["rendering/noe_plus/quality/preset"] = quality_preset_selection->get_item_metadata(quality_preset_selection->get_selected());
+					initial_settings["rendering/noe_render/quality/preset"] = quality_preset_selection->get_item_metadata(quality_preset_selection->get_selected());
 
 					EditorSettings::get_singleton()->set("project_manager/default_renderer", renderer_type);
 					EditorSettings::get_singleton()->save();
@@ -992,7 +992,7 @@ public:
 		HBoxContainer *quality_line = memnew(HBoxContainer);
 		renderer_container->add_child(quality_line);
 		Label *quality_label = memnew(Label);
-		quality_label->set_text(TTR("Noe+ graphics quality:"));
+		quality_label->set_text(TTR("NoeRender graphics quality:"));
 		quality_line->add_child(quality_label);
 		quality_preset_selection = memnew(OptionButton);
 		quality_preset_selection->set_h_size_flags(Control::SIZE_EXPAND_FILL);

@@ -1,9 +1,9 @@
-// Native Noe+ rendering quality policy, independent of GPU drivers and Godot.
+// Native NoeRender rendering quality policy, independent of GPU drivers and Godot.
 #ifndef NOE_RENDER_QUALITY_POLICY_H
 #define NOE_RENDER_QUALITY_POLICY_H
 #include <cmath>
 #include <cstdint>
-namespace NoePlus {
+namespace NoeRender {
 enum class Tier { AUTO, LITE, BALANCED, HIGH, ULTRA, CUSTOM };
 struct Preset { float scale; int scaling_mode; int msaa_3d; int shadow_atlas; float lod_threshold; };
 inline Tier resolve(Tier requested, bool compatibility, uint64_t physical_ram_bytes) {
@@ -64,5 +64,5 @@ public:
         return true;
     }
 };
-} // namespace NoePlus
+} // namespace NoeRender
 #endif

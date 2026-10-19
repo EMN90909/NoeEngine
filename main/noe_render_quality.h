@@ -1,4 +1,4 @@
-// Noe+ game quality adapter. Does not rename legacy renderer/driver IDs.
+// NoeRender game quality adapter. Does not rename legacy renderer/driver IDs.
 #ifndef NOE_RENDER_QUALITY_H
 #define NOE_RENDER_QUALITY_H
 #include "core/config/project_settings.h"
@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <cstdio>
 #include "main/noe_render_quality_policy.h"
-namespace NoePlus {
+namespace NoeRender {
 // Only Linux procfs can be queried here without platform header macro leaks.
 // Unknown RAM is reported as 0: a heuristic must not masquerade as GPU probing.
 inline uint64_t physical_ram_bytes() {
@@ -28,15 +28,16 @@ inline Tier parse(const String &name) {
     if (n == "high") return Tier::HIGH;
     if (n == "ultra") return Tier::ULTRA;
     if (n == "custom") return Tier::CUSTOM;
-    if (n != "auto") WARN_PRINT("Noe+: Unknown preset, using Auto.");
+    if (n != "auto") WARN_PRINT("NoeRender: Unknown preset, using Auto.");
     return Tier::AUTO;
 }
 inline void configure(ProjectSettings *settings, const String &renderer, bool editor_or_project_manager) {
+    const String migrated = settings->has_setting("rendering/noe_plus/quality/preset") ? String(settings->get_setting("rendering/noe_plus/quality/preset")) : "Auto";
     const String selected = GLOBAL_DEF_BASIC(PropertyInfo(Variant::STRING,
-            "rendering/noe_plus/quality/preset", PROPERTY_HINT_ENUM,
-            "Auto,Lite,Balanced,High,Ultra,Custom"), "Auto");
-    const bool adaptive_requested = GLOBAL_DEF_BASIC("rendering/noe_plus/quality/adaptive_3d_scaling", true);
-    GLOBAL_DEF_BASIC(PropertyInfo(Variant::FLOAT, "rendering/noe_plus/quality/target_frame_ms",
+            "rendering/noe_render/quality/preset", PROPERTY_HINT_ENUM,
+            "Auto,Lite,Balanced,High,Ultra,Custom"), migrated);
+    const bool adaptive_requested = GLOBAL_DEF_BASIC("rendering/noe_render/quality/adaptive_3d_scaling", true);
+    GLOBAL_DEF_BASIC(PropertyInfo(Variant::FLOAT, "rendering/noe_render/quality/target_frame_ms",
             PROPERTY_HINT_RANGE, "8,50,0.5"), 16.667);
     if (editor_or_project_manager) return; // Never downscale editor controls.
     const Tier requested = parse(selected);
@@ -45,14 +46,14 @@ inline void configure(ProjectSettings *settings, const String &renderer, bool ed
     const Tier effective = resolve(requested, compatibility, physical_ram_bytes());
     const Preset p = preset(effective, compatibility);
     if (compatibility && requested != Tier::LITE && requested != Tier::AUTO)
-        WARN_PRINT("Noe+: Forward+-only quality is unavailable in Compatibility; applying Lite.");
+        WARN_PRINT("NoeRender: Forward+-only quality is unavailable in Compatibility; applying Lite.");
     settings->set_setting("rendering/anti_aliasing/quality/msaa_3d", p.msaa_3d);
     settings->set_setting("rendering/lights_and_shadows/positional_shadow/atlas_size", p.shadow_atlas);
     settings->set_setting("rendering/mesh_lod/lod_change/threshold_pixels", p.lod_threshold);
     settings->set_setting("rendering/scaling_3d/mode", p.scaling_mode);
     settings->set_setting("rendering/scaling_3d/scale", p.scale);
-    settings->set_setting("rendering/noe_plus/quality/adaptive_active",
+    settings->set_setting("rendering/noe_render/quality/adaptive_active",
             adaptive_requested && !compatibility);
 }
-} // namespace NoePlus
+} // namespace NoeRender
 #endif
