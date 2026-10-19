@@ -170,6 +170,13 @@ void NoeAccountWorkspace::_make_page(Page page) {
         p->add_child(website_url_field);
         website_url_status = _add_label(p, TTR("Enter the deployed account website address to enable browser sign-in."));
         _add_button(p, TTR("Save account website"), callable_mp(this, &NoeAccountWorkspace::_save_website_url));
+        _add_label(p, TTR("Remote MCP bridge URL (HTTPS)"));
+        collaboration_url_field = memnew(LineEdit);
+        collaboration_url_field->set_placeholder("https://your-noeengine-bridge.example");
+        collaboration_url_field->set_max_length(2048);
+        collaboration_url_field->set_tooltip_text(TTR("The trusted NoeEngine bridge used for editor pairing and team events."));
+        p->add_child(collaboration_url_field);
+        _add_button(p, TTR("Save MCP bridge URL"), callable_mp(this, &NoeAccountWorkspace::_save_collaboration_url));
         _add_button(p, TTR("Log out"), callable_mp(this, &NoeAccountWorkspace::_logout));
     }
 }
@@ -224,9 +231,10 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
     // Security page controls are constructed before initial URL configuration is shown.
     if (website_url_field) website_url_field->set_text(auth_base);
     collaboration_url = OS::get_singleton()->get_environment("NOEENGINE_COLLAB_URL").strip_edges();
-    if (collaboration_url.is_empty()) collaboration_url = "https://noeengine-bridge.onrender.com";
+    if (collaboration_url.is_empty()) collaboration_url = String(config->get_value("bridge", "base_url", "")).strip_edges();
     if (!_is_https_url(collaboration_url)) collaboration_url = "";
     if (collaboration_url.ends_with("/")) collaboration_url = collaboration_url.substr(0, collaboration_url.length() - 1);
+    if (collaboration_url_field) collaboration_url_field->set_text(collaboration_url);
     bridge_endpoint_id = String(config->get_value("bridge", "endpoint_id", ""));
     bridge_public_url = String(config->get_value("bridge", "endpoint_url", ""));
     if (collab_project) collab_project->clear();
@@ -492,6 +500,31 @@ void NoeAccountWorkspace::_refresh_profile() {
                 display_name.left(1).to_upper() : String("N"));
     }
     if (avatar_button) avatar_button->set_text(online_session ? display_name.left(14) : String(config->get_value("account", "last_name", TTR("Account"))).left(14));
+}
+void NoeAccountWorkspace::_save_collaboration_url() {
+    if (!collaboration_url_field) return;
+    String candidate = collaboration_url_field->get_text().strip_edges();
+    if (!_is_https_url(candidate) || candidate.contains("?") || candidate.contains("#")) {
+        collab_status->set_text(TTR("Enter a trusted HTTPS bridge origin without credentials or query parameters."));
+        return;
+    }
+    while (candidate.ends_with("/")) candidate = candidate.substr(0, candidate.length() - 1);
+    if (candidate.contains("/", 8)) {
+        collab_status->set_text(TTR("Enter the bridge origin only, without a path."));
+        return;
+    }
+    if (candidate == collaboration_url) return;
+    if (bridge_request) bridge_request->cancel_request();
+    if (collab_request) collab_request->cancel_request();
+    collaboration_url = candidate;
+    bridge_endpoint_id.clear();
+    bridge_public_url.clear();
+    bridge_event_token.clear();
+    config->set_value("bridge", "base_url", collaboration_url);
+    config->erase_section_key("bridge", "endpoint_id");
+    config->erase_section_key("bridge", "endpoint_url");
+    _save_usage();
+    collab_status->set_text(TTR("MCP bridge URL saved. Generate a fresh pairing key on the website."));
 }
 void NoeAccountWorkspace::_save_website_url() {
     String site = website_url_field->get_text().strip_edges();
