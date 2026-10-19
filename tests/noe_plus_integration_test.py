@@ -11,6 +11,13 @@ class NoePlusTests(unittest.TestCase):
         code=(ROOT/"main/main.cpp").read_text()
         for name in ["forward_plus","mobile","gl_compatibility"]:
             self.assertIn(f'rendering_method == "{name}"',code)
+    def test_new_project_persists_quality_and_backend_separately(self):
+        code=(ROOT/"editor/project_manager.cpp").read_text()
+        self.assertIn('initial_settings["rendering/noe_plus/quality/preset"]',code)
+        self.assertIn('initial_settings["rendering/renderer/rendering_method"]',code)
+    def test_fsr_restricted_to_forward_plus(self):
+        code=(ROOT/"main/noe_render_quality.h").read_text()
+        self.assertIn('renderer != "forward_plus"',code)
     def test_runtime_affects_3d_only(self):
         code=(ROOT/"scene/main/scene_tree.cpp").read_text()
         self.assertIn("root->set_scaling_3d_scale(next_scale)",code)

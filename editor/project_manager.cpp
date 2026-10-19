@@ -98,6 +98,7 @@ private:
 	Container *install_path_container;
 	Container *renderer_container;
 	Label *renderer_info;
+	OptionButton *quality_preset_selection = nullptr;
 	HBoxContainer *default_files_container;
 	Ref<ButtonGroup> renderer_button_group;
 	Label *msg;
@@ -440,6 +441,15 @@ private:
 		ERR_FAIL_COND(!renderer_button_group->get_pressed_button());
 
 		String renderer_type = renderer_button_group->get_pressed_button()->get_meta(SNAME("rendering_method"));
+		if (quality_preset_selection != nullptr) {
+			// High/Ultra need Forward+; keep the user-selectable preset honest.
+			const bool limited_backend = renderer_type != "forward_plus";
+			quality_preset_selection->set_item_disabled(3, limited_backend);
+			quality_preset_selection->set_item_disabled(4, limited_backend);
+			if (limited_backend && (quality_preset_selection->get_selected() == 3 || quality_preset_selection->get_selected() == 4)) {
+				quality_preset_selection->select(0);
+			}
+		}
 
 		if (renderer_type == "forward_plus") {
 			renderer_info->set_text(
@@ -525,6 +535,7 @@ private:
 					// and "gl_compatibility" for the web override.
 					String renderer_type = renderer_button_group->get_pressed_button()->get_meta(SNAME("rendering_method"));
 					initial_settings["rendering/renderer/rendering_method"] = renderer_type;
+					initial_settings["rendering/noe_plus/quality/preset"] = quality_preset_selection->get_item_metadata(quality_preset_selection->get_selected());
 
 					EditorSettings::get_singleton()->set("project_manager/default_renderer", renderer_type);
 					EditorSettings::get_singleton()->save();
@@ -975,6 +986,23 @@ public:
 		_renderer_selected();
 
 		l = memnew(Label);
+
+		// Quality is a separate project-level selection, not a rendering backend.
+		HBoxContainer *quality_line = memnew(HBoxContainer);
+		renderer_container->add_child(quality_line);
+		Label *quality_label = memnew(Label);
+		quality_label->set_text(TTR("Noe+ graphics quality:"));
+		quality_line->add_child(quality_label);
+		quality_preset_selection = memnew(OptionButton);
+		quality_preset_selection->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+		quality_line->add_child(quality_preset_selection);
+		const char *profiles[] = { "Auto", "Lite", "Balanced", "High", "Ultra", "Custom" };
+		for (const char *profile : profiles) {
+			quality_preset_selection->add_item(String(profile));
+			quality_preset_selection->set_item_metadata(quality_preset_selection->get_item_count() - 1, String(profile));
+		}
+		quality_preset_selection->select(0);
+
 		l->set_text(TTR("The renderer can be changed later, but scenes may need to be adjusted."));
 		// Add some extra spacing to separate it from the list above and the buttons below.
 		l->set_custom_minimum_size(Size2(0, 40) * EDSCALE);

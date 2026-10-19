@@ -12,6 +12,8 @@
 - Compatibility profile gates out FSR and advanced Forward+-only settings; on GL it stays at native 3D scale.
 - `rendering/noe_plus/quality/adaptive_3d_scaling` and `target_frame_ms` tune an optional game-only 3D scaling controller using smoothed **main-loop frame times**, threshold hysteresis and cooldown.
 - 3D scaling changes only the root 3D render buffer, not the editor's UI rendering scale.
+- Project Manager now exposes a separate Noe+ quality selector on new projects and saves a stable preset value.
+- Mobile and Compatibility renderer methods are conservatively restricted to Lite-compatible effects; FSR 1.0 is only used on Forward+.
 - New low-memory project renderer recommendation (under 8 GiB) uses Compatibility where compiled, without changing existing projects' renderer IDs.
 - Standalone, GPU-independent C++ policy regression tests, Python source integration tests, and GitHub Actions workflow added.
 

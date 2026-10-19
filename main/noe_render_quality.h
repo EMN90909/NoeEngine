@@ -41,7 +41,7 @@ inline void configure(ProjectSettings *settings, const String &renderer, bool ed
     if (editor_or_project_manager) return; // Never downscale editor controls.
     const Tier requested = parse(selected);
     if (requested == Tier::CUSTOM) return; // Honor hand-tuned project settings.
-    const bool compatibility = renderer == "gl_compatibility";
+    const bool compatibility = renderer != "forward_plus"; // Mobile and GL lack Forward+ FSR 1.0.
     const Tier effective = resolve(requested, compatibility, physical_ram_bytes());
     const Preset p = preset(effective, compatibility);
     if (compatibility && requested != Tier::LITE && requested != Tier::AUTO)
