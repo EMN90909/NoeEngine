@@ -34,7 +34,7 @@ Error atomic_replace(const String &temporary, const String &target) {
 #endif
 }
 
-Error atomic_save_layout(const Ref<ConfigFile> &layout) {
+Error atomic_save_layout(Ref<ConfigFile> layout) {
     const String target = EditorPaths::get_singleton()->get_project_settings_dir().path_join("editor_layout.cfg");
     const String temporary = target + ".noecore-tmp";
     const Error saved = layout->save(temporary);
