@@ -137,8 +137,10 @@ class JamilaService:
         self.bridge=Bridge(project,engine)
         self.plans={}
         self.lock=threading.Lock()
+        self.validated=False
 
     def plan(self,payload):
+        self.validated=False
         prompt=payload.get("prompt","")
         if not isinstance(prompt,str) or not 1<=len(prompt.strip())<=3000:
             raise ValueError("Write a game-building task (1 to 3000 characters)")
@@ -184,7 +186,23 @@ class JamilaService:
                 check={"ok":False,"error":str(exc)[:400]}
         else:
             check={"ok":False,"error":"Validation skipped because a write failed"}
-        return {"files":outcomes,"validation":check,"ok":bool(outcomes and all(x["ok"] for x in outcomes) and check.get("ok"))}
+        self.validated=bool(outcomes and all(x["ok"] for x in outcomes) and check.get("ok"))
+        return {"files":outcomes,"validation":check,"ok":self.validated}
+
+    def export_game(self,payload):
+        if not self.validated:
+            raise ValueError("Create and validate a game before exporting it")
+        preset=payload.get("preset")
+        if not isinstance(preset,str) or len(preset)>80:
+            raise ValueError("Select a valid project export preset")
+        # Validation and export are real headless NoeEngine invocations.
+        # Both use the same locally approved, constrained MCP toolchain.
+        checks=self.bridge.call("noe_validate_project",approved=True)
+        if not checks.get("ok"):
+            self.validated=False
+            return {"ok":False,"validation":checks,"error":"Project validation failed before export"}
+        export=self.bridge.call("noe_export_pack",{"preset":preset},approved=True)
+        return {"ok":bool(export.get("ok")),"export":export}
 
 def make_handler(service,token):
     class AgentHandler(BaseHTTPRequestHandler):
@@ -223,6 +241,8 @@ def make_handler(service,token):
                     output=service.plan(payload)
                 elif self.path=="/v1/apply":
                     output=service.apply(payload)
+                elif self.path=="/v1/export":
+                    output=service.export_game(payload)
                 else:
                     return self.respond(404,{"error":"not_found"})
                 return self.respond(200,output)
