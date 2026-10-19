@@ -8,7 +8,7 @@
 namespace NoeSessionRecovery {
 // Must be implemented per OS: Windows DirAccess::rename() deletes destinations!
 Error atomic_replace(const String &temporary, const String &target);
-Error atomic_save_layout(const Ref<ConfigFile> &layout);
+Error atomic_save_layout(Ref<ConfigFile> layout);
 void begin();
 void finish();
 } // namespace NoeSessionRecovery
