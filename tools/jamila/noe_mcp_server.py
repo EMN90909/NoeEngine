@@ -45,7 +45,7 @@ class ProjectTools:
         if not isinstance(value, str) or not value or len(value) > 320 or "\\" in value:
             raise ValueError("Invalid relative asset path")
         rel = PurePosixPath(value)
-        if rel.is_absolute() or any(part in ("", ".", "..") or part.startswith(".") or part in BLOCKED for part in rel.parts):
+        if rel.is_absolute() or any(part in ("", ".", "..") or part.startswith(".") or part in BLOCKED or not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9_ .-]*", part) for part in rel.parts):
             raise ValueError("Path must remain within the game project")
         p = self.root.joinpath(*rel.parts)
         if p.suffix.lower() not in (WRITE_EXTS if writing else READ_EXTS):
