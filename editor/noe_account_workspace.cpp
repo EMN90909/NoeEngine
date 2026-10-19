@@ -5,6 +5,11 @@
 #include "editor/editor_paths.h"
 #include "editor/editor_scale.h"
 #include "core/io/http_client.h"
+#include "core/io/file_access.h"
+#include "core/io/file_access_encrypted.h"
+#include "core/crypto/crypto.h"
+#include "core/config/project_settings.h"
+#include "core/io/dir_access.h"
 #include "core/io/json.h"
 #include "core/io/resource.h"
 #include "core/os/os.h"
@@ -22,6 +27,7 @@
 #include "scene/gui/separator.h"
 #include "scene/gui/tab_container.h"
 #include "scene/main/http_request.h"
+#include "scene/main/node.h"
 #include "scene/main/timer.h"
 
 class NoeAccountButton : public MenuButton {
@@ -125,7 +131,7 @@ void NoeAccountWorkspace::_make_page(Page page) {
         p->add_child(tabs);
         VBoxContainer *api = memnew(VBoxContainer);
         api->set_name(TTR("API")); tabs->add_child(api);
-        _add_label(api, TTR("Custom endpoints (configuration only; no requests or secrets stored)."));
+        _add_label(api, TTR("Configure API providers. Keys are encrypted in a local passphrase-protected vault, never in regular editor settings."));
         _add_button(api, TTR("Add API"), callable_mp(this, &NoeAccountWorkspace::_show_api_form));
         api_list = memnew(VBoxContainer); api->add_child(api_list);
         VBoxContainer *mcp = memnew(VBoxContainer);
@@ -135,25 +141,27 @@ void NoeAccountWorkspace::_make_page(Page page) {
         _add_button(mcp, TTR("Browse MCP Marketplace"), callable_mp(this, &NoeAccountWorkspace::_show_mcp_marketplace));
         _add_button(mcp, TTR("Official MCP Registry"), callable_mp(this, &NoeAccountWorkspace::_open_registry));
         mcp_list = memnew(VBoxContainer); mcp->add_child(mcp_list);
-        _add_label(mcp, TTR("Enable toggles only save configuration. No MCP process is executed or connected yet."));
+        _add_label(mcp, TTR("Remote paired editor supports read-only MCP tools. Custom endpoints are saved as preferences until a transport is implemented."));
     } else if (page == EXTENSIONS) {
         _add_label(p, TTR("Extensions"));
         _add_label(p, TTR("Godot-compatible editor extensions install per project via Project Settings > Plugins."));
         _add_button(p, TTR("Discover Godot MCP Toolkit"), callable_mp(this, &NoeAccountWorkspace::_open_godot_mcp));
         _add_label(p, TTR("Extension installation and permissions are not managed by this panel yet."));
         _add_label(p, TTR("Team collaboration"));
-        _add_label(p, TTR("Enter the Convex project ID shared by your team. Scene/resource saves publish activity, not file contents."));
+        _add_label(p, TTR("Paste the one-time 64-character pairing key from the website at Account > Remote MCP access. Sign in to the same account first."));
         collab_project = memnew(LineEdit);
-        collab_project->set_placeholder(TTR("Team project ID"));
-        collab_project->set_max_length(128);
+        collab_project->set_placeholder(TTR("64-character pairing key"));
+        collab_project->set_max_length(64);
+        collab_project->set_secret(true);
         p->add_child(collab_project);
-        _add_button(p, TTR("Save collaboration project"), callable_mp(this, &NoeAccountWorkspace::_save_collaboration_project));
-        collab_status = _add_label(p, TTR("No collaboration project configured."));
+        _add_button(p, TTR("Pair team and remote MCP"), callable_mp(this, &NoeAccountWorkspace::_save_collaboration_project));
+        collab_status = _add_label(p, TTR("No connected remote MCP endpoint."));
+        _add_label(p, TTR("Endpoint URL identifies the editor; the external AI must also provide a separate private bearer key from the website."));
         collab_activity = _add_label(p, TTR("Team activity will appear here."));
     } else if (page == SECURITY) {
         _add_label(p, TTR("Security"));
         security_label = _add_label(p, TTR("Offline. No active access token."));
-        _add_label(p, TTR("HTTPS device authorization. Tokens are only held in memory, not in settings."));
+        _add_label(p, TTR("HTTPS device authorization. Expiring access tokens are memory-only; your last verified profile is remembered locally without implying an active session."));
         _add_label(p, TTR("Account website URL (HTTPS)"));
         website_url_field = memnew(LineEdit);
         website_url_field->set_placeholder("https://your-noeengine-site.onrender.com");
@@ -162,6 +170,13 @@ void NoeAccountWorkspace::_make_page(Page page) {
         p->add_child(website_url_field);
         website_url_status = _add_label(p, TTR("Enter the deployed account website address to enable browser sign-in."));
         _add_button(p, TTR("Save account website"), callable_mp(this, &NoeAccountWorkspace::_save_website_url));
+        _add_label(p, TTR("Remote MCP bridge URL (HTTPS)"));
+        collaboration_url_field = memnew(LineEdit);
+        collaboration_url_field->set_placeholder("https://your-noeengine-bridge.example");
+        collaboration_url_field->set_max_length(2048);
+        collaboration_url_field->set_tooltip_text(TTR("The trusted NoeEngine bridge used for editor pairing and team events."));
+        p->add_child(collaboration_url_field);
+        _add_button(p, TTR("Save MCP bridge URL"), callable_mp(this, &NoeAccountWorkspace::_save_collaboration_url));
         _add_button(p, TTR("Log out"), callable_mp(this, &NoeAccountWorkspace::_logout));
     }
 }
@@ -216,9 +231,13 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
     // Security page controls are constructed before initial URL configuration is shown.
     if (website_url_field) website_url_field->set_text(auth_base);
     collaboration_url = OS::get_singleton()->get_environment("NOEENGINE_COLLAB_URL").strip_edges();
+    if (collaboration_url.is_empty()) collaboration_url = String(config->get_value("bridge", "base_url", "")).strip_edges();
     if (!_is_https_url(collaboration_url)) collaboration_url = "";
     if (collaboration_url.ends_with("/")) collaboration_url = collaboration_url.substr(0, collaboration_url.length() - 1);
-    if (collab_project) collab_project->set_text(String(config->get_value("collaboration", "project_id", "")));
+    if (collaboration_url_field) collaboration_url_field->set_text(collaboration_url);
+    bridge_endpoint_id = String(config->get_value("bridge", "endpoint_id", ""));
+    bridge_public_url = String(config->get_value("bridge", "endpoint_url", ""));
+    if (collab_project) collab_project->clear();
     welcome = memnew(ConfirmationDialog);
     welcome->set_title(TTR("Welcome to NoeEngine"));
     welcome->set_text(TTR("Sign in to connect your account, or use NoeEngine offline."));
@@ -236,12 +255,18 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
     api_dialog = memnew(ConfirmationDialog);
     api_dialog->set_title(TTR("Add API"));
     VBoxContainer *af = memnew(VBoxContainer);
-    af->set_custom_minimum_size(Size2(440, 165) * EDSCALE);
+    af->set_custom_minimum_size(Size2(470, 360) * EDSCALE);
     api_dialog->add_child(af);
     _add_label(af, TTR("Name"));
     api_name = memnew(LineEdit); api_name->set_max_length(64); api_name->set_tooltip_text(TTR("API name")); af->add_child(api_name);
+    _add_label(af, TTR("API key (encrypted on this device)"));
+    api_key = memnew(LineEdit); api_key->set_secret(true); api_key->set_max_length(4096); af->add_child(api_key);
     _add_label(af, TTR("HTTPS endpoint"));
     api_url = memnew(LineEdit); api_url->set_max_length(2048); api_url->set_tooltip_text(TTR("HTTPS API endpoint")); api_url->set_placeholder("https://api.example.com/v1"); af->add_child(api_url);
+    _add_label(af, TTR("Model (optional)"));
+    api_model = memnew(LineEdit); api_model->set_max_length(128); af->add_child(api_model);
+    _add_label(af, TTR("Vault passphrase (minimum 16 characters, required to save or add keys)"));
+    api_vault_passphrase = memnew(LineEdit); api_vault_passphrase->set_secret(true); api_vault_passphrase->set_max_length(256); af->add_child(api_vault_passphrase);
     api_error = _add_label(af, "");
     api_dialog->connect("confirmed", callable_mp(this, &NoeAccountWorkspace::_save_api));
     add_child(api_dialog);
@@ -297,7 +322,17 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
     collab_timer->set_wait_time(15.0);
     collab_timer->connect("timeout", callable_mp(this, &NoeAccountWorkspace::_poll_collaboration_activity));
     add_child(collab_timer);
-    metrics_timer = memnew(Timer);
+    bridge_request = memnew(HTTPRequest);
+    bridge_request->set_timeout(12.0);
+    bridge_request->set_max_redirects(0);
+    bridge_request->set_body_size_limit(16384);
+    bridge_request->connect("request_completed", callable_mp(this, &NoeAccountWorkspace::_on_bridge_response));
+    add_child(bridge_request);
+    bridge_timer = memnew(Timer);
+    bridge_timer->set_wait_time(5.0);
+    bridge_timer->connect("timeout", callable_mp(this, &NoeAccountWorkspace::_poll_bridge));
+    add_child(bridge_timer);
+        metrics_timer = memnew(Timer);
     metrics_timer->set_wait_time(1);
     metrics_timer->connect("timeout", callable_mp(this, &NoeAccountWorkspace::_tick_usage));
     add_child(metrics_timer);
@@ -326,6 +361,7 @@ void NoeAccountWorkspace::_notification(int what) {
     if (what == NOTIFICATION_READY) {
         metrics_timer->start();
         collab_timer->start();
+        bridge_timer->start();
         if (EditorNode::get_singleton()) {
             EditorNode::get_singleton()->connect("scene_saved", callable_mp(this, &NoeAccountWorkspace::_on_scene_saved));
             EditorNode::get_singleton()->connect("resource_saved", callable_mp(this, &NoeAccountWorkspace::_on_resource_saved));
@@ -353,7 +389,7 @@ void NoeAccountWorkspace::_account_action(int id) {
     _show_page(id);
 }
 void NoeAccountWorkspace::_show_welcome() {
-    if ((bool)config->get_value("account", "welcome_seen", false)) return;
+    if ((bool)config->get_value("account", "welcome_seen", false) || online_session || !String(config->get_value("account", "last_email", "")).is_empty()) return;
     config->set_value("account", "welcome_seen", true);
     _save_usage();
     welcome->popup_centered();
@@ -444,15 +480,18 @@ void NoeAccountWorkspace::_on_auth_response(int result, int status, const Packed
         display_name = reply.get("name", "");
         if (display_name.is_empty()) display_name = email.get_slice("@", 0);
         online_session = true;
+        config->set_value("account", "last_name", display_name);
+        config->set_value("account", "last_email", email);
+        _save_usage();
         login_dialog->hide();
         _refresh_profile();
         _show_page(PROFILE);
     }
 }
 void NoeAccountWorkspace::_refresh_profile() {
-    name_label->set_text(TTR("Name: ") + (online_session ? display_name : TTR("Not signed in")));
-    email_label->set_text(TTR("Email: ") + (online_session ? email : TTR("Not signed in")));
-    account_status->set_text(online_session ? TTR("Verified session") : TTR("Offline / unverified"));
+    name_label->set_text(TTR("Name: ") + (online_session ? display_name : String(config->get_value("account", "last_name", TTR("Not signed in")))));
+    email_label->set_text(TTR("Email: ") + (online_session ? email : String(config->get_value("account", "last_email", TTR("Not signed in")))));
+    account_status->set_text(online_session ? TTR("Verified session") : TTR("Offline. Reconnect to restore verified access."));
     security_label->set_text(online_session ? TTR("Signed in; token is in memory only.") : TTR("Offline; no token stored."));
     if (website_url_status) website_url_status->set_text(auth_base.is_empty() ?
             TTR("No account website configured. Set an HTTPS origin to connect.") : TTR("Account website: ") + auth_base);
@@ -460,7 +499,32 @@ void NoeAccountWorkspace::_refresh_profile() {
         profile_avatar_label->set_text(online_session && !display_name.is_empty() ?
                 display_name.left(1).to_upper() : String("N"));
     }
-    if (avatar_button) avatar_button->set_text(online_session ? display_name.left(14) : TTR("Account"));
+    if (avatar_button) avatar_button->set_text(online_session ? display_name.left(14) : String(config->get_value("account", "last_name", TTR("Account"))).left(14));
+}
+void NoeAccountWorkspace::_save_collaboration_url() {
+    if (!collaboration_url_field) return;
+    String candidate = collaboration_url_field->get_text().strip_edges();
+    if (!_is_https_url(candidate) || candidate.contains("?") || candidate.contains("#")) {
+        collab_status->set_text(TTR("Enter a trusted HTTPS bridge origin without credentials or query parameters."));
+        return;
+    }
+    while (candidate.ends_with("/")) candidate = candidate.substr(0, candidate.length() - 1);
+    if (candidate.find("/", 8) >= 0) {
+        collab_status->set_text(TTR("Enter the bridge origin only, without a path."));
+        return;
+    }
+    if (candidate == collaboration_url) return;
+    if (bridge_request) bridge_request->cancel_request();
+    if (collab_request) collab_request->cancel_request();
+    collaboration_url = candidate;
+    bridge_endpoint_id.clear();
+    bridge_public_url.clear();
+    bridge_event_token.clear();
+    config->set_value("bridge", "base_url", collaboration_url);
+    config->erase_section_key("bridge", "endpoint_id");
+    config->erase_section_key("bridge", "endpoint_url");
+    _save_usage();
+    collab_status->set_text(TTR("MCP bridge URL saved. Generate a fresh pairing key on the website."));
 }
 void NoeAccountWorkspace::_save_website_url() {
     String site = website_url_field->get_text().strip_edges();
@@ -482,7 +546,10 @@ void NoeAccountWorkspace::_logout() {
     request_kind = REQUEST_NONE;
     if (collab_request) collab_request->cancel_request();
     queued_collaboration_paths.clear(); queued_collaboration_ids.clear();
-    access_token.clear(); device_code.clear(); email.clear(); display_name.clear();
+    access_token.clear(); bridge_event_token.clear(); device_code.clear(); email.clear(); display_name.clear();
+    config->erase_section_key("account", "last_name");
+    config->erase_section_key("account", "last_email");
+    _save_usage();
     online_session = false; awaiting_login = false; poll_timer->stop();
     if (collab_request) collab_request->cancel_request();
     collaboration_polling = false;
@@ -513,24 +580,98 @@ void NoeAccountWorkspace::_tick_usage() {
             (int)ai_local, (int)ai_cloud));
     if (now >= next_save_msec) { _save_usage(); next_save_msec = now + 60000; }
 }
+// The vault requires a locally entered passphrase for each edit. Neither the key
+// nor the passphrase is put in ConfigFile, command line arguments or cloud storage.
+bool NoeAccountWorkspace::_store_api_secret(const String &name, const String &secret, const String &password) {
+    if (password.length() < 16 || secret.is_empty() || config_path.is_empty()) return false;
+    const String vault_path = EditorPaths::get_singleton()->get_config_dir().path_join("noeengine_api.vault");
+    const bool existing = FileAccess::exists(vault_path);
+    Ref<Crypto> crypto = Ref<Crypto>(Crypto::create());
+    if (crypto.is_null()) return false;
+    PackedByteArray salt = config->get_value("vault", "salt", PackedByteArray());
+    if (salt.size() != 16) {
+        if (existing) return false; // Never overwrite an existing vault without its salt.
+        salt = crypto->generate_random_bytes(16);
+    }
+    // PBKDF2-HMAC-SHA256, 120000 iterations, distinct salt per installation.
+    // The native encrypted file uses AES-256. Salt is public; the passphrase isn't.
+    PackedByteArray pass = password.to_utf8_buffer();
+    PackedByteArray msg = salt;
+    msg.push_back(0); msg.push_back(0); msg.push_back(0); msg.push_back(1);
+    PackedByteArray u = crypto->hmac_digest(HashingContext::HASH_SHA256, pass, msg);
+    if (u.size() != 32) return false;
+    PackedByteArray result = u;
+    for (int round = 1; round < 120000; ++round) {
+        u = crypto->hmac_digest(HashingContext::HASH_SHA256, pass, u);
+        if (u.size() != 32) return false;
+        for (int j = 0; j < 32; ++j) result.set(j, result[j] ^ u[j]);
+    }
+    Vector<uint8_t> aes;
+    aes.resize(32);
+    for (int j = 0; j < 32; ++j) aes.write[j] = result[j];
+    Dictionary secrets;
+    if (existing) {
+        Error err = OK;
+        Ref<FileAccess> base = FileAccess::open(vault_path, FileAccess::READ, &err);
+        if (base.is_null() || err != OK) return false;
+        Ref<FileAccessEncrypted> encrypted = Ref<FileAccessEncrypted>(memnew(FileAccessEncrypted));
+        if (encrypted->open_and_parse(base, aes, FileAccessEncrypted::MODE_READ) != OK ||
+                encrypted->get_length() > 512 * 1024) return false;
+        Vector<uint8_t> bytes;
+        bytes.resize((int)encrypted->get_length());
+        if (encrypted->get_buffer(bytes.ptrw(), bytes.size()) != (uint64_t)bytes.size()) return false;
+        if (bytes.is_empty()) return false;
+        Variant parsed = JSON::parse_string(String::utf8(reinterpret_cast<const char *>(bytes.ptr()), bytes.size()));
+        if (parsed.get_type() != Variant::DICTIONARY) return false;
+        secrets = parsed;
+    }
+    if (secrets.has(name)) return false; // Do not accidentally overwrite another credential.
+    secrets[name] = secret;
+    const PackedByteArray encoded = JSON::stringify(secrets).to_utf8_buffer();
+    if (encoded.size() > 512 * 1024) return false;
+    const String tmp_path = vault_path + ".tmp";
+    Error err = OK;
+    Ref<FileAccess> target = FileAccess::open(tmp_path, FileAccess::WRITE, &err);
+    if (target.is_null() || err != OK) return false;
+    Ref<FileAccessEncrypted> encrypted = Ref<FileAccessEncrypted>(memnew(FileAccessEncrypted));
+    if (encrypted->open_and_parse(target, aes, FileAccessEncrypted::MODE_WRITE_AES256) != OK) return false;
+    encrypted->store_buffer(encoded.ptr(), encoded.size());
+    encrypted.unref(); // Flush encrypted bytes before moving into place.
+    target.unref();
+    if (DirAccess::rename_absolute(tmp_path, vault_path) != OK) return false;
+    config->set_value("vault", "salt", salt);
+    return true;
+}
 void NoeAccountWorkspace::_show_api_form() {
-    api_name->clear(); api_url->clear(); api_error->set_text("");
-    api_dialog->popup_centered(Size2i(485, 300) * EDSCALE);
+    api_name->clear(); api_url->clear(); api_key->clear(); api_model->clear();
+    api_vault_passphrase->clear(); api_error->set_text("");
+    api_dialog->popup_centered(Size2i(555, 565) * EDSCALE);
     api_name->grab_focus();
 }
 void NoeAccountWorkspace::_save_api() {
-    String name = api_name->get_text().strip_edges(), url = api_url->get_text().strip_edges();
-    if (name.is_empty() || !_is_https_url(url)) {
-        api_error->set_text(TTR("Name and HTTPS endpoint required."));
+    const String name = api_name->get_text().strip_edges();
+    const String url = api_url->get_text().strip_edges();
+    const String model = api_model->get_text().strip_edges();
+    const String key = api_key->get_text().strip_edges();
+    const String passphrase = api_vault_passphrase->get_text();
+    if (name.is_empty() || !_is_https_url(url) || key.is_empty() || passphrase.length() < 16) {
+        api_error->set_text(TTR("Name, HTTPS URL, API key, and vault passphrase (16+ characters) required."));
         api_dialog->popup_centered(); return;
     }
     int count = CLAMP((int)config->get_value("api", "count", 0), 0, 128);
-    if (count == 128) return;
+    if (count == 128 || !_store_api_secret(name, key, passphrase)) {
+        api_error->set_text(TTR("Vault could not be unlocked or saved, or API name already exists. Verify the passphrase."));
+        api_dialog->popup_centered(); return;
+    }
+    // Non-sensitive provider metadata only; API credentials are in the encrypted vault.
     config->set_value("api", "count", count + 1);
     config->set_value("api", "name_" + itos(count), name);
     config->set_value("api", "url_" + itos(count), url);
+    config->set_value("api", "model_" + itos(count), model);
+    api_key->clear(); api_vault_passphrase->clear();
     _save_usage(); _render_integrations();
 }
+
 void NoeAccountWorkspace::_show_mcp_form() {
     mcp_name->clear(); mcp_url->clear(); mcp_error->set_text("");
     mcp_dialog->popup_centered(Size2i(485, 300) * EDSCALE);
@@ -563,7 +704,9 @@ void NoeAccountWorkspace::_render_integrations() {
     if (!count) _add_label(api_list, TTR("No APIs added."));
     for (int i = 0; i < count; ++i)
         _add_label(api_list, String(config->get_value("api", "name_" + itos(i), "")) + " · " +
-                String(config->get_value("api", "url_" + itos(i), "")));
+                String(config->get_value("api", "url_" + itos(i), "")) +
+                " · " + String(config->get_value("api", "model_" + itos(i), "")) +
+                TTR(" · Key encrypted in local vault"));
     count = CLAMP((int)config->get_value("mcp", "count", 0), 0, 128);
     if (!count) _add_label(mcp_list, TTR("No MCPs added."));
     for (int i = 0; i < count; ++i) {
@@ -643,27 +786,137 @@ void NoeAccountWorkspace::_open_registry() {
 }
 
 void NoeAccountWorkspace::_save_collaboration_project() {
-    if (!collab_project) return;
-    const String candidate = collab_project->get_text().strip_edges();
-    if (!candidate.is_empty() && (candidate.length() < 3 || candidate.length() > 128 ||
-            candidate.contains("/") || candidate.contains(" ") || candidate.contains("\\") ||
-            candidate.contains("?") || candidate.contains("#"))) {
-        collab_status->set_text(TTR("Invalid project ID."));
+    const String code = collab_project->get_text().strip_edges().to_lower();
+    if (!online_session || access_token.is_empty()) {
+        collab_status->set_text(TTR("Sign into your NoeEngine account before pairing this editor."));
         return;
     }
-    queued_collaboration_paths.clear();
-    queued_collaboration_ids.clear();
-    config->set_value("collaboration", "project_id", candidate);
-    _save_usage();
-    collab_status->set_text(candidate.is_empty() ? TTR("Collaboration disabled.") :
-            TTR("Project selected. Requires a verified session and HTTPS collaboration service."));
+    if (code.length() != 64 || !code.is_valid_hex_number(false)) {
+        collab_status->set_text(TTR("Enter the complete 64-character hexadecimal pairing code from the website."));
+        return;
+    }
+    if (bridge_kind != BRIDGE_NONE || !_is_https_url(collaboration_url)) {
+        collab_status->set_text(TTR("Pairing service unavailable or busy."));
+        return;
+    }
+    Dictionary payload;
+    payload["code"] = code;
+    PackedStringArray headers;
+    headers.push_back("Content-Type: application/json");
+    headers.push_back("Authorization: Bearer " + access_token);
+    if (bridge_request->request(collaboration_url + "/v1/editor/pair", headers,
+            HTTPClient::METHOD_POST, JSON::stringify(payload)) != OK) {
+        collab_status->set_text(TTR("Cannot connect to the editor bridge."));
+        return;
+    }
+    bridge_kind = BRIDGE_PAIR;
+    collab_project->clear(); // The pairing key must never be saved in regular settings.
+    collab_status->set_text(TTR("Pairing with the verified website account..."));
 }
+void NoeAccountWorkspace::_poll_bridge() {
+    if (!online_session || access_token.is_empty() || bridge_endpoint_id.is_empty() ||
+            collaboration_url.is_empty() || bridge_kind != BRIDGE_NONE) return;
+    PackedStringArray headers;
+    headers.push_back("Authorization: Bearer " + access_token);
+    if (bridge_request->request(collaboration_url + "/v1/editor/pending?endpoint_id=" + bridge_endpoint_id, headers) == OK)
+        bridge_kind = BRIDGE_POLL;
+}
+Dictionary NoeAccountWorkspace::_read_scene_tree() const {
+    Dictionary response;
+    response["online"] = true;
+    if (!EditorNode::get_singleton()) {
+        response["scene"] = "Project Manager";
+        response["nodes"] = Array();
+        return response;
+    }
+    Node *scene = EditorNode::get_singleton()->get_edited_scene();
+    if (!scene) {
+        response["scene"] = "No scene open";
+        response["nodes"] = Array();
+        return response;
+    }
+    response["scene"] = String(scene->get_name());
+    Array nodes;
+    Vector<Node *> pending;
+    pending.push_back(scene);
+    while (!pending.is_empty() && nodes.size() < 120) {
+        Node *node = pending[0];
+        pending.remove_at(0);
+        Dictionary row;
+        row["name"] = String(node->get_name()).left(120);
+        row["type"] = String(node->get_class()).left(120);
+        nodes.push_back(row);
+        for (int i = 0; i < node->get_child_count() && pending.size() < 130; ++i)
+            pending.push_back(node->get_child(i));
+    }
+    response["nodes"] = nodes;
+    response["truncated"] = !pending.is_empty();
+    return response;
+}
+void NoeAccountWorkspace::_on_bridge_response(int result, int code, const PackedStringArray &headers,
+        const PackedByteArray &body) {
+    const BridgeKind phase = bridge_kind;
+    bridge_kind = BRIDGE_NONE;
+    if (phase == BRIDGE_NONE) return;
+    if (result != HTTPRequest::RESULT_SUCCESS) {
+        if (phase == BRIDGE_PAIR) collab_status->set_text(TTR("Pairing bridge network error."));
+        return;
+    }
+    Variant parsed = JSON::parse_string(String::utf8(reinterpret_cast<const char *>(body.ptr()), body.size()));
+    Dictionary reply;
+    if (parsed.get_type() == Variant::DICTIONARY) reply = parsed;
+    if (code == 401 || code == 403) {
+        collab_status->set_text(TTR("Bridge access denied. Reconnect your account or regenerate the pairing code."));
+        return;
+    }
+    if (phase == BRIDGE_PAIR) {
+        const String endpoint = reply.get("endpoint_id", "");
+        if (code != 200 || endpoint.length() != 32 || !endpoint.is_valid_hex_number(false)) {
+            collab_status->set_text(TTR("Pairing failed or code expired. Generate another code on the website."));
+            return;
+        }
+        bridge_endpoint_id = endpoint;
+        bridge_event_token = String(reply.get("event_token", ""));
+        bridge_public_url = reply.get("endpoint_url", "");
+        config->set_value("bridge", "endpoint_id", endpoint); // Public handle only.
+        config->set_value("bridge", "endpoint_url", bridge_public_url);
+        const String project = reply.get("project_id", "");
+        if (!project.is_empty()) config->set_value("collaboration", "project_id", project);
+        _save_usage();
+        collab_status->set_text(TTR("Paired. MCP endpoint: ") + bridge_public_url +
+            TTR("\nExternal clients also require the private bearer key shown on the website."));
+        _poll_bridge();
+    } else if (phase == BRIDGE_POLL && code == 200) {
+        Variant raw = reply.get("tasks", Array());
+        if (raw.get_type() != Variant::ARRAY) return;
+        Array tasks = raw;
+        if (tasks.is_empty() || tasks[0].get_type() != Variant::DICTIONARY) return;
+        Dictionary task = tasks[0];
+        String id = task.get("task_id", "");
+        String tool = task.get("tool", "");
+        if (id.is_empty() || id.length() > 80) return;
+        Dictionary outcome;
+        if (tool == "noeengine_scene_tree") outcome = _read_scene_tree();
+        else outcome["error"] = "Unknown or unauthorized tool";
+        Dictionary payload;
+        payload["task_id"] = id;
+        payload["endpoint_id"] = bridge_endpoint_id;
+        payload["result"] = outcome;
+        PackedStringArray http_headers;
+        http_headers.push_back("Content-Type: application/json");
+        http_headers.push_back("Authorization: Bearer " + access_token);
+        if (bridge_request->request(collaboration_url + "/v1/editor/result", http_headers,
+                HTTPClient::METHOD_POST, JSON::stringify(payload)) == OK)
+            bridge_kind = BRIDGE_REPLY;
+    }
+}
+
 void NoeAccountWorkspace::_on_scene_saved(const String &path) { _send_collaboration_event(path); }
 void NoeAccountWorkspace::_on_resource_saved(const Ref<Resource> &resource) {
     if (resource.is_valid()) _send_collaboration_event(resource->get_path());
 }
 void NoeAccountWorkspace::_send_collaboration_event(const String &file) {
-    if (!online_session || access_token.is_empty() || collaboration_url.is_empty() || !collab_project) return;
+    if (!online_session || access_token.is_empty() || bridge_event_token.is_empty() || collaboration_url.is_empty() || !collab_project) return;
     const String project = String(config->get_value("collaboration", "project_id", ""));
     if (project.is_empty() || !file.begins_with("res://")) return;
     const String relative_path = file.trim_prefix("res://");
@@ -694,12 +947,14 @@ void NoeAccountWorkspace::_flush_collaboration_queue() {
     PackedStringArray headers;
     headers.push_back("Content-Type: application/json");
     headers.push_back("Authorization: Bearer " + access_token);
+    headers.push_back("X-Noe-Session: " + bridge_event_token);
+    headers.push_back("X-Noe-Endpoint: " + bridge_endpoint_id);
     if (collab_request->request(collaboration_url + "/v1/collaboration/events", headers,
             HTTPClient::METHOD_POST, JSON::stringify(payload)) != OK)
         collab_status->set_text(TTR("Team activity queued. Reconnecting on next check."));
 }
 void NoeAccountWorkspace::_poll_collaboration_activity() {
-    if (!online_session || access_token.is_empty() || collaboration_url.is_empty() || !collab_project ||
+    if (!online_session || access_token.is_empty() || bridge_event_token.is_empty() || collaboration_url.is_empty() || !collab_project ||
             String(config->get_value("collaboration", "project_id", "")).is_empty()) return;
     // Saves take priority over the feed poll; retry using the same request ID.
     if (!queued_collaboration_paths.is_empty()) {
@@ -709,6 +964,8 @@ void NoeAccountWorkspace::_poll_collaboration_activity() {
     if (collab_request->get_http_client_status() != HTTPClient::STATUS_DISCONNECTED) return;
     PackedStringArray headers;
     headers.push_back("Authorization: Bearer " + access_token);
+    headers.push_back("X-Noe-Session: " + bridge_event_token);
+    headers.push_back("X-Noe-Endpoint: " + bridge_endpoint_id);
     collaboration_polling = true;
     const String project = String(config->get_value("collaboration", "project_id", "")).uri_encode();
     if (collab_request->request(collaboration_url + "/v1/collaboration/activity?projectId=" + project, headers) != OK)

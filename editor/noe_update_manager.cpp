@@ -147,12 +147,15 @@ void NoeUpdateManager::_on_manifest(int result, int status, const PackedStringAr
     update_button->set_text(TTR("Updates"));
     update_button->set_disabled(false);
     if (status == 204) {
-        if (!quiet_check) _show_notice(TTR("No update available"), TTR("No published update exists for this platform and channel."));
+        if (!quiet_check) _show_notice(TTR("No signed binary release yet"), TTR("The release catalogue is reachable, but there is no published installable .noepatch for this platform and channel. Source patches in Supabase Storage must be compiled, signed, and approved before appearing in Updates."));
         return;
     }
     if (result != HTTPRequest::RESULT_SUCCESS || status != 200) {
         if (quiet_check) return;
-        _show_notice(TTR("Update check failed"), TTR("The NoeEngine release catalog is unavailable."));
+        if (status == 429) _show_notice(TTR("Please try again shortly"), TTR("The update catalogue has temporarily rate-limited requests."));
+        else if (status == 503) _show_notice(TTR("Release service not configured"), TTR("The website is reachable but its Supabase release backend is unavailable. Check your website deployment settings and /health."));
+        else if (result != HTTPRequest::RESULT_SUCCESS) _show_notice(TTR("Update network error"), TTR("The editor could not reach its configured account website. Check HTTPS connectivity, DNS and Account > Security."));
+        else _show_notice(TTR("Update HTTP error"), vformat(TTR("The release catalogue returned HTTP %d. Verify the trusted NoeEngine website or try again later."), status));
         return;
     }
     const Variant parsed = JSON::parse_string(String::utf8(reinterpret_cast<const char *>(body.ptr()), body.size()));

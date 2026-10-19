@@ -424,6 +424,9 @@ Ref<Theme> create_editor_theme(const Ref<Theme> p_theme) {
 	float relationship_line_opacity = EDITOR_GET("interface/theme/relationship_line_opacity");
 
 	String preset = EDITOR_GET("interface/theme/preset");
+	// The graphical preset is still built from inexpensive StyleBoxFlat controls.
+	// Users of older hardware can select NoeEngine Dark to retain the original UI.
+	const bool noe_soft_ui = preset == "NoeEngine Soft";
 
 	int border_size = EDITOR_GET("interface/theme/border_size");
 	int corner_radius = EDITOR_GET("interface/theme/corner_radius");
@@ -442,6 +445,12 @@ Ref<Theme> create_editor_theme(const Ref<Theme> p_theme) {
 		accent_color = EDITOR_GET("interface/theme/accent_color");
 		base_color = EDITOR_GET("interface/theme/base_color");
 		contrast = EDITOR_GET("interface/theme/contrast");
+	} else if (preset == "NoeEngine Soft") {
+		// Dark graphite surfaces and a restrained Noethric-orange highlight.
+		preset_accent_color = Color(0.98, 0.55, 0.32);
+		preset_base_color = Color(0.12, 0.14, 0.17);
+		preset_contrast = 0.22;
+		preset_draw_extra_borders = false;
 	} else if (preset == "Breeze Dark") {
 		preset_accent_color = Color(0.26, 0.76, 1.00);
 		preset_base_color = Color(0.24, 0.26, 0.28);
@@ -666,7 +675,7 @@ Ref<Theme> create_editor_theme(const Ref<Theme> p_theme) {
 
 	// Ensure borders are visible when using an editor scale below 100%.
 	const int border_width = CLAMP(border_size, 0, 2) * MAX(1, EDSCALE);
-	const int corner_width = CLAMP(corner_radius, 0, 6);
+	const int corner_width = noe_soft_ui ? 6 : CLAMP(corner_radius, 0, 6);
 	const int default_margin_size = 4;
 	const int margin_size_extra = default_margin_size + CLAMP(border_size, 0, 2);
 
@@ -679,11 +688,11 @@ Ref<Theme> create_editor_theme(const Ref<Theme> p_theme) {
 	// Button and widgets
 	const float extra_spacing = EDITOR_GET("interface/theme/additional_spacing");
 
-	const Vector2 widget_default_margin = Vector2(extra_spacing + 6, extra_spacing + default_margin_size + 1) * EDSCALE;
+	const Vector2 widget_default_margin = Vector2(extra_spacing + (noe_soft_ui ? 8 : 6), extra_spacing + default_margin_size + 1) * EDSCALE;
 
 	Ref<StyleBoxFlat> style_widget = style_default->duplicate();
 	style_widget->set_content_margin_individual(widget_default_margin.x, widget_default_margin.y, widget_default_margin.x, widget_default_margin.y);
-	style_widget->set_bg_color(dark_color_1);
+	style_widget->set_bg_color(noe_soft_ui ? dark_color_2 : dark_color_1);
 	if (draw_extra_borders) {
 		style_widget->set_border_width_all(Math::round(EDSCALE));
 		style_widget->set_border_color(extra_border_color_1);
@@ -705,10 +714,10 @@ Ref<Theme> create_editor_theme(const Ref<Theme> p_theme) {
 	style_widget_focus->set_border_color(accent_color);
 
 	Ref<StyleBoxFlat> style_widget_pressed = style_widget->duplicate();
-	style_widget_pressed->set_bg_color(dark_color_1.darkened(0.125));
+	style_widget_pressed->set_bg_color(noe_soft_ui ? dark_color_2.darkened(0.15) : dark_color_1.darkened(0.125));
 
 	Ref<StyleBoxFlat> style_widget_hover = style_widget->duplicate();
-	style_widget_hover->set_bg_color(mono_color * Color(1, 1, 1, 0.11));
+	style_widget_hover->set_bg_color(noe_soft_ui ? dark_color_2.lightened(0.12) : mono_color * Color(1, 1, 1, 0.11));
 	if (draw_extra_borders) {
 		style_widget_hover->set_border_color(extra_border_color_1);
 	} else {
