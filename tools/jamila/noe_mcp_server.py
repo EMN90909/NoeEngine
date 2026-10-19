@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Adapted from Jamila-GD's NoeEngine project MCP integration.
 """Jamila's NoeEngine project MCP (stdio/JSON-RPC 2.0).
 
 Adapted from EMN90909/Jamila-GD integrations/noeengine/noe_mcp_server.py.
@@ -134,7 +136,7 @@ class ProjectTools:
         if name == "noe_export_pack":
             self.require_approval(args)
             preset = args.get("preset")
-            if not isinstance(preset, str) or not re.fullmatch(r"[A-Za-z0-9_ .+()-]{1,80}", preset):
+            if not isinstance(preset, str) or not re.fullmatch(r"[A-Za-z0-9_ .+()/\\-]{1,80}", preset):
                 raise ValueError("Select a valid export preset name")
             if not self.engine or not self.engine.is_file():
                 raise ValueError("Cannot export: NoeEngine executable missing")
