@@ -62,7 +62,7 @@ void begin() {
         WARN_PRINT("NoeCore: Cannot create local session recovery marker.");
         return;
     }
-    file->store_string("active\\n");
+    file->store_string("active\n");
     file->flush();
     file.unref();
     if (atomic_replace(temporary, marker) != OK) {
