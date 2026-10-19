@@ -4735,7 +4735,7 @@ String EditorNode::_get_system_info() const {
 		driver_name = "GLES3";
 	}
 	if (rendering_method == "forward_plus") {
-		rendering_method = "Forward+";
+		rendering_method = "NoeRender";
 	} else if (rendering_method == "mobile") {
 		rendering_method = "Mobile";
 	} else if (rendering_method == "gl_compatibility") {
@@ -7771,7 +7771,7 @@ EditorNode::EditorNode() {
 
 		// Add the renderers name to the UI.
 		if (rendering_method == "forward_plus") {
-			renderer->add_item(TTR("Forward+"));
+			renderer->add_item(TTR("NoeRender"));
 		}
 		if (rendering_method == "mobile") {
 			renderer->add_item(TTR("Mobile"));
