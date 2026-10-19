@@ -185,6 +185,18 @@ def smoke_test_linux(binary, with_tests=False):
     print("Native Noqeri lifecycle and repeat smoke: PASSED", flush=True)
 
 
+def stage_jamila(destination):
+    """Bundle the lightweight Python MCP runtime with each editor installer."""
+    source = ROOT / "tools" / "jamila"
+    names = ("jamila_agent.py", "noe_mcp_server.py")
+    destination.mkdir(parents=True, exist_ok=True)
+    for name in names:
+        source_file = source / name
+        if not source_file.is_file():
+            raise RuntimeError("Jamila component missing: " + name)
+        shutil.copy2(source_file, destination / name)
+
+
 def write_debian(binary):
     check_tool("dpkg-deb")
     with tempfile.TemporaryDirectory(prefix="noeengine-deb-") as tmp:
@@ -196,6 +208,7 @@ def write_debian(binary):
         for directory in (app, bindir, applications, control):
             directory.mkdir(parents=True, exist_ok=True)
         shutil.copy2(binary, app / "noeengine")
+        stage_jamila(app / "Jamila")
         (app / "noeengine").chmod(0o755)
         launcher = bindir / "noeengine"
         launcher.write_text('#!/bin/sh\nexec /usr/lib/noeengine/noeengine "$@"\n')
@@ -225,6 +238,7 @@ def write_windows(binary):
     with tempfile.TemporaryDirectory(prefix="noeengine-nsis-") as tmp:
         directory = Path(tmp)
         shutil.copy2(binary, directory / "NoeEngine.exe")
+        stage_jamila(directory / "Jamila")
         shutil.copy2(ROOT / "LICENSE.txt", directory / "LICENSE.txt")
         shutil.copy2(ROOT / "COPYRIGHT.txt", directory / "COPYRIGHT.txt")
         shutil.copy2(ROOT / "NOTICE.md", directory / "NOTICE.md")
@@ -236,12 +250,14 @@ def write_windows(binary):
             'Unicode true\nName "NoeEngine"\nOutFile "' + out.as_posix() + '"\n'
             'InstallDir "$PROGRAMFILES64\\Noethric\\NoeEngine"\nRequestExecutionLevel admin\n'
             'Section "Install"\nSetOutPath "$INSTDIR"\nFile "NoeEngine.exe"\nFile "LICENSE.txt"\nFile "COPYRIGHT.txt"\nFile "NOTICE.md"\nFile "NOETHRIC-PROPRIETARY-LICENSE.txt"\n'
+            'SetOutPath "$INSTDIR\\Jamila"\nFile "Jamila\\jamila_agent.py"\nFile "Jamila\\noe_mcp_server.py"\nSetOutPath "$INSTDIR"\n'
             'WriteUninstaller "$INSTDIR\\Uninstall.exe"\n'
             'CreateShortCut "$DESKTOP\\NoeEngine.lnk" "$INSTDIR\\NoeEngine.exe"\n'
             'SectionEnd\nSection "Uninstall"\n'
             'Delete "$DESKTOP\\NoeEngine.lnk"\n'
             'Delete "$INSTDIR\\NoeEngine.exe"\nDelete "$INSTDIR\\LICENSE.txt"\nDelete "$INSTDIR\\COPYRIGHT.txt"\n'
             'Delete "$INSTDIR\\NOTICE.md"\nDelete "$INSTDIR\\NOETHRIC-PROPRIETARY-LICENSE.txt"\n'
+            'Delete "$INSTDIR\\Jamila\\jamila_agent.py"\nDelete "$INSTDIR\\Jamila\\noe_mcp_server.py"\nRMDir "$INSTDIR\\Jamila"\n'
             'Delete "$INSTDIR\\Uninstall.exe"\nRMDir "$INSTDIR"\nSectionEnd\n'
         )
         command(["makensis", "/V2" if os.name == "nt" else "-V2", nsi], directory)
@@ -255,6 +271,7 @@ def write_macos(binary):
         executable = app / "Contents/MacOS/NoeEngine"
         executable.parent.mkdir(parents=True)
         shutil.copy2(binary, executable)
+        stage_jamila(app / "Contents/Resources/Jamila")
         executable.chmod(0o755)
         resources = app / "Contents/Resources"
         resources.mkdir(parents=True, exist_ok=True)
@@ -298,6 +315,7 @@ def write_linux_app(binary):
     exe = app_dir / "usr/bin/noeengine"
     exe.parent.mkdir(parents=True)
     shutil.copy2(binary, exe)
+    stage_jamila(exe.parent / "Jamila")
     exe.chmod(0o755)
     app_run = app_dir / "AppRun"
     app_run.write_text('#!/bin/sh\nHERE="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"\nexec "$HERE/usr/bin/noeengine" "$@"\n')
