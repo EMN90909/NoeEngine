@@ -136,7 +136,7 @@ class ProjectTools:
         if name == "noe_export_pack":
             self.require_approval(args)
             preset = args.get("preset")
-            if not isinstance(preset, str) or not re.fullmatch(r"[A-Za-z0-9_ .+()/\\-]{1,80}", preset):
+            if not isinstance(preset, str) or not re.fullmatch(r"[A-Za-z0-9_ .+()/\-]{1,80}", preset):
                 raise ValueError("Select a valid export preset name")
             if not self.engine or not self.engine.is_file():
                 raise ValueError("Cannot export: NoeEngine executable missing")
@@ -144,9 +144,26 @@ class ProjectTools:
             if not settings.is_file() or settings.is_symlink() or settings.stat().st_size > 64000:
                 raise ValueError("Create a NoeEngine export preset first")
             config = settings.read_text(encoding="utf8")
-            # Read only preset name entries. Never interpret configuration strings
-            # as a command or accept an arbitrary output file path.
-            names = set(re.findall(r'^name="([^"\\r\\n]{1,80})"
+            # Export presets are project-controlled. Never execute their contents.
+            names = set(re.findall(r'^name="([^"]{1,80})"', config, re.M))
+            if preset not in names:
+                raise ValueError("Unknown configured export preset")
+            target = self.root / "builds" / "Jamila-Game.pck"
+            if target.is_symlink() or target.parent.is_symlink():
+                raise ValueError("Unsafe build output path")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                run = subprocess.run(
+                    [str(self.engine), "--headless", "--path", str(self.root), "--export-pack", preset, str(target)],
+                    cwd=self.root, capture_output=True, text=True, timeout=180, shell=False)
+                log = (run.stdout + "\n" + run.stderr)[-12000:]
+                ok = run.returncode == 0 and target.is_file() and target.stat().st_size > 100
+                return {"ok": ok, "path": "builds/Jamila-Game.pck" if ok else None,
+                        "bytes": target.stat().st_size if target.is_file() else 0,
+                        "exit_code": run.returncode, "output": log}
+            except subprocess.TimeoutExpired:
+                return {"ok": False, "error": "Game export timed out"}
+        if name == "noe_validate_project":
             self.require_approval(args)
             if not self.engine or not self.engine.is_file():
                 raise ValueError("NoeEngine executable unavailable; cannot claim validation passed")
