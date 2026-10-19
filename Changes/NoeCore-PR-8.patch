@@ -1,0 +1,576 @@
+diff --git a/.github/workflows/noecore-policy.yml b/.github/workflows/noecore-policy.yml
+new file mode 100644
+index 00000000000..ded50af017e
+--- /dev/null
++++ b/.github/workflows/noecore-policy.yml
+@@ -0,0 +1,24 @@
++name: NoeCore policy tests
++on:
++  pull_request:
++    branches: [main]
++  push:
++    branches: [main]
++  workflow_dispatch:
++permissions:
++  contents: read
++jobs:
++  noecore:
++    runs-on: ubuntu-22.04
++    timeout-minutes: 8
++    steps:
++      - name: Check out NoeEngine
++        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
++        with:
++          persist-credentials: false
++      - name: Compile policy with strict warnings
++        run: c++ -std=c++17 -Wall -Wextra -Werror -I . tests/noe_core_policy_test.cpp -o /tmp/noecore-test
++      - name: Test hardware selection and cache guards
++        run: /tmp/noecore-test
++      - name: Assert settings and session safeguards
++        run: python3 -m unittest discover -s tests/python_build -p 'test_noecore_regressions.py' -v
+diff --git a/docs/NOECORE_OPTIMIZATION.md b/docs/NOECORE_OPTIMIZATION.md
+new file mode 100644
+index 00000000000..dbd42ab9674
+--- /dev/null
++++ b/docs/NOECORE_OPTIMIZATION.md
+@@ -0,0 +1,37 @@
++# NoeCore optimization: implementation and limitations
++
++NoeCore is an **advisory, opt-in optimization layer**, not a replacement for the rendering or resource managers. Existing NoeRender Vulkan validation, adaptive resolution, editor low-resource mode, threaded filesystem scanning and Godot startup benchmarking are reused.
++
++## Adaptive hardware detection
++- Detects logical CPU threads and Linux host RAM, with a Vulkan candidate/estimated device-local heap from the existing probe. On other operating systems RAM is unknown in the early runtime path; existing editor hardware detection supports Windows and macOS.
++- Recommends Low, Balanced, High or Ultra using explicit CPU, RAM, GPU, API capability signals. Unknown capability selects a conservative tier.
++- The recommendation is displayed *only* when `performance/noecore/diagnostics/startup_benchmark` is enabled. It never changes a user's quality preset or renderer. The project creation UI displays an additional advisory tooltip but retains Auto as its default.
++- GPU heap sizes are estimates, **not current available VRAM**. Presentation capability requires actual renderer startup, not this probe.
++
++## Startup and editor responsiveness
++- Reuses Engine startup benchmark timers. NoeCore diagnostics are disabled by default to avoid startup work and log noise.
++- Removes an unnecessary duplicate per-frame texture import update; asset discovery already uses worker-thread scans.
++- Does not globally defer required systems or disable user plugins because that would break projects.
++
++## Memory
++- `performance/noecore/memory/target_cache_budget_mb` configures a future shared cache target (0 = unset). **It does not currently impose a universal engine allocation limit.**
++- `interface/noecore/preview_cache_budget_mb` controls the *editor preview cache* (0 = off). A bounded LRU pass only drops cache-held reference-counted thumbnails without outstanding external references; actual resources and scene contents are not unloaded.
++- The C++ policy handles integer overflow and requires an over-budget state, an idle grace interval, and zero external references, no scene pin and no in-flight load before deeming any entry eviction eligible.
++- Core allocator memory counters and `Performance` rendering/texture memory monitors already exist. Per-resource GPU residency tracking still requires renderer-specific instrumentation.
++
++## Crash recovery and diagnostics
++- `interface/noecore/session_recovery_enabled` controls a **local per-project active-session marker**, enabled by default. On unexpected exit the next editor session warns. Normal exit clears it.
++- Editor layout writes use a same-directory temporary file and POSIX rename or Windows MoveFileExW with replace/write-through; on failure the previous layout remains intact.
++- The existing editor layout contains reopened *saved scene tabs*. Unsaved scene edits are **not recovered**. Do not mistake the marker for a crash dump or full autosave facility.
++- Diagnostics contain only hardware capacity counters and the recommendation. They never include project paths, source files, keys or model tokens; diagnostics are opt-in.
++- No crash dumps are uploaded or sent to remote services.
++
++## Optional features
++- The existing SCons `module_<name>_enabled=no` switches (where offered) and export template `tools=no` should be used to build lean exports. NoeMixer and advanced cinematic/geometry systems must remain opt-in modules; no such modules are linked by this PR.
++- Modularizing already-linked subsystems, true texture residency eviction, shader compilation prioritization, and full unsaved-scene recovery are **follow-on native engine projects**, not claimed as completed here.
++
++## Checks
++- `c++ -std=c++17 -Wall -Wextra -Werror -I . tests/noe_core_policy_test.cpp -o /tmp/noecore-test && /tmp/noecore-test`
++- `python3 -m unittest discover -s tests/python_build -p 'test_noecore_regressions.py' -v`
++- CI: `.github/workflows/noecore-policy.yml`.
++- Full editor/export builds remain mandatory before merging major engine changes.
+diff --git a/editor/editor_node.cpp b/editor/editor_node.cpp
+index 7a36ab7892d..f28e4cb6f02 100644
+--- a/editor/editor_node.cpp
++++ b/editor/editor_node.cpp
+@@ -7,6 +7,7 @@
+ #include "editor/noe_account_workspace.h"
+ #include "editor/noe_jamila_panel.h"
+ #include "editor/noe_update_manager.h"
++#include "editor/noe_session_recovery.h"
+ 
+ #include "core/config/project_settings.h"
+ #include "core/input/input.h"
+@@ -603,13 +604,15 @@ void EditorNode::_notification(int p_what) {
+ 				emit_signal(SNAME("project_settings_changed"));
+ 			}
+ 
+-			ResourceImporterTexture::get_singleton()->update_imports();
+-
++			// Import polling already ran earlier this frame.
+ 			bottom_panel_updating = false;
+ 		} break;
+ 
+ 		case NOTIFICATION_ENTER_TREE: {
+ 			Engine::get_singleton()->set_editor_hint(true);
++			if (bool(EDITOR_GET("interface/noecore/session_recovery_enabled"))) {
++				NoeSessionRecovery::begin();
++			}
+ 
+ 			Window *window = get_window();
+ 			if (window) {
+@@ -639,6 +642,9 @@ void EditorNode::_notification(int p_what) {
+ 		} break;
+ 
+ 		case NOTIFICATION_EXIT_TREE: {
++			if (bool(EDITOR_GET("interface/noecore/session_recovery_enabled"))) {
++				NoeSessionRecovery::finish();
++			}
+ 			if (progress_dialog) {
+ 				progress_dialog->queue_free();
+ 			}
+@@ -5117,7 +5123,10 @@ void EditorNode::_save_docks() {
+ 	_save_open_scenes_to_config(config, "EditorNode");
+ 	editor_data.get_plugin_window_layout(config);
+ 
+-	config->save(EditorPaths::get_singleton()->get_project_settings_dir().path_join("editor_layout.cfg"));
++	const Error noe_layout_error = NoeSessionRecovery::atomic_save_layout(config);
++	if (noe_layout_error != OK) {
++		WARN_PRINT("NoeCore: Failed to save editor layout atomically; previous layout retained.");
++	}
+ }
+ 
+ void EditorNode::_save_docks_to_config(Ref<ConfigFile> p_layout, const String &p_section) {
+diff --git a/editor/editor_resource_preview.cpp b/editor/editor_resource_preview.cpp
+index 1640006094e..f4ca596d816 100644
+--- a/editor/editor_resource_preview.cpp
++++ b/editor/editor_resource_preview.cpp
+@@ -14,6 +14,7 @@
+ #include "editor/editor_paths.h"
+ #include "editor/editor_scale.h"
+ #include "editor/editor_settings.h"
++#include "main/noe_core_policy.h"
+ 
+ bool EditorResourcePreviewGenerator::handles(const String &p_type) const {
+ 	bool success = false;
+@@ -97,21 +98,43 @@ void EditorResourcePreview::_preview_ready(const String &p_str, const Ref<Textur
+ 		item.modified_time = modified_time;
+ 
+ 		cache[path] = item;
+-		// Bounded LRU thumbnail cache only in opt-in low-resource editor mode.
+-		// Evicting decoded previews is safe: file thumbnails can be regenerated,
+-		// and this does not touch the user's project resources or save state.
+-		if (bool(EDITOR_GET("interface/noe_render/low_resource_mode"))) {
+-			const int limit = CLAMP(int(EDITOR_GET("interface/noe_render/preview_cache_limit")), 32, 1024);
+-			if (cache.size() > uint32_t(limit)) {
++		// Evict only decoded editor thumbnails, never scene assets. RefCounted
++		// textures survive the removal of a cache entry while used elsewhere.
++		const bool low_resource = bool(EDITOR_GET("interface/noe_render/low_resource_mode"));
++		const uint64_t byte_limit = uint64_t(CLAMP(int(EDITOR_GET("interface/noecore/preview_cache_budget_mb")), 0, 1024)) * 1024ULL * 1024ULL;
++		const uint32_t entry_limit = low_resource ? uint32_t(CLAMP(int(EDITOR_GET("interface/noe_render/preview_cache_limit")), 32, 1024)) : UINT32_MAX;
++		if (byte_limit || low_resource) {
++			// Bounded scan. Avoid doing unbounded cleanup work on the preview thread.
++			for (int attempts = 0; attempts < 32; ++attempts) {
++				NoeCore::MemoryBudget preview_budget(byte_limit);
++				for (const KeyValue<String, Item> &entry : cache) {
++					if (entry.value.preview.is_valid()) {
++						preview_budget.account(uint64_t(entry.value.preview->get_width()) * uint64_t(entry.value.preview->get_height()) * 4ULL);
++					}
++					if (entry.value.small_preview.is_valid()) {
++						preview_budget.account(uint64_t(entry.value.small_preview->get_width()) * uint64_t(entry.value.small_preview->get_height()) * 4ULL);
++					}
++				}
++				if (cache.size() <= entry_limit && !preview_budget.over_budget()) {
++					break;
++				}
+ 				String oldest_path;
+-				uint64_t oldest_order = UINT64_MAX;
++				int oldest_order = INT32_MAX;
+ 				for (const KeyValue<String, Item> &entry : cache) {
+-					if (entry.value.order < oldest_order) {
+-						oldest_order = entry.value.order;
++					const Item &candidate = entry.value;
++					if ((candidate.preview.is_valid() && candidate.preview->get_reference_count() > 1) ||
++							(candidate.small_preview.is_valid() && candidate.small_preview->get_reference_count() > 1)) {
++						continue;
++					}
++					if (candidate.order < oldest_order) {
++						oldest_order = candidate.order;
+ 						oldest_path = entry.key;
+ 					}
+ 				}
+-				if (!oldest_path.is_empty()) cache.erase(oldest_path);
++				if (oldest_path.is_empty()) {
++					break; // All cached textures still referenced: favor safety over budget.
++				}
++				cache.erase(oldest_path);
+ 			}
+ 		}
+ 	}
+diff --git a/editor/editor_settings.cpp b/editor/editor_settings.cpp
+index 6255568b282..ddaf35b6cb1 100644
+--- a/editor/editor_settings.cpp
++++ b/editor/editor_settings.cpp
+@@ -403,6 +403,8 @@ void EditorSettings::_load_defaults(Ref<ConfigFile> p_extra_config) {
+ 	EDITOR_SETTING(Variant::BOOL, PROPERTY_HINT_NONE, "interface/noe_render/low_resource_mode", false, "")
+ 	EDITOR_SETTING(Variant::BOOL, PROPERTY_HINT_NONE, "interface/noe_render/suppress_complex_previews", false, "")
+ 	EDITOR_SETTING(Variant::INT, PROPERTY_HINT_RANGE, "interface/noe_render/preview_cache_limit", 192, "32,1024,1")
++	EDITOR_SETTING(Variant::INT, PROPERTY_HINT_RANGE, "interface/noecore/preview_cache_budget_mb", 64, "0,1024,1")
++	EDITOR_SETTING(Variant::BOOL, PROPERTY_HINT_NONE, "interface/noecore/session_recovery_enabled", true, "")
+ 	EDITOR_SETTING(Variant::INT, PROPERTY_HINT_RANGE, "interface/noe_render/focused_sleep_usec", 16000, "7000,33000,500")
+ 	EDITOR_SETTING_USAGE(Variant::FLOAT, PROPERTY_HINT_RANGE, "interface/editor/low_processor_mode_sleep_usec", 6900, "1,100000,1", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_RESTART_IF_CHANGED)
+ 	// Default unfocused usec sleep is for 10 FPS. Allow an unfocused FPS limit
+diff --git a/editor/noe_session_recovery.cpp b/editor/noe_session_recovery.cpp
+new file mode 100644
+index 00000000000..fdfdda1bd18
+--- /dev/null
++++ b/editor/noe_session_recovery.cpp
+@@ -0,0 +1,77 @@
++#include "noe_session_recovery.h"
++
++#include "core/config/project_settings.h"
++#include "core/io/dir_access.h"
++#include "core/io/file_access.h"
++#include "core/string/print_string.h"
++#include "editor/editor_paths.h"
++
++#if defined(WINDOWS_ENABLED)
++// SDK macros stay isolated in this platform implementation, never a shared header.
++#ifndef WIN32_LEAN_AND_MEAN
++#define WIN32_LEAN_AND_MEAN
++#endif
++#include <windows.h>
++#endif
++
++namespace NoeSessionRecovery {
++static String marker_path() {
++    return EditorPaths::get_singleton()->get_project_settings_dir().path_join("noecore-session.active");
++}
++
++Error atomic_replace(const String &temporary, const String &target) {
++#if defined(WINDOWS_ENABLED)
++    const String source = ProjectSettings::get_singleton()->globalize_path(temporary);
++    const String destination = ProjectSettings::get_singleton()->globalize_path(target);
++    // DirAccessWindows::rename removes the old file first. MoveFileExW replaces
++    // it without explicitly deleting it and preserves the old file on failure.
++    return MoveFileExW(reinterpret_cast<LPCWSTR>(source.utf16().get_data()),
++                      reinterpret_cast<LPCWSTR>(destination.utf16().get_data()),
++                      MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) ? OK : FAILED;
++#else
++    // Same-directory POSIX rename atomically replaces the previous file.
++    return DirAccess::rename_absolute(temporary, target);
++#endif
++}
++
++Error atomic_save_layout(const Ref<ConfigFile> &layout) {
++    const String target = EditorPaths::get_singleton()->get_project_settings_dir().path_join("editor_layout.cfg");
++    const String temporary = target + ".noecore-tmp";
++    const Error saved = layout->save(temporary);
++    if (saved != OK) {
++        DirAccess::remove_absolute(temporary);
++        return saved;
++    }
++    const Error replaced = atomic_replace(temporary, target);
++    if (replaced != OK) {
++        DirAccess::remove_absolute(temporary);
++    }
++    return replaced;
++}
++
++void begin() {
++    const String marker = marker_path();
++    if (FileAccess::exists(marker)) {
++        // The native editor layout contains saved open-scene tabs. Neither the
++        // crash marker nor the diagnostic message contains private paths.
++        WARN_PRINT("NoeCore: Previous editor session ended unexpectedly. Saved tabs may be restored from the editor layout; unsaved edits may be lost.");
++    }
++    const String temporary = marker + ".tmp";
++    Ref<FileAccess> file = FileAccess::open(temporary, FileAccess::WRITE);
++    if (file.is_null()) {
++        WARN_PRINT("NoeCore: Cannot create local session recovery marker.");
++        return;
++    }
++    file->store_string("active\n");
++    file->flush();
++    file.unref();
++    if (atomic_replace(temporary, marker) != OK) {
++        DirAccess::remove_absolute(temporary);
++        WARN_PRINT("NoeCore: Cannot commit local session recovery marker.");
++    }
++}
++
++void finish() {
++    DirAccess::remove_absolute(marker_path());
++}
++} // namespace NoeSessionRecovery
+diff --git a/editor/noe_session_recovery.h b/editor/noe_session_recovery.h
+new file mode 100644
+index 00000000000..739174fe899
+--- /dev/null
++++ b/editor/noe_session_recovery.h
+@@ -0,0 +1,15 @@
++// NoeCore local crash-session marker and atomic editor layout persistence.
++// Unsaved in-memory scene edits are NOT reconstructed by this marker.
++#ifndef NOE_SESSION_RECOVERY_H
++#define NOE_SESSION_RECOVERY_H
++
++#include "core/io/config_file.h"
++
++namespace NoeSessionRecovery {
++// Must be implemented per OS: Windows DirAccess::rename() deletes destinations!
++Error atomic_replace(const String &temporary, const String &target);
++Error atomic_save_layout(const Ref<ConfigFile> &layout);
++void begin();
++void finish();
++} // namespace NoeSessionRecovery
++#endif // NOE_SESSION_RECOVERY_H
+diff --git a/editor/project_manager.cpp b/editor/project_manager.cpp
+index 1ad1a1bd4ee..2dd1d409a12 100644
+--- a/editor/project_manager.cpp
++++ b/editor/project_manager.cpp
+@@ -26,6 +26,8 @@
+ #include "editor/editor_themes.h"
+ #include "editor/editor_vcs_interface.h"
+ #include "main/main.h"
++#include "main/noe_core_policy.h"
++#include <thread>
+ #include "scene/gui/center_container.h"
+ #include "scene/gui/check_box.h"
+ #include "scene/gui/line_edit.h"
+@@ -423,6 +425,14 @@ class ProjectDialog : public ConfirmationDialog {
+ 			quality_preset_selection->set_item_disabled(4, limited_backend);
+ 			if (limited_backend && (quality_preset_selection->get_selected() == 3 || quality_preset_selection->get_selected() == 4)) {
+ 				quality_preset_selection->select(0);
++		// Recommendation is descriptive only. New projects keep Auto and user choice wins.
++		NoeCore::Hardware noe_hardware;
++		noe_hardware.cpu_threads = std::thread::hardware_concurrency();
++		noe_hardware.ram_bytes = NoeHardwareProfile::installed_memory_bytes();
++		// The project manager has not created a render device: GPU/VRAM remain unknown.
++		const String noe_recommendation = NoeCore::profile_name(NoeCore::recommend(noe_hardware));
++		quality_preset_selection->set_tooltip_text(vformat(TTR("NoeCore conservative estimate: %s. GPU capabilities are not verified here. The selection is yours."), noe_recommendation));
++
+ 		_renderer_selected(); // Apply backend limits after the quality widget exists.
+ 			}
+ 		}
+diff --git a/main/main.cpp b/main/main.cpp
+index 4da294b8d29..89671a537bf 100644
+--- a/main/main.cpp
++++ b/main/main.cpp
+@@ -31,6 +31,7 @@
+ #include "drivers/register_driver_types.h"
+ #include "main/app_icon.gen.h"
+ #include "main/main_timer_sync.h"
++#include "main/noe_core_integration.h"
+ #include "main/noe_render_quality.h"
+ #include "main/noe_render_gpu_probe.h"
+ #include "main/performance.h"
+@@ -657,6 +658,7 @@ int Main::test_entrypoint(int argc, char *argv[], bool &tests_need_run) {
+  */
+ 
+ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_phase) {
++	NoeRender::GpuCapabilities noe_core_gpu; // Declared before any goto error paths.
+ 	OS::get_singleton()->initialize();
+ 
+ 	engine = memnew(Engine);
+@@ -1658,6 +1660,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
+ 	const bool allow_fallback = GLOBAL_DEF_BASIC("rendering/noe_render/backend/allow_fallback", true);
+ 	if (!noe_render_cli_override && allow_fallback && rendering_driver == "vulkan") {
+ 		const NoeRender::GpuCapabilities caps = NoeRender::probe_vulkan();
++		noe_core_gpu = caps;
+ 		print_line("NoeRender Vulkan probe: " + caps.reason +
+ 				(caps.render_device_candidate ? " | " + caps.device_name : ""));
+ #ifdef GLES3_ENABLED
+@@ -1671,6 +1674,9 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
+ 
+ 	}
+ 
++	// Advisory NoeCore profile + opt-in budgets. Never rewrites the quality preset.
++	NoeCore::initialize(noe_core_gpu);
++
+ 	// Resolve NoeRender game graphics quality while preserving legacy renderer IDs.
+ 	// SceneTree subsequently consumes the resulting settings at initialization.
+ 	NoeRender::configure(globals, rendering_method, editor || project_manager);
+diff --git a/main/noe_core_integration.h b/main/noe_core_integration.h
+new file mode 100644
+index 00000000000..6b61ea65614
+--- /dev/null
++++ b/main/noe_core_integration.h
+@@ -0,0 +1,33 @@
++// NoeCore runtime hooks are advisory: never rewrite saved graphics preferences.
++#ifndef NOE_CORE_INTEGRATION_H
++#define NOE_CORE_INTEGRATION_H
++
++#include "core/config/project_settings.h"
++#include "core/os/os.h"
++#include "core/string/print_string.h"
++#include "main/noe_core_policy.h"
++#include "main/noe_render_gpu_probe.h"
++#include "main/noe_render_quality.h"
++
++namespace NoeCore {
++inline void initialize(const NoeRender::GpuCapabilities &gpu) {
++    GLOBAL_DEF_BASIC("performance/noecore/diagnostics/startup_benchmark", false);
++    GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "performance/noecore/memory/target_cache_budget_mb",
++            PROPERTY_HINT_RANGE, "0,65536,64"), 0);
++    GLOBAL_DEF_BASIC("performance/noecore/memory/safe_eviction", true);
++
++    Hardware h;
++    h.cpu_threads = static_cast<uint32_t>(OS::get_singleton()->get_processor_count());
++    h.ram_bytes = NoeRender::physical_ram_bytes();
++    h.vram_bytes = gpu.device_local_bytes; // Vulkan heap is only an estimate, not free VRAM.
++    h.hardware_gpu = gpu.render_device_candidate && !gpu.software_device;
++    h.graphics_api_supported = gpu.render_device_candidate;
++    if (bool(GLOBAL_GET("performance/noecore/diagnostics/startup_benchmark"))) {
++        // Diagnostics omit paths, project data, tokens, model and device identifiers.
++        print_line(vformat("NoeCore hardware: threads=%d RAM_MiB=%d GPU_heap_MiB=%d verified_vulkan=%s recommendation=%s (advisory only)",
++                static_cast<int>(h.cpu_threads), static_cast<int64_t>(h.ram_bytes / (1024ULL * 1024)), static_cast<int64_t>(h.vram_bytes / (1024ULL * 1024)),
++                h.graphics_api_supported ? "yes" : "no", String(profile_name(recommend(h)))));
++    }
++}
++} // namespace NoeCore
++#endif // NOE_CORE_INTEGRATION_H
+diff --git a/main/noe_core_policy.h b/main/noe_core_policy.h
+new file mode 100644
+index 00000000000..d5b2936a659
+--- /dev/null
++++ b/main/noe_core_policy.h
+@@ -0,0 +1,70 @@
++// NoeCore policy primitives. No engine types or allocation on the hot path.
++#ifndef NOE_CORE_POLICY_H
++#define NOE_CORE_POLICY_H
++
++#include <cstdint>
++#include <limits>
++
++namespace NoeCore {
++constexpr uint64_t GiB = 1024ULL * 1024 * 1024;
++
++enum class Profile { LOW, BALANCED, HIGH, ULTRA };
++struct Hardware {
++    uint32_t cpu_threads = 0;
++    uint64_t ram_bytes = 0;
++    uint64_t vram_bytes = 0; // 0 means unknown, NOT no VRAM.
++    bool hardware_gpu = false;
++    bool graphics_api_supported = false;
++};
++
++inline Profile recommend(const Hardware &h) {
++    // An unverified renderer is not evidence for selecting a costly preset.
++    if (!h.hardware_gpu || !h.graphics_api_supported) return Profile::LOW;
++    if (h.cpu_threads && h.cpu_threads < 4) return Profile::LOW;
++    if (h.ram_bytes && h.ram_bytes < 6 * GiB) return Profile::LOW;
++    if (!h.ram_bytes || !h.cpu_threads || !h.vram_bytes) return Profile::BALANCED;
++    if (h.cpu_threads >= 12 && h.ram_bytes >= 24 * GiB && h.vram_bytes >= 8 * GiB) return Profile::ULTRA;
++    if (h.cpu_threads >= 8 && h.ram_bytes >= 12 * GiB && h.vram_bytes >= 4 * GiB) return Profile::HIGH;
++    return h.vram_bytes < 2 * GiB ? Profile::LOW : Profile::BALANCED;
++}
++inline const char *profile_name(Profile p) {
++    switch (p) {
++        case Profile::LOW: return "Low";
++        case Profile::BALANCED: return "Balanced";
++        case Profile::HIGH: return "High";
++        case Profile::ULTRA: return "Ultra";
++    }
++    return "Low";
++}
++
++struct CacheEntry {
++    uint64_t size_bytes = 0;
++    uint64_t last_used_frame = 0;
++    uint32_t external_references = 0;
++    bool pinned = false;
++    bool in_active_scene = false;
++    bool loading = false;
++};
++
++class MemoryBudget {
++    uint64_t limit_bytes = 0;
++    uint64_t used_bytes = 0;
++public:
++    explicit MemoryBudget(uint64_t limit = 0) : limit_bytes(limit) {}
++    void set_limit(uint64_t limit) { limit_bytes = limit; }
++    uint64_t limit() const { return limit_bytes; }
++    uint64_t usage() const { return used_bytes; }
++    void account(uint64_t bytes) {
++        used_bytes = bytes > std::numeric_limits<uint64_t>::max() - used_bytes ?
++                std::numeric_limits<uint64_t>::max() : used_bytes + bytes;
++    }
++    void release(uint64_t bytes) { used_bytes = bytes > used_bytes ? 0 : used_bytes - bytes; }
++    bool over_budget() const { return limit_bytes && used_bytes > limit_bytes; }
++    bool may_evict(const CacheEntry &item, uint64_t now_frame, uint64_t grace_frames = 120) const {
++        return over_budget() && item.size_bytes != 0 && !item.pinned &&
++                !item.in_active_scene && !item.loading && !item.external_references &&
++                now_frame >= item.last_used_frame && now_frame - item.last_used_frame >= grace_frames;
++    }
++};
++} // namespace NoeCore
++#endif // NOE_CORE_POLICY_H
+diff --git a/tests/noe_core_policy_test.cpp b/tests/noe_core_policy_test.cpp
+new file mode 100644
+index 00000000000..606c6dca074
+--- /dev/null
++++ b/tests/noe_core_policy_test.cpp
+@@ -0,0 +1,44 @@
++#include "main/noe_core_policy.h"
++#include <cassert>
++#include <limits>
++int main() {
++    using namespace NoeCore;
++    Hardware h;
++    assert(recommend(h) == Profile::LOW);
++    h = { 8, 16 * GiB, 4 * GiB, true, true };
++    assert(recommend(h) == Profile::HIGH);
++    h = { 16, 32 * GiB, 12 * GiB, true, true };
++    assert(recommend(h) == Profile::ULTRA);
++    h = { 8, 16 * GiB, 0, true, true };
++    assert(recommend(h) == Profile::BALANCED);
++    h = { 8, 16 * GiB, 8 * GiB, true, false };
++    assert(recommend(h) == Profile::LOW);
++    h = { 2, 32 * GiB, 8 * GiB, true, true };
++    assert(recommend(h) == Profile::LOW);
++    MemoryBudget budget(100);
++    CacheEntry item{ 60, 10, 0, false, false, false };
++    budget.account(101);
++    assert(budget.over_budget());
++    assert(!budget.may_evict(item, 129));
++    assert(budget.may_evict(item, 130));
++    item.in_active_scene = true;
++    assert(!budget.may_evict(item, 10000));
++    item.in_active_scene = false;
++    item.external_references = 1;
++    assert(!budget.may_evict(item, 10000));
++    item.external_references = 0;
++    item.pinned = true;
++    assert(!budget.may_evict(item, 10000));
++    item.pinned = false;
++    item.loading = true;
++    assert(!budget.may_evict(item, 10000));
++    item.loading = false;
++    budget.release(101);
++    assert(!budget.may_evict(item, 10000));
++    budget.account(std::numeric_limits<uint64_t>::max());
++    budget.account(42);
++    assert(budget.usage() == std::numeric_limits<uint64_t>::max());
++    budget.release(std::numeric_limits<uint64_t>::max());
++    assert(budget.usage() == 0);
++    return 0;
++}
+diff --git a/tests/python_build/test_noecore_regressions.py b/tests/python_build/test_noecore_regressions.py
+new file mode 100644
+index 00000000000..e5e9c2d8e18
+--- /dev/null
++++ b/tests/python_build/test_noecore_regressions.py
+@@ -0,0 +1,31 @@
++"""Non-invasive NoeCore integration invariants."""
++import pathlib
++import unittest
++
++ROOT = pathlib.Path(__file__).resolve().parents[2]
++
++class TestNoeCore(unittest.TestCase):
++    def test_advisory_quality(self):
++        main = (ROOT / "main/main.cpp").read_text()
++        hooks = (ROOT / "main/noe_core_integration.h").read_text()
++        self.assertIn("NoeCore::initialize(noe_core_gpu)", main)
++        self.assertNotIn('set_setting("rendering/noe_render/quality/preset"', hooks)
++        self.assertIn("advisory only", hooks)
++
++    def test_session_privacy(self):
++        recovery = (ROOT / "editor/noe_session_recovery.cpp").read_text()
++        self.assertIn('file->store_string("active\\n")', recovery)
++        self.assertIn("atomic_save_layout", recovery)
++        self.assertNotIn("API_KEY", recovery)
++        self.assertIn("MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH", recovery)
++        self.assertIn("DirAccess::rename_absolute", recovery)
++        self.assertIn("NoeSessionRecovery::finish()", (ROOT / "editor/editor_node.cpp").read_text())
++
++    def test_editor_cache_non_destructive(self):
++        previews = (ROOT / "editor/editor_resource_preview.cpp").read_text()
++        self.assertIn("get_reference_count()", previews)
++        self.assertIn("interface/noecore/preview_cache_budget_mb", previews)
++        self.assertIn('ResourceImporterTexture::get_singleton()->update_imports();', (ROOT / "editor/editor_node.cpp").read_text())
++
++if __name__ == "__main__":
++    unittest.main()
