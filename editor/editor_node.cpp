@@ -1949,6 +1949,7 @@ void EditorNode::_noe_autosave_tick() {
 		return;
 	}
 	noe_autosave_elapsed_seconds = 0;
+	int saved_scenes = 0;
 	for (int i = 0; i < editor_data.get_edited_scene_count(); i++) {
 		Node *scene = editor_data.get_edited_scene_root(i);
 		if (!scene) {
@@ -1963,6 +1964,9 @@ void EditorNode::_noe_autosave_tick() {
 			continue;
 		}
 		_save_scene(filename, i);
+		if (++saved_scenes >= 4) {
+			break; // Bound disk writes per interval for low-memory devices.
+		}
 	}
 }
 
