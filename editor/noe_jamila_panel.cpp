@@ -273,6 +273,13 @@ void NoeJamilaPanel::_plan() {
     export_button->set_disabled(true);
     release_button->set_disabled(true);
     review_field->clear();
+    if (NoeAccountWorkspace::get_jamila_desktop_token().is_empty() ||
+            NoeAccountWorkspace::get_jamila_gateway_url().is_empty()) {
+        running = false;
+        plan_button->set_disabled(false);
+        status_label->set_text("Sign in through Account before using Jamila Cloud.");
+        return;
+    }
     if (!_launch_agent()) {
         return;
     }
@@ -281,13 +288,7 @@ void NoeJamilaPanel::_plan() {
     exporting = false;
     plan_button->set_disabled(true);
     status_label->set_text("Inspecting project MCP tools, planning game changes...");
-    if (NoeAccountWorkspace::get_jamila_desktop_token().is_empty() ||
-            NoeAccountWorkspace::get_jamila_gateway_url().is_empty()) {
-        running = false;
-        plan_button->set_disabled(false);
-        status_label->set_text("Sign in through Account before using Jamila Cloud.");
-        return;
-    }
+
     pending_plan = true;
     startup->start(); // Launch is asynchronous; never block the editor UI.
 }
