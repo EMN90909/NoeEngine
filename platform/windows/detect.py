@@ -23,34 +23,41 @@ def get_name():
 
 
 def try_cmd(test, prefix, arch):
-    if arch:
+    # SCons runs as native Windows Python even when MSYS2 is installed.
+    # Avoid shell=True: cmd.exe silently fails compiler probes with some
+    # MSYS2/PATH combinations, and old code discarded all diagnostics.
+    arguments = test.split()
+    if not arguments:
+        return False
+    candidates = [arch] if arch else ["x86_64", "x86_32", "arm64", "arm32"]
+    # MSYS2 may export MINGW_PREFIX=/ucrt64, a POSIX-only path. Native Windows
+    # uses the MSYS2 UCRT64 bin directory on PATH instead.
+    if os.name == "nt" and prefix.startswith("/"):
+        prefix = ""
+    for candidate in candidates:
+        executable = get_mingw_bin_prefix(prefix, candidate) + arguments[0]
+        resolved = shutil.which(executable)
+        if resolved is None:
+            continue
         try:
-            out = subprocess.Popen(
-                get_mingw_bin_prefix(prefix, arch) + test,
-                shell=True,
-                stderr=subprocess.PIPE,
+            result = subprocess.run(
+                [resolved] + arguments[1:],
                 stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
             )
-            out.communicate()
-            if out.returncode == 0:
+            if result.returncode == 0:
                 return True
-        except Exception:
-            pass
-    else:
-        for a in ["x86_64", "x86_32", "arm64", "arm32"]:
-            try:
-                out = subprocess.Popen(
-                    get_mingw_bin_prefix(prefix, a) + test,
-                    shell=True,
-                    stderr=subprocess.PIPE,
-                    stdout=subprocess.PIPE,
-                )
-                out.communicate()
-                if out.returncode == 0:
-                    return True
-            except Exception:
-                pass
-
+            print(
+                "NoeEngine: compiler probe " + resolved +
+                " exited " + str(result.returncode) + ": " +
+                result.stderr.decode("utf-8", errors="replace").strip(),
+                file=sys.stderr,
+                flush=True,
+            )
+        except OSError as exc:
+            print("NoeEngine: compiler probe could not run " + resolved +
+                  ": " + str(exc), file=sys.stderr, flush=True)
     return False
 
 
@@ -316,9 +323,12 @@ def setup_mingw(env):
         "clang --version", env["mingw_prefix"], env["arch"]
     ):
         print(
-            """
-            No valid compilers found, use MINGW_PREFIX environment variable to set MinGW path.
-            """
+            "NoeEngine: MinGW compiler probe failed for architecture " +
+            str(env["arch"]) + " (prefix=" + repr(env["mingw_prefix"]) +
+            "). Expected x86_64-w64-mingw32-gcc.exe in PATH. "
+            "Check MSYS2 UCRT64 bin and GCC installation.",
+            file=sys.stderr,
+            flush=True,
         )
         sys.exit(202)
 
