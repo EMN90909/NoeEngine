@@ -33,6 +33,10 @@ TOOLS = [
      "inputSchema": {"type": "object", "properties": {"path": {"type": "string"}, "content": {"type": "string"}, "overwrite": {"type": "boolean"}, "approval_token": {"type": "string"}}, "required": ["path", "content", "approval_token"], "additionalProperties": False}},
     {"name": "noe_export_pack", "description": "Export a PCK game data package with a configured export preset after explicit approval and headless validation.",
      "inputSchema": {"type": "object", "properties": {"preset": {"type": "string"}, "approval_token": {"type": "string"}}, "required": ["preset", "approval_token"], "additionalProperties": False}},
+    {"name": "noe_run_scene", "description": "Headless-playtest a project scene for 120 frames after user approval; report runtime errors.",
+     "inputSchema": {"type": "object", "properties": {"path": {"type": "string"}, "approval_token": {"type": "string"}}, "required": ["path", "approval_token"], "additionalProperties": False}},
+    {"name": "noe_export_release", "description": "Compile/export a playable release for a configured desktop/web/mobile preset using installed export templates, after approval.",
+     "inputSchema": {"type": "object", "properties": {"preset": {"type": "string"}, "approval_token": {"type": "string"}}, "required": ["preset", "approval_token"], "additionalProperties": False}},
     {"name": "noe_validate_project", "description": "Run the exact NoeEngine binary in headless editor import/parse mode after approval (no shell).",
      "inputSchema": {"type": "object", "properties": {"approval_token": {"type": "string"}}, "required": ["approval_token"], "additionalProperties": False}},
 ]
@@ -163,6 +167,65 @@ class ProjectTools:
                         "exit_code": run.returncode, "output": log}
             except subprocess.TimeoutExpired:
                 return {"ok": False, "error": "Game export timed out"}
+        if name == "noe_run_scene":
+            self.require_approval(args)
+            scene = self.path(args.get("path"))
+            if scene.suffix.lower() != ".tscn" or not scene.is_file():
+                raise ValueError("Choose an existing .tscn scene")
+            if not self.engine or not self.engine.is_file():
+                raise ValueError("NoeEngine executable unavailable; cannot playtest")
+            try:
+                run = subprocess.run([str(self.engine), "--headless", "--path", str(self.root),
+                                      "--quit-after", "120", "res://" + scene.relative_to(self.root).as_posix()],
+                                     cwd=self.root, capture_output=True, text=True, timeout=45, shell=False)
+                log = (run.stdout + "\n" + run.stderr)[-12000:]
+                ok = run.returncode == 0 and not any(x in log for x in ("SCRIPT ERROR:", "Parse Error:", "ERROR:"))
+                return {"ok": ok, "scene": scene.relative_to(self.root).as_posix(),
+                        "exit_code": run.returncode, "output": log}
+            except subprocess.TimeoutExpired:
+                return {"ok": False, "error": "Scene playtest timed out after 45 seconds"}
+        if name == "noe_export_release":
+            self.require_approval(args)
+            preset = args.get("preset")
+            if not isinstance(preset, str) or not re.fullmatch(r"[A-Za-z0-9_ .+()/\\-]{1,80}", preset):
+                raise ValueError("Select a valid export preset name")
+            if not self.engine or not self.engine.is_file():
+                raise ValueError("Cannot export: NoeEngine executable missing")
+            settings = self.root / "export_presets.cfg"
+            if not settings.is_file() or settings.is_symlink() or settings.stat().st_size > 64000:
+                raise ValueError("Create an export preset in Project > Export first")
+            config = settings.read_text(encoding="utf8")
+            names = set(re.findall(r'^name="([^"]{1,80})"', config, re.M))
+            if preset not in names:
+                raise ValueError("Unknown configured export preset")
+            name = preset.casefold()
+            if "linux" in name:
+                suffix = ".x86_64"
+            elif "windows" in name:
+                suffix = ".exe"
+            elif "android" in name:
+                suffix = ".apk"
+            elif "macos" in name or "mac os" in name:
+                suffix = ".zip"
+            elif "web" in name or "html" in name:
+                suffix = ".html"
+            else:
+                raise ValueError("Unrecognized export target. Use a preset named Linux, Windows, macOS, Android, or Web.")
+            target = self.root / "builds" / ("Jamila-Game" + suffix)
+            if target.is_symlink() or target.parent.is_symlink():
+                raise ValueError("Unsafe build output path")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                run = subprocess.run([str(self.engine), "--headless", "--path", str(self.root),
+                                      "--export-release", preset, str(target)],
+                                     cwd=self.root, capture_output=True, text=True, timeout=240, shell=False)
+                log = (run.stdout + "\n" + run.stderr)[-12000:]
+                ok = run.returncode == 0 and target.is_file() and target.stat().st_size > 100
+                return {"ok": ok, "path": "builds/" + target.name if ok else None,
+                        "bytes": target.stat().st_size if target.is_file() else 0,
+                        "exit_code": run.returncode, "output": log}
+            except subprocess.TimeoutExpired:
+                return {"ok": False, "error": "Release build timed out after 240 seconds"}
         if name == "noe_validate_project":
             self.require_approval(args)
             if not self.engine or not self.engine.is_file():
@@ -195,7 +258,7 @@ def main():
             method = req.get("method")
             if method == "initialize":
                 payload = {"protocolVersion": "2024-11-05", "capabilities": {"tools": {"listChanged": False}},
-                           "serverInfo": {"name": "jamila-noeengine", "version": "0.2.0"}}
+                           "serverInfo": {"name": "jamila-noeengine", "version": "0.3.0"}}
             elif method == "ping":
                 payload = {}
             elif method == "tools/list":
