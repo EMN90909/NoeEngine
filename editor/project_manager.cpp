@@ -2724,11 +2724,22 @@ ProjectManager::ProjectManager() {
 	local_projects_hb = memnew(HBoxContainer);
 	local_projects_hb->set_name(TTR("Local Projects"));
 	tabs->add_child(local_projects_hb);
+	const bool noe_bento_layout = !NoeHardwareProfile::use_classic_ui();
+	if (noe_bento_layout) local_projects_hb->add_theme_constant_override("separation", 12 * EDSCALE);
 
 	{
 		// Projects + search bar
 		VBoxContainer *search_tree_vb = memnew(VBoxContainer);
-		local_projects_hb->add_child(search_tree_vb);
+		if (noe_bento_layout) {
+			PanelContainer *projects_card = memnew(PanelContainer);
+			projects_card->add_theme_style_override("panel", get_theme_stylebox(SNAME("NoeBentoPanel"), SNAME("EditorStyles")));
+			projects_card->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+			projects_card->set_v_size_flags(Control::SIZE_EXPAND_FILL);
+			local_projects_hb->add_child(projects_card);
+			projects_card->add_child(search_tree_vb);
+		} else {
+			local_projects_hb->add_child(search_tree_vb);
+		}
 		search_tree_vb->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 
 		HBoxContainer *hb = memnew(HBoxContainer);
@@ -2783,8 +2794,17 @@ ProjectManager::ProjectManager() {
 	{
 		// Project tab side bar
 		VBoxContainer *tree_vb = memnew(VBoxContainer);
-		tree_vb->set_custom_minimum_size(Size2(120, 120));
-		local_projects_hb->add_child(tree_vb);
+		tree_vb->set_custom_minimum_size(Size2(noe_bento_layout ? 178 * EDSCALE : 120, 120));
+		if (noe_bento_layout) {
+			PanelContainer *actions_card = memnew(PanelContainer);
+			actions_card->add_theme_style_override("panel", get_theme_stylebox(SNAME("NoeBentoPanel"), SNAME("EditorStyles")));
+			actions_card->set_custom_minimum_size(Size2(195 * EDSCALE, 0));
+			actions_card->set_v_size_flags(Control::SIZE_EXPAND_FILL);
+			local_projects_hb->add_child(actions_card);
+			actions_card->add_child(tree_vb);
+		} else {
+			local_projects_hb->add_child(tree_vb);
+		}
 
 		const int btn_h_separation = int(6 * EDSCALE);
 

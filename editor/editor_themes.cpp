@@ -805,6 +805,17 @@ Ref<Theme> create_editor_theme(const Ref<Theme> p_theme) {
 	theme->set_color("background", "Editor", background_color_opaque);
 	theme->set_stylebox("Background", "EditorStyles", make_flat_stylebox(background_color_opaque, default_margin_size, default_margin_size, default_margin_size, default_margin_size));
 
+	// Modern NoeEngine uses native flat card surfaces. Classic mode keeps the
+	// original compact panels without extra containers or drawing effects.
+	Ref<StyleBoxFlat> bento_panel = style_default->duplicate();
+	bento_panel->set_bg_color(base_color.lightened(0.085));
+	bento_panel->set_content_margin_all(13 * EDSCALE);
+	bento_panel->set_corner_radius_all(noe_soft_ui ? 12 * EDSCALE : 0);
+	bento_panel->set_border_width_all(noe_soft_ui ? EDSCALE : 0);
+	bento_panel->set_border_color(accent_color * Color(1, 1, 1, 0.18));
+	bento_panel->set_shadow_size(noe_soft_ui ? 2 * EDSCALE : 0);
+	theme->set_stylebox("NoeBentoPanel", "EditorStyles", bento_panel);
+
 	// Focus
 	theme->set_stylebox("Focus", "EditorStyles", style_widget_focus);
 	// Use a less opaque color to be less distracting for the 2D and 3D editor viewports.
