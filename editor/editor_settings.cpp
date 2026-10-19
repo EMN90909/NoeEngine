@@ -453,7 +453,7 @@ void EditorSettings::_load_defaults(Ref<ConfigFile> p_extra_config) {
 	// Select an inexpensive classic default on systems with less than 4 GiB RAM.
 	// Existing user-saved presets remain untouched; manual theme overrides still work.
 	const char *noe_default_theme = NoeHardwareProfile::use_classic_ui() ? "NoeEngine Dark" : "NoeEngine Soft";
-	EDITOR_SETTING(Variant::STRING, PROPERTY_HINT_ENUM, "interface/theme/preset", noe_default_theme, "NoeEngine Soft,NoeEngine Dark,NoeEngine Retro,Default,Breeze Dark,Gray,Light,Solarized (Dark),Solarized (Light),Black (OLED),Custom")
+	EDITOR_SETTING(Variant::STRING, PROPERTY_HINT_ENUM, "interface/theme/preset", noe_default_theme, "NoeEngine Soft,NoeEngine Dark,Default,NoeEngine Retro,Breeze Dark,Gray,Light,Solarized (Dark),Solarized (Light),Black (OLED),Custom")
 	EDITOR_SETTING(Variant::INT, PROPERTY_HINT_ENUM, "interface/theme/icon_and_font_color", 0, "Auto,Dark,Light")
 	EDITOR_SETTING(Variant::COLOR, PROPERTY_HINT_NONE, "interface/theme/base_color", Color(0.075, 0.08, 0.09), "")
 	EDITOR_SETTING(Variant::COLOR, PROPERTY_HINT_NONE, "interface/theme/accent_color", Color(0.72, 0.75, 0.80), "")

@@ -54,7 +54,7 @@ int main() {
   constexpr unsigned long long gib = 1024ULL * 1024 * 1024;
   if (!NoeHardwareProfile::use_classic_ui(0)) return 1;
   if (!NoeHardwareProfile::use_classic_ui(3 * gib)) return 2;
-  if (!NoeHardwareProfile::use_classic_ui(4 * gib)) return 3;
+  if (NoeHardwareProfile::use_classic_ui(4 * gib)) return 3;
   if (NoeHardwareProfile::use_classic_ui(4 * gib + 1)) return 4;
   if (NoeHardwareProfile::use_classic_ui(6 * gib)) return 5;
   return 0;
