@@ -87,7 +87,7 @@ NoeJamilaPanel::NoeJamilaPanel() {
     body->add_child(task_field);
 
     plan_button = memnew(Button);
-    plan_button->set_text("Generate editable plan");
+    plan_button->set_text("Generate plan for review");
     plan_button->set_tooltip_text("Generate a proposal only. No files are changed.");
     plan_button->connect("pressed", callable_mp(this, &NoeJamilaPanel::_plan));
     body->add_child(plan_button);
@@ -102,7 +102,7 @@ NoeJamilaPanel::NoeJamilaPanel() {
 
     apply_button = memnew(Button);
     apply_button->set_text("Approve changes, build and validate");
-    apply_button->set_tooltip_text("Creates approved game assets, then runs NoeEngine --headless --editor --quit.");
+    apply_button->set_tooltip_text("Creates approved game assets, then runs NoeEngine --headless --editor --quit-after 2.");
     apply_button->set_disabled(true);
     apply_button->connect("pressed", callable_mp(this, &NoeJamilaPanel::_apply));
     body->add_child(apply_button);
