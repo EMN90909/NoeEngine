@@ -5,6 +5,7 @@
 #ifdef VULKAN_ENABLED
 #include "drivers/vulkan/godot_vulkan.h"
 #include <vector>
+#include <cstring>
 #endif
 
 namespace NoeRender {
@@ -70,9 +71,27 @@ GpuCapabilities probe_vulkan() {
                     (family.queueFlags & VK_QUEUE_COMPUTE_BIT)) capable = true;
         }
         if (!capable) continue;
+        // A graphics/compute queue does not establish window presentation.
+        // Require the standard swapchain device extension before suggesting
+        // that this device is a candidate for a desktop Vulkan renderer.
+        uint32_t extension_count = 0;
+        if (vkEnumerateDeviceExtensionProperties(devices[i], nullptr, &extension_count, nullptr) != VK_SUCCESS ||
+                extension_count == 0 || extension_count > 2048) continue;
+        std::vector<VkExtensionProperties> extensions(extension_count);
+        if (vkEnumerateDeviceExtensionProperties(devices[i], nullptr, &extension_count, extensions.data()) != VK_SUCCESS) continue;
+        bool has_swapchain = false;
+        for (const VkExtensionProperties &ext : extensions) {
+            if (std::strcmp(ext.extensionName, VK_KHR_SWAPCHAIN_EXTENSION_NAME) == 0) {
+                has_swapchain = true;
+                break;
+            }
+        }
+        if (!has_swapchain) continue;
         VkPhysicalDeviceMemoryProperties mem = {};
         vkGetPhysicalDeviceMemoryProperties(devices[i], &mem);
         result.graphics_compute_queue = true;
+        result.swapchain_extension = true;
+        result.software_device = props.deviceType == VK_PHYSICAL_DEVICE_TYPE_CPU;
         result.render_device_candidate = true;
         result.vendor_id = props.vendorID;
         result.device_id = props.deviceID;
@@ -83,10 +102,12 @@ GpuCapabilities probe_vulkan() {
                 result.device_local_bytes += mem.memoryHeaps[h].size;
             }
         }
-        result.reason = "Vulkan graphics/compute device found; presentation not yet validated";
+        result.reason = result.software_device ?
+                "Vulkan software device with swapchain extension (presentation unverified)" :
+                "Vulkan GPU with graphics/compute queue and swapchain extension (presentation unverified)";
         break;
     }
-    if (!result.render_device_candidate) result.reason = "No Vulkan device with graphics and compute queues";
+    if (!result.render_device_candidate) result.reason = "No Vulkan device with graphics/compute queue and swapchain extension";
     vkDestroyInstance(instance, nullptr);
     return result;
 #endif

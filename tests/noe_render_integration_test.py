@@ -18,6 +18,13 @@ class NoeRenderTests(unittest.TestCase):
     def test_fsr_restricted_to_forward_plus(self):
         code=(ROOT/"main/noe_render_quality.h").read_text()
         self.assertIn('renderer != "forward_plus"',code)
+    def test_probe_requires_swapchain_extension(self):
+        source=(ROOT/"main/noe_render_gpu_probe.cpp").read_text()
+        self.assertIn("vkEnumerateDeviceExtensionProperties", source)
+        self.assertIn("VK_KHR_SWAPCHAIN_EXTENSION_NAME", source)
+        self.assertIn("VK_PHYSICAL_DEVICE_TYPE_CPU", source)
+        main=(ROOT/"main/main.cpp").read_text()
+        self.assertIn("noe_render_cli_override = true; // Do not silently ignore", main)
     def test_native_vulkan_probe_and_fallback(self):
         main=(ROOT/"main/main.cpp").read_text()
         self.assertIn("NoeRender::probe_vulkan()",main)

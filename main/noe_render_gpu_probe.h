@@ -10,6 +10,8 @@ struct GpuCapabilities {
     bool instance_available = false;
     bool graphics_compute_queue = false;
     bool render_device_candidate = false;
+    bool swapchain_extension = false;
+    bool software_device = false;
     uint32_t vendor_id = 0;
     uint32_t device_id = 0;
     uint32_t api_version = 0;

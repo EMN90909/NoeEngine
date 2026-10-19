@@ -945,6 +945,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 		} else if (I->get() == "--gpu-index") {
 			if (I->next()) {
 				Engine::singleton->gpu_idx = I->next()->get().to_int();
+				noe_render_cli_override = true; // Do not silently ignore an explicitly selected GPU.
 				N = I->next()->next();
 			} else {
 				OS::get_singleton()->print("Missing GPU index argument, aborting.\n");
