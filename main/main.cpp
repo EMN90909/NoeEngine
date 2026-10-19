@@ -658,6 +658,7 @@ int Main::test_entrypoint(int argc, char *argv[], bool &tests_need_run) {
  */
 
 Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_phase) {
+	NoeRender::GpuCapabilities noe_core_gpu; // Declared before any goto error paths.
 	OS::get_singleton()->initialize();
 
 	engine = memnew(Engine);
@@ -1651,8 +1652,6 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 			rendering_driver = GLOBAL_GET("rendering/rendering_device/driver");
 		}
 	}
-
-	NoeRender::GpuCapabilities noe_core_gpu; // Unknown unless the existing probe runs.
 
 	// Probe real Vulkan device queues before selecting a display backend. This
 	// cannot prove presentation support, so the normal DisplayServer still

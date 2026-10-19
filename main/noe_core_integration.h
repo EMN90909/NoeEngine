@@ -25,8 +25,8 @@ inline void initialize(const NoeRender::GpuCapabilities &gpu) {
     if (bool(GLOBAL_GET("performance/noecore/diagnostics/startup_benchmark"))) {
         // Diagnostics omit paths, project data, tokens, model and device identifiers.
         print_line(vformat("NoeCore hardware: threads=%d RAM_MiB=%d GPU_heap_MiB=%d verified_vulkan=%s recommendation=%s (advisory only)",
-                h.cpu_threads, h.ram_bytes / (1024ULL * 1024), h.vram_bytes / (1024ULL * 1024),
-                h.graphics_api_supported ? "yes" : "no", profile_name(recommend(h))));
+                static_cast<int>(h.cpu_threads), static_cast<int64_t>(h.ram_bytes / (1024ULL * 1024)), static_cast<int64_t>(h.vram_bytes / (1024ULL * 1024)),
+                h.graphics_api_supported ? "yes" : "no", String(profile_name(recommend(h)))));
     }
 }
 } // namespace NoeCore
