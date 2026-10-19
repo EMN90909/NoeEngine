@@ -1319,7 +1319,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 			disable_vsync = true;
 		} else if (I->get() == "--print-fps") {
 			print_fps = true;
-		} else if (I->get() == "--profile-gpu") {
+		} else if (I->get() == "--profile-gpu" || I->get() == "--gpu-profile") {
 			profile_gpu = true;
 		} else if (I->get() == "--disable-crash-handler") {
 			OS::get_singleton()->disable_crash_handler();

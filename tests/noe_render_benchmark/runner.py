@@ -25,13 +25,16 @@ def parse_result(output: str) -> dict:
             return json.loads(line.split(MARKER, 1)[1].strip())
     raise RuntimeError("No benchmark marker in engine stdout. Inspect log for scene errors.")
 
-def run_benchmark(engine: str, output_dir: Path, renderer: str, timeout: int = 180) -> dict:
+def run_benchmark(engine: str, output_dir: Path, renderer: str, timeout: int = 180, gpu_profile: bool = False) -> dict:
     output_dir.mkdir(parents=True, exist_ok=True)
     screenshot = output_dir / "render.png"
     environment = os.environ.copy()
     environment["NOERENDER_SCREENSHOT_PATH"] = str(screenshot.resolve())
     cmd = [engine, "--path", str(PROJECT), "--rendering-method", renderer,
            "--resolution", "1280x720", "--windowed"]
+    if gpu_profile:
+        # GPU profiling alters workload timing; record it explicitly.
+        cmd.append("--gpu-profile")
     if "--headless" in cmd or os.environ.get("NOERENDER_HEADLESS") == "1":
         raise RuntimeError("Benchmark requires a graphics display; --headless is not valid.")
     start = time.monotonic()
@@ -46,6 +49,8 @@ def run_benchmark(engine: str, output_dir: Path, renderer: str, timeout: int = 1
     if not screenshot.exists() or screenshot.stat().st_size < 100:
         raise RuntimeError("No real rendered screenshot captured. Headless or GPU init failed.")
     metrics.update({"host_os": platform.platform(), "renderer_requested": renderer,
+                    "gpu_profiler_requested": gpu_profile,
+                    "gpu_profiler_note": "Profiler output may be unavailable on this backend; frame_ms remains application timing.",
                     "duration_wall_seconds": round(elapsed, 3),
                     "rendered_screenshot": str(screenshot),
                     "software_renderer_warning": "llvmpipe" in log.lower() or "softpipe" in log.lower()})
@@ -58,7 +63,8 @@ def main(argv=None):
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--renderer", choices=("gl_compatibility","forward_plus","mobile"), default="gl_compatibility")
     parser.add_argument("--timeout", type=int, default=180)
+    parser.add_argument("--gpu-profile", action="store_true", help="enable GPU profile log; profiling perturbs frame timings")
     args=parser.parse_args(argv)
-    print(json.dumps(run_benchmark(args.engine, args.output, args.renderer, args.timeout), indent=2))
+    print(json.dumps(run_benchmark(args.engine, args.output, args.renderer, args.timeout, args.gpu_profile), indent=2))
 if __name__=="__main__":
     sys.exit(main())

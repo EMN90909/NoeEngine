@@ -48,6 +48,12 @@ class NoeRenderTests(unittest.TestCase):
             self.assertIn("interface/noe_render/"+key,settings)
             self.assertIn("interface/noe_render/"+key,previews)
         self.assertIn('type == "PackedScene"',previews)
+    def test_benchmark_gpu_profiler_is_opt_in(self):
+        main=(ROOT/"main/main.cpp").read_text()
+        runner=(ROOT/"tests/noe_render_benchmark/runner.py").read_text()
+        self.assertIn('I->get() == "--gpu-profile"',main)
+        self.assertIn('cmd.append("--gpu-profile")',runner)
+        self.assertIn('"gpu_profiler_requested": gpu_profile',runner)
     def test_runtime_affects_3d_only(self):
         code=(ROOT/"scene/main/scene_tree.cpp").read_text()
         self.assertIn("root->set_scaling_3d_scale(next_scale)",code)

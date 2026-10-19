@@ -22,6 +22,11 @@
 - Benchmark scripts and screenshots must be **executed on physical GPUs** with fixed driver and hardware records. A CI machine running llvmpipe/Xvfb is not a physical GPU.
 - **No measured shader-cache improvement, clustered-light speedup, memory reduction, GPU timestamp data or verified cross-platform fallback performance is claimed here.**
 
+## GPU profiling workflow
+- The engine accepts both `--gpu-profile` (documented) and historical `--profile-gpu`.
+- `tests/noe_render_benchmark/runner.py --gpu-profile` records opt-in GPU profiling output in `engine.log` and labels the performance sample as profiled, because instrumentation can affect frame pacing.
+- No GPU timestamp data is inferred unless an actual rendering backend emits it.
+
 ## Release blockers
 - Actual Vulkan WSI and OpenGL fallback runtime QA on Intel/AMD/NVIDIA across Linux/Windows/macOS.
 - Headless Noqeri editor SIGABRT investigation and regression closure.
