@@ -53,7 +53,8 @@ class Bridge:
                    "params":{"name":name,"arguments":payload}}
         run = subprocess.run([sys.executable, "-u", self.script, "--project", self.project,
                               "--engine", self.engine], input=json.dumps(request)+"\n",
-                             text=True, capture_output=True, timeout=105, env=env)
+                             text=True, capture_output=True,
+                             timeout=275 if name=="noe_export_release" else 205 if name=="noe_export_pack" else 105, env=env)
         if run.returncode != 0:
             raise RuntimeError("MCP server unavailable: " + run.stderr[-250:])
         result = json.loads(run.stdout.splitlines()[-1])["result"]
