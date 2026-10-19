@@ -10,7 +10,10 @@ Set-Location $root
 function Refresh-ToolPath {
     $machine = [Environment]::GetEnvironmentVariable('PATH', 'Machine')
     $user = [Environment]::GetEnvironmentVariable('PATH', 'User')
-    if ($machine -or $user) { $env:PATH = "$machine;$user;$env:PATH" }
+    # Keep process-scoped paths (notably actions/setup-python, VS Developer Shell)
+    # ahead of system entries. Replacing PATH can silently select the wrong
+    # Python and make an already-installed SCons appear missing.
+    if ($machine -or $user) { $env:PATH = "$env:PATH;$machine;$user" }
     foreach ($nsis in @("${env:ProgramFiles(x86)}\NSIS", "$env:ProgramFiles\NSIS")) {
         if (Test-Path $nsis) { $env:PATH = "$nsis;$env:PATH" }
     }
@@ -65,10 +68,17 @@ if (-not (Get-Command makensis.exe -ErrorAction SilentlyContinue)) {
 Refresh-ToolPath
 if (-not (Get-Command makensis.exe -ErrorAction SilentlyContinue)) { throw 'NSIS installed but makensis.exe not on PATH.' }
 # SCons is a Python dependency; use module execution for reliable version checks.
+Write-Host "[NoeEngine] Selected Python: $($python.Path)"
 & $python.Path @($python.Args) -m pip --version
 if ($LASTEXITCODE -ne 0) { throw 'pip missing from the selected Python installation.' }
-$check = & $python.Path @($python.Args) -c 'import SCons; print(SCons.__version__)' 2>$null
-if ($LASTEXITCODE -ne 0 -or -not $check) {
+$sconsAvailable = $false
+try {
+    # Windows PowerShell can elevate native-process stderr to a terminating
+    # exception with ErrorActionPreference=Stop. Probe it explicitly instead.
+    & $python.Path @($python.Args) -c 'import SCons; print(SCons.__version__)' 2>$null | Out-Null
+    $sconsAvailable = ($LASTEXITCODE -eq 0)
+} catch { $sconsAvailable = $false }
+if (-not $sconsAvailable) {
     if ($SkipInstall) { throw 'SCons not installed; run build.bat to install dependencies.' }
     & $python.Path @($python.Args) -m pip install --user 'scons==4.8.1'
     if ($LASTEXITCODE -ne 0) { throw 'Failed to install SCons.' }
