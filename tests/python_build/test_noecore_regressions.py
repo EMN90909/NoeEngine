@@ -13,10 +13,11 @@ class TestNoeCore(unittest.TestCase):
         self.assertIn("advisory only", hooks)
 
     def test_session_privacy(self):
-        recovery = (ROOT / "editor/noe_session_recovery.h").read_text()
+        recovery = (ROOT / "editor/noe_session_recovery.cpp").read_text()
         self.assertIn('file->store_string("active\\n")', recovery)
         self.assertIn("atomic_save_layout", recovery)
         self.assertNotIn("API_KEY", recovery)
+        self.assertIn("MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH", recovery)
         self.assertIn("DirAccess::rename_absolute", recovery)
         self.assertIn("NoeSessionRecovery::finish()", (ROOT / "editor/editor_node.cpp").read_text())
 

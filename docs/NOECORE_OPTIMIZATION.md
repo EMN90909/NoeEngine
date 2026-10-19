@@ -21,7 +21,7 @@ NoeCore is an **advisory, opt-in optimization layer**, not a replacement for the
 
 ## Crash recovery and diagnostics
 - `interface/noecore/session_recovery_enabled` controls a **local per-project active-session marker**, enabled by default. On unexpected exit the next editor session warns. Normal exit clears it.
-- Editor layout writes use a temporary file followed by atomic rename; on failure the original layout remains intact.
+- Editor layout writes use a same-directory temporary file and POSIX rename or Windows MoveFileExW with replace/write-through; on failure the previous layout remains intact.
 - The existing editor layout contains reopened *saved scene tabs*. Unsaved scene edits are **not recovered**. Do not mistake the marker for a crash dump or full autosave facility.
 - Diagnostics contain only hardware capacity counters and the recommendation. They never include project paths, source files, keys or model tokens; diagnostics are opt-in.
 - No crash dumps are uploaded or sent to remote services.
