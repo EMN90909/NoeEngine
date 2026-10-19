@@ -1,0 +1,30 @@
+name: Jamila MCP integration tests
+
+on:
+  push:
+    paths:
+      - "tools/jamila/**"
+      - "editor/noe_jamila_panel.*"
+      - ".github/workflows/jamila-mcp-tests.yml"
+  pull_request:
+    paths:
+      - "tools/jamila/**"
+      - "editor/noe_jamila_panel.*"
+      - ".github/workflows/jamila-mcp-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  jamila-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Syntax check
+        run: python -m py_compile tools/jamila/jamila_agent.py tools/jamila/noe_mcp_server.py tools/jamila/test_jamila_mcp.py
+      - name: MCP and agent integration tests
+        run: python -m unittest discover -s tools/jamila -p 'test_*.py' -v
