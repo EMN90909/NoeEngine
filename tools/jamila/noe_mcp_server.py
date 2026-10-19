@@ -33,6 +33,8 @@ TOOLS = [
      "inputSchema": {"type": "object", "properties": {"path": {"type": "string"}, "content": {"type": "string"}, "overwrite": {"type": "boolean"}, "approval_token": {"type": "string"}}, "required": ["path", "content", "approval_token"], "additionalProperties": False}},
     {"name": "noe_export_pack", "description": "Export a PCK game data package with a configured export preset after explicit approval and headless validation.",
      "inputSchema": {"type": "object", "properties": {"preset": {"type": "string"}, "approval_token": {"type": "string"}}, "required": ["preset", "approval_token"], "additionalProperties": False}},
+    {"name": "noe_set_main_scene", "description": "Set the project startup scene using a dedicated guarded project.godot update, only after explicit approval.",
+     "inputSchema": {"type": "object", "properties": {"path": {"type": "string"}, "overwrite": {"type": "boolean"}, "approval_token": {"type": "string"}}, "required": ["path", "approval_token"], "additionalProperties": False}},
     {"name": "noe_run_scene", "description": "Headless-playtest a project scene for 120 frames after user approval; report runtime errors.",
      "inputSchema": {"type": "object", "properties": {"path": {"type": "string"}, "approval_token": {"type": "string"}}, "required": ["path", "approval_token"], "additionalProperties": False}},
     {"name": "noe_export_release", "description": "Compile/export a playable release for a configured desktop/web/mobile preset using installed export templates, after approval.",
@@ -137,6 +139,39 @@ class ProjectTools:
                 if os.path.exists(temp):
                     os.unlink(temp)
             return {"saved": p.relative_to(self.root).as_posix(), "bytes": len(content.encode("utf8"))}
+        if name == "noe_set_main_scene":
+            self.require_approval(args)
+            scene = self.path(args.get("path"))
+            if scene.suffix.lower() != ".tscn" or not scene.is_file():
+                raise ValueError("Main scene must be an existing project .tscn file")
+            config_path = self.root / "project.godot"
+            if config_path.is_symlink() or config_path.stat().st_size > 96000:
+                raise ValueError("Unsafe project configuration")
+            config = config_path.read_text(encoding="utf8")
+            new_line = 'run/main_scene="res://' + scene.relative_to(self.root).as_posix() + '"'
+            current = re.search(r"(?m)^run/main_scene=.*$", config)
+            if current and not args.get("overwrite", False):
+                raise ValueError("Replacing the existing main scene requires explicit approval")
+            if current:
+                updated = config[:current.start()] + new_line + config[current.end():]
+            elif "[application]" in config:
+                updated = config.replace("[application]", "[application]\n" + new_line, 1)
+            else:
+                updated = config.rstrip() + "\n\n[application]\n" + new_line + "\n"
+            fd, temp = tempfile.mkstemp(dir=self.root, prefix=".jamila-main-", suffix=".tmp")
+            try:
+                with os.fdopen(fd, "wb") as out:
+                    out.write(updated.encode("utf8"))
+                    out.flush()
+                    os.fsync(out.fileno())
+                backup = config_path.with_name("project.godot.jamila-backup")
+                if not backup.exists():
+                    backup.write_bytes(config.encode("utf8"))
+                os.replace(temp, config_path)
+            finally:
+                if os.path.exists(temp):
+                    os.unlink(temp)
+            return {"main_scene": "res://" + scene.relative_to(self.root).as_posix()}
         if name == "noe_export_pack":
             self.require_approval(args)
             preset = args.get("preset")
