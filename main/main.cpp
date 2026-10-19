@@ -1678,6 +1678,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	// Probe real Vulkan device queues before selecting a display backend. This
 	// cannot prove presentation support, so the normal DisplayServer still
 	// validates Vulkan swapchains/extensions during initialization.
+	{
 	const bool allow_fallback = GLOBAL_DEF_BASIC("rendering/noe_render/backend/allow_fallback", true);
 	if (!noe_render_cli_override && allow_fallback && rendering_driver == "vulkan") {
 		const NoeRender::GpuCapabilities caps = NoeRender::probe_vulkan();
@@ -1690,6 +1691,8 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 			rendering_driver = "opengl3";
 		}
 #endif
+	}
+
 	}
 
 	// Resolve NoeRender game graphics quality while preserving legacy renderer IDs.
