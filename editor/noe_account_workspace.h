@@ -70,6 +70,7 @@ class NoeAccountWorkspace : public AcceptDialog {
     Label *collab_status = nullptr;
     Label *collab_activity = nullptr;
     String collaboration_url;
+    LineEdit *collaboration_url_field = nullptr;
     String bridge_endpoint_id;
     String bridge_event_token; // One-hour ephemeral event session, never persisted.
     String bridge_public_url;
@@ -125,6 +126,7 @@ class NoeAccountWorkspace : public AcceptDialog {
     void _tick_usage();
     void _logout();
     void _save_website_url();
+    void _save_collaboration_url();
     void _show_api_form();
     void _save_api();
     void _show_mcp_form();
