@@ -1,3 +1,0 @@
-// This intentionally does not execute in the restricted bridge.
-import "std/file.nqr"
-function _ready(): void { print("must not run") }

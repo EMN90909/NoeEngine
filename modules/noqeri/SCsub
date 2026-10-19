@@ -1,9 +1,0 @@
-#!/usr/bin/env python
-# Copyright (c) 2026 Noethric.
-# SPDX-License-Identifier: LicenseRef-Noethric-Proprietary
-
-Import("env")
-Import("env_modules")
-
-env_noqeri = env_modules.Clone()
-env_noqeri.add_source_files(env.modules_sources, "*.cpp")
