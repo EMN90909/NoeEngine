@@ -445,6 +445,8 @@ private:
 	Rect2 dock_select_rect[DOCK_SLOT_MAX];
 	TabContainer *dock_slot[DOCK_SLOT_MAX];
 	Timer *dock_drag_timer = nullptr;
+	Timer *noe_autosave_timer = nullptr;
+	int noe_autosave_elapsed_seconds = 0;
 	bool docks_visible = true;
 	int dock_popup_selected_idx = -1;
 	int dock_select_rect_over_idx = -1;
@@ -598,6 +600,7 @@ private:
 	bool _validate_scene_recursive(const String &p_filename, Node *p_node);
 	void _save_scene(String p_file, int idx = -1);
 	void _save_all_scenes();
+	void _noe_autosave_tick();
 	int _next_unsaved_scene(bool p_valid_filename, int p_start = 0);
 	void _discard_changes(const String &p_str = String());
 

@@ -6,6 +6,7 @@ random bearer. The model can suggest files but cannot execute arbitrary shell.
 Adapted from Jamila-GD's game-agent stages and NoeEngine project MCP.
 """
 import argparse
+import hashlib
 import ipaddress
 import json
 import os
@@ -23,15 +24,15 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 MAX_REQUEST = 130_000
 MAX_FILES = 8
 SYSTEM = """You are Jamila, a NoeEngine game-building assistant ported from Jamila-GD.
-Work in ordered specialist stages: plan, scene, gameplay, integration, QA.
+Work in ordered specialist stages: plan, scene, gameplay, integration, QA. Inspect the supplied script/scene samples; preserve file references and scene node paths. If a build_error is supplied, propose corrective asset changes and set overwrite=true for existing files.
 Return ONLY a JSON object: {"summary":"what will be built","actions":[{"tool":"noe_write_asset","arguments":{"path":"scenes/main.tscn","content":"full literal UTF-8 file content","overwrite":false}}, ...]}.
-Allowed action tools: noe_write_asset only. The local agent automatically runs
-noe_validate_project after applying approved writes. Never invent success or
+Allowed actions: noe_write_asset and noe_set_main_scene (for a runnable project). Put scene creation before setting it as the main scene. The local agent automatically runs
+noe_validate_project and a bounded scene playtest after applying approved writes. Never invent success or
 claim that a game was tested. Create a small playable slice and keep existing
 assets untouched unless the user explicitly requested an overwrite.
 Scene files must be valid NoeEngine/Godot .tscn text; GDScript scripts must match
 scene node paths. For a runnable demo use res:// scripts and suitable scene names.
-Return at most 8 full files, each <= 96 kB; no shell commands, paths outside the
+Return at most 8 approved actions, each file <= 96 kB; no shell commands, paths outside the
 project, remote downloads, secrets, installers, or network tools.
 The user must review and explicitly approve ALL file edits before execution."""
 
@@ -52,7 +53,8 @@ class Bridge:
                    "params":{"name":name,"arguments":payload}}
         run = subprocess.run([sys.executable, "-u", self.script, "--project", self.project,
                               "--engine", self.engine], input=json.dumps(request)+"\n",
-                             text=True, capture_output=True, timeout=105, env=env)
+                             text=True, capture_output=True,
+                             timeout=275 if name=="noe_export_release" else 205 if name=="noe_export_pack" else 105, env=env)
         if run.returncode != 0:
             raise RuntimeError("MCP server unavailable: " + run.stderr[-250:])
         result = json.loads(run.stdout.splitlines()[-1])["result"]
@@ -69,64 +71,85 @@ def normalize_plan(output):
         raise ValueError("Model must propose 1 to 8 project files")
     normalized = []
     for item in actions:
-        if not isinstance(item,dict) or item.get("tool")!="noe_write_asset":
-            raise ValueError("Only approved project file writes are supported")
+        if not isinstance(item,dict) or item.get("tool") not in ("noe_write_asset","noe_set_main_scene"):
+            raise ValueError("Only approved game writes and main scene setup are supported")
         args=item.get("arguments")
         if not isinstance(args,dict):
-            raise ValueError("Missing write arguments")
+            raise ValueError("Missing action arguments")
         path=args.get("path")
-        content=args.get("content")
-        if not isinstance(path,str) or not path or len(path)>320 or not isinstance(content,str) or len(content.encode())>96000:
-            raise ValueError("Invalid game asset proposal")
-        normalized.append({"tool":"noe_write_asset","arguments":{
-            "path":path,"content":content,"overwrite":args.get("overwrite") is True
-        }})
-    if len({a["arguments"]["path"] for a in normalized}) != len(normalized):
+        if not isinstance(path,str) or not path or len(path)>320:
+            raise ValueError("Invalid game asset path")
+        if item["tool"]=="noe_set_main_scene":
+            if not path.endswith(".tscn"):
+                raise ValueError("Main scene must be a .tscn file")
+            normalized.append({"tool":"noe_set_main_scene","arguments":{
+                "path":path, "overwrite":args.get("overwrite") is True
+            }})
+        else:
+            content=args.get("content")
+            if not isinstance(content,str) or len(content.encode())>96000:
+                raise ValueError("Invalid game asset proposal")
+            normalized.append({"tool":"noe_write_asset","arguments":{
+                "path":path,"content":content,"overwrite":args.get("overwrite") is True
+            }})
+    writes=[a["arguments"]["path"] for a in normalized if a["tool"]=="noe_write_asset"]
+    if len(set(writes)) != len(writes):
         raise ValueError("Duplicate asset paths in plan")
     return {"summary":output["summary"][:1200], "actions":normalized}
 
 def provider_url(value):
-    if not isinstance(value,str) or len(value)>400:
-        raise ValueError("Invalid AI provider URL")
-    url=urllib.parse.urlparse(value)
-    if url.scheme!="https" or not url.hostname or url.username or url.password or url.fragment:
-        raise ValueError("Use an HTTPS model endpoint")
-    if url.port and url.port!=443:
-        raise ValueError("Use HTTPS port 443")
+    """Reject insecure/private AI destinations, retained for regression safety."""
+    if not isinstance(value,str) or len(value)>500:
+        raise ValueError('Invalid AI gateway URL')
+    parsed=urllib.parse.urlparse(value)
+    if parsed.scheme!='https' or not parsed.hostname or parsed.username or parsed.password:
+        raise ValueError('AI gateways require an HTTPS URL without credentials')
+    if parsed.fragment or parsed.query or parsed.port not in (None,443):
+        raise ValueError('AI gateway URL must not contain query/fragment/custom port')
+    hostname=parsed.hostname.lower()
+    if hostname in ('localhost','localhost.localdomain') or hostname.endswith('.local'):
+        raise ValueError('Loopback/private AI gateways are disallowed')
     try:
-        ip=ipaddress.ip_address(url.hostname)
-        if not ip.is_global:
-            raise ValueError("Private model IP destinations are not supported")
-    except ValueError as exc:
-        if "Private model" in str(exc):
-            raise
-    if url.hostname in ("localhost", "localhost.localdomain") or url.hostname.endswith(".local"):
-        raise ValueError("Local model endpoints need a separate trusted adapter")
+        address=ipaddress.ip_address(hostname)
+    except ValueError:
+        pass
+    else:
+        if not address.is_global:
+            raise ValueError('Private IP gateway destinations are disallowed')
     return value
-
-def call_model(url, api_key, model, prompt, context):
-    if not isinstance(api_key,str) or not 8<=len(api_key)<=4096:
-        raise ValueError("Provide the model API key")
-    if not isinstance(model,str) or not 1<=len(model)<=128:
-        raise ValueError("Provide the model name")
-    url=provider_url(url)
-    body=json.dumps({"model":model,"temperature":0.2,"max_tokens":6500,
-        "messages":[{"role":"system","content":SYSTEM},
-                    {"role":"user","content":json.dumps({"request":prompt,"project_context":context})}]}).encode()
-    req=urllib.request.Request(url,body,method="POST",headers={
-        "Authorization":"Bearer "+api_key,"Content-Type":"application/json","Accept":"application/json"
-    })
+def call_model(gateway_url, desktop_token, provider, role, prompt, context):
+    """Authenticate with the website; provider API keys remain in its backend."""
+    if not isinstance(desktop_token,str) or not 30 <= len(desktop_token) <= 5000:
+        raise ValueError("Sign in to NoeEngine before using Jamila")
+    if provider not in ("openai","google","gemini","openrouter","deepseek"):
+        raise ValueError("Unknown cloud provider")
+    if role not in ("builder","planner","scene","gameplay","qa"):
+        raise ValueError("Unknown agent role")
+    gateway_url=provider_url(gateway_url)
+    url=urllib.parse.urlparse(gateway_url)
+    if (url.scheme!="https" or not url.hostname or url.username or url.password or
+        url.query or url.fragment or url.port not in (None,443) or url.path!="/api/jamila/plan"):
+        raise ValueError("Jamila requires the trusted NoeEngine HTTPS backend")
+    body=json.dumps({"provider":provider,"role":role,"messages":[
+        {"role":"system","content":SYSTEM},
+        {"role":"user","content":json.dumps({"request":prompt,"project_context":context})}
+    ]}).encode()
+    if len(body)>130000: raise ValueError("Project context too large")
+    req=urllib.request.Request(gateway_url,body,method="POST",headers={
+        "Authorization":"Bearer "+desktop_token,"Content-Type":"application/json",
+        "Accept":"application/json"})
     try:
-        with urllib.request.urlopen(req,timeout=48) as response:
-            raw=response.read(600_000)
+        with urllib.request.urlopen(req,timeout=84) as response:
+            raw=response.read(650001)
+    except urllib.error.HTTPError as exc:
+        if exc.code in (401,403): raise ValueError("Session expired; sign in again") from None
+        if exc.code==429: raise ValueError("Jamila rate limit reached") from None
+        raise RuntimeError("Jamila gateway rejected the request") from None
     except (urllib.error.URLError,TimeoutError) as exc:
-        raise RuntimeError("Model request failed") from exc
-    data=json.loads(raw)
-    message=data["choices"][0]["message"]["content"]
-    if isinstance(message,list):
-        message="".join(x.get("text","") for x in message if isinstance(x,dict))
-    if not isinstance(message,str):
-        raise ValueError("Model did not return a text plan")
+        raise RuntimeError("Jamila gateway unavailable") from exc
+    if len(raw)>650000: raise RuntimeError("Response too large")
+    message=json.loads(raw)["choices"][0]["message"]["content"]
+    if not isinstance(message,str): raise ValueError("Model response missing plan")
     message=message.strip()
     if message.startswith("```"):
         message=message.partition("\n")[2].rsplit("```",1)[0].strip()
@@ -146,21 +169,53 @@ class JamilaService:
             raise ValueError("Write a game-building task (1 to 3000 characters)")
         info=self.bridge.call("noe_project_info")
         assets=self.bridge.call("noe_list_assets",{"limit":70})
-        # Never send project.godot secrets or editor auth settings to the provider.
-        context={"project":info,"assets":assets["assets"][:70]}
-        model_plan=call_model(payload.get("api_url",""),payload.get("api_key",""),
-                              payload.get("model",""),prompt,context)
+        # Only explicitly supported game source files are sampled. No project
+        # auth files, hidden directories, environment variables, or export credentials.
+        samples = {}
+        for path in assets["assets"]:
+            if len(samples) >= 4:
+                break
+            if Path(path).suffix.lower() not in {".gd", ".nqr", ".tscn", ".gdshader"}:
+                continue
+            try:
+                source = self.bridge.call("noe_read_asset", {"path": path})["content"]
+                if len(source.encode("utf8")) <= 7000:
+                    samples[path] = source
+            except (ValueError, RuntimeError, KeyError, subprocess.TimeoutExpired):
+                continue
+        context={"project":info,"assets":assets["assets"][:70], "source_samples":samples}
+        model_plan=call_model(payload.get("gateway_url",""),payload.get("desktop_token",""),
+                              payload.get("provider",""),payload.get("role","builder"),prompt,context)
         # MCP validates proposed paths before the user sees the plan.
         from noe_mcp_server import ProjectTools
         validator=ProjectTools(self.bridge.project,self.bridge.engine)
+        baselines={}
+        created=set()
+        config_baseline=None
         for action in model_plan["actions"]:
-            path=validator.path(action["arguments"]["path"],writing=True)
+            relative=action["arguments"]["path"]
+            path=validator.path(relative,writing=True)
+            if action["tool"]=="noe_set_main_scene":
+                if relative not in created and not path.is_file():
+                    raise ValueError("Main scene must exist or be created by an earlier action")
+                config_path=Path(self.bridge.project)/"project.godot"
+                config_text=config_path.read_text(encoding="utf8")
+                if "run/main_scene=" in config_text and not action["arguments"]["overwrite"]:
+                    raise ValueError("A main scene is already selected; the plan must request overwrite")
+                config_baseline=hashlib.sha256(config_path.read_bytes()).hexdigest()
+                continue
             if path.exists() and not action["arguments"]["overwrite"]:
                 raise ValueError("Model tried to overwrite an existing asset without approval: "+path.name)
+            if path.exists() and (not path.is_file() or path.stat().st_size > 96000):
+                raise ValueError("Cannot overwrite oversized or non-file asset")
+            baselines[relative] = (
+                hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else None
+            )
+            created.add(relative)
         token=secrets.token_hex(16)
         with self.lock:
             self.plans={k:v for k,v in self.plans.items() if v["expires"]>time.time()}
-            self.plans[token]={"plan":model_plan,"expires":time.time()+600}
+            self.plans[token]={"plan":model_plan,"baselines":baselines,"config_baseline":config_baseline,"expires":time.time()+600}
         return {"plan_id":token, **model_plan}
 
     def apply(self,payload):
@@ -171,6 +226,20 @@ class JamilaService:
             selected=self.plans.pop(plan_id,None)
         if not selected or selected["expires"]<time.time():
             raise ValueError("Plan expired; request a new plan")
+        # Recheck at approval time, not just when the proposal was generated.
+        # This prevents an agent overwriting edits made by a user while reviewing.
+        from noe_mcp_server import ProjectTools
+        validator=ProjectTools(self.bridge.project,self.bridge.engine)
+        for relative, digest in selected["baselines"].items():
+            path=validator.path(relative,writing=True)
+            current=hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
+            if current != digest:
+                raise ValueError("Asset changed since planning: "+relative+"; generate a new plan")
+        if selected.get("config_baseline"):
+            config_path=Path(self.bridge.project)/"project.godot"
+            current=hashlib.sha256(config_path.read_bytes()).hexdigest()
+            if current != selected["config_baseline"]:
+                raise ValueError("Project settings changed since planning; generate a new plan")
         outcomes=[]
         for item in selected["plan"]["actions"]:
             try:
@@ -186,8 +255,19 @@ class JamilaService:
                 check={"ok":False,"error":str(exc)[:400]}
         else:
             check={"ok":False,"error":"Validation skipped because a write failed"}
-        self.validated=bool(outcomes and all(x["ok"] for x in outcomes) and check.get("ok"))
-        return {"files":outcomes,"validation":check,"ok":self.validated}
+        # A headless scene start catches runtime issues missed by editor import.
+        # We do not claim the result verifies graphics, player input, or gameplay.
+        smoke={"ok":False,"skipped":True,"reason":"No scene changed or validation failed"}
+        scenes=[entry["arguments"]["path"] for entry in selected["plan"]["actions"]
+                if entry["arguments"]["path"].endswith(".tscn")]
+        if check.get("ok") and scenes:
+            try:
+                smoke=self.bridge.call("noe_run_scene",{"path":scenes[0]},approved=True)
+            except (ValueError,RuntimeError,subprocess.TimeoutExpired) as exc:
+                smoke={"ok":False,"error":str(exc)[:400]}
+        self.validated=bool(outcomes and all(x["ok"] for x in outcomes)
+                            and check.get("ok") and (not scenes or smoke.get("ok")))
+        return {"files":outcomes,"validation":check,"playtest":smoke,"ok":self.validated}
 
     def export_game(self,payload):
         if not self.validated:
@@ -201,8 +281,12 @@ class JamilaService:
         if not checks.get("ok"):
             self.validated=False
             return {"ok":False,"validation":checks,"error":"Project validation failed before export"}
-        export=self.bridge.call("noe_export_pack",{"preset":preset},approved=True)
-        return {"ok":bool(export.get("ok")),"export":export}
+        mode=payload.get("mode","pack")
+        if mode not in ("pack","release"):
+            raise ValueError("Unknown export mode")
+        tool="noe_export_release" if mode=="release" else "noe_export_pack"
+        export=self.bridge.call(tool,{"preset":preset},approved=True)
+        return {"ok":bool(export.get("ok")),"export":export,"mode":mode}
 
 def make_handler(service,token):
     class AgentHandler(BaseHTTPRequestHandler):

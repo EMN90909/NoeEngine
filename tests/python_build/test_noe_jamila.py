@@ -131,7 +131,7 @@ class JamilaAgentTests(unittest.TestCase):
             local=agent.JamilaService(root, "")
             plan={"summary":"Simple starter","actions":[{"tool":"noe_write_asset",
                 "arguments":{"path":"main.gd","content":"extends Node\n","overwrite":False}}]}
-            local.plans["once"]={"plan":plan,"expires":1e15}
+            local.plans["once"]={"plan":plan,"baselines":{"main.gd":None},"config_baseline":None,"expires":1e15}
             output=local.apply({"plan_id":"once"})
             self.assertTrue((root/"main.gd").is_file())
             self.assertFalse(output["ok"]) # No engine binary to validate.

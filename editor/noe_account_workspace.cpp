@@ -363,9 +363,23 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
     _refresh_profile();
     _render_integrations();
 }
+static NoeAccountWorkspace *noe_active_account = nullptr;
+
+String NoeAccountWorkspace::get_jamila_desktop_token() {
+    return noe_active_account && noe_active_account->online_session ? noe_active_account->access_token : String();
+}
+String NoeAccountWorkspace::get_jamila_gateway_url() {
+    if (!noe_active_account || !noe_active_account->online_session ||
+            !noe_active_account->_is_https_url(noe_active_account->auth_base)) return String();
+    String url = noe_active_account->auth_base;
+    while (url.ends_with("/")) url = url.substr(0, url.length() - 1);
+    return url + "/api/jamila/plan";
+}
+
 NoeAccountWorkspace *NoeAccountWorkspace::install(Control *parent, HBoxContainer *toolbar) {
     NoeAccountWorkspace *w = memnew(NoeAccountWorkspace);
     parent->add_child(w);
+    noe_active_account = w;
     MenuButton *b = memnew(NoeAccountButton);
     b->set_text(TTR("Account"));
     b->set_tooltip_text(TTR("Account, usage and integration settings"));
@@ -398,7 +412,11 @@ void NoeAccountWorkspace::_notification(int what) {
         intro->start();
     }
 }
-NoeAccountWorkspace::~NoeAccountWorkspace() { _save_usage(); access_token.clear(); }
+NoeAccountWorkspace::~NoeAccountWorkspace() {
+    if (noe_active_account == this) noe_active_account = nullptr;
+    _save_usage();
+    access_token.clear();
+}
 void NoeAccountWorkspace::_show_page(int idx) {
     if (idx < 0 || idx >= 5) return;
     for (int i = 0; i < 5; ++i) {

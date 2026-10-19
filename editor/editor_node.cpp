@@ -635,6 +635,9 @@ void EditorNode::_notification(int p_what) {
 
 		case NOTIFICATION_ENTER_TREE: {
 			Engine::get_singleton()->set_editor_hint(true);
+			if (noe_autosave_timer) {
+				noe_autosave_timer->start();
+			}
 
 			Window *window = get_window();
 			if (window) {
@@ -1928,6 +1931,43 @@ void EditorNode::restart_editor() {
 	}
 
 	OS::get_singleton()->set_restart_on_exit(true, args);
+}
+
+void EditorNode::_noe_autosave_tick() {
+	// Saves only dirty, already-named scenes, without preview rendering or
+	// interrupting a running game. Editor Settings -> Run -> Auto Save controls it.
+	if (!bool(EDITOR_GET("run/auto_save/save_modified_scenes_periodically")) || exiting) {
+		noe_autosave_elapsed_seconds = 0;
+		return;
+	}
+	if (editor_run.get_status() != EditorRun::STATUS_STOP) {
+		return;
+	}
+	noe_autosave_elapsed_seconds += 5;
+	const int interval = CLAMP(int(EDITOR_GET("run/auto_save/interval_seconds")), 30, 1800);
+	if (noe_autosave_elapsed_seconds < interval) {
+		return;
+	}
+	noe_autosave_elapsed_seconds = 0;
+	int saved_scenes = 0;
+	for (int i = 0; i < editor_data.get_edited_scene_count(); i++) {
+		Node *scene = editor_data.get_edited_scene_root(i);
+		if (!scene) {
+			continue;
+		}
+		const String filename = scene->get_scene_file_path();
+		if (filename.is_empty() || !DirAccess::exists(filename.get_base_dir())) {
+			continue; // Never invent a path or overwrite a missing directory.
+		}
+		const int history_id = editor_data.get_scene_history_id_from_path(filename);
+		if (!history_id || !EditorUndoRedoManager::get_singleton()->is_history_unsaved(history_id)) {
+			continue;
+		}
+		_save_scene(filename, i);
+		if (++saved_scenes >= 4) {
+			break; // Bound disk writes per interval for low-memory devices.
+		}
+	}
 }
 
 void EditorNode::_save_all_scenes() {
@@ -4711,7 +4751,7 @@ String EditorNode::_get_system_info() const {
 		driver_name = "GLES3";
 	}
 	if (rendering_method == "forward_plus") {
-		rendering_method = "Forward+";
+		rendering_method = "NoeRender";
 	} else if (rendering_method == "mobile") {
 		rendering_method = "Mobile";
 	} else if (rendering_method == "gl_compatibility") {
@@ -7236,6 +7276,15 @@ EditorNode::EditorNode() {
 	dock_drag_timer->set_one_shot(true);
 	dock_drag_timer->connect("timeout", callable_mp(this, &EditorNode::_save_docks));
 
+	// A lightweight five-second heartbeat avoids reconfiguring a timer every
+	// time the user changes the auto-save interval in Editor Settings.
+	noe_autosave_timer = memnew(Timer);
+	noe_autosave_timer->set_wait_time(5.0);
+	noe_autosave_timer->set_one_shot(false);
+	add_child(noe_autosave_timer);
+	noe_autosave_timer->connect("timeout", callable_mp(this, &EditorNode::_noe_autosave_tick));
+
+
 	top_split = memnew(VSplitContainer);
 	center_split->add_child(top_split);
 	top_split->set_v_size_flags(Control::SIZE_EXPAND_FILL);
@@ -7747,7 +7796,7 @@ EditorNode::EditorNode() {
 
 		// Add the renderers name to the UI.
 		if (rendering_method == "forward_plus") {
-			renderer->add_item(TTR("Forward+"));
+			renderer->add_item(TTR("NoeRender"));
 		}
 		if (rendering_method == "mobile") {
 			renderer->add_item(TTR("Mobile"));
