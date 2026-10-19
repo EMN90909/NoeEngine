@@ -221,13 +221,27 @@ def build_res_file(target, source, env):
     prefixed = get_mingw_bin_prefix(env["mingw_prefix"], env["arch"]) + "windres"
     # On MSYS2 UCRT64 the executable is windres.exe, without a triplet prefix.
     # Linux MinGW cross compilers normally use x86_64-w64-mingw32-windres.
-    compiler = next((tool for tool in (prefixed, "windres") if shutil.which(tool)), None)
+    compiler = next((shutil.which(tool) for tool in (prefixed, "windres") if shutil.which(tool)), None)
     if compiler is None:
         print("NoeEngine: MinGW windres resource compiler not found on PATH.", file=sys.stderr, flush=True)
         return -1
 
+    # windres invokes a *second* compiler to preprocess .rc inputs. On native
+    # Windows the default plain "gcc" lookup can fail even when SCons sees
+    # x86_64-w64-mingw32-gcc. Use the resolved target GCC executable directly.
+    target_gcc = get_mingw_bin_prefix(env["mingw_prefix"], env["arch"]) + "gcc"
+    gcc_path = shutil.which(target_gcc)
+    if gcc_path is None:
+        print("NoeEngine: Resource preprocessor " + target_gcc +
+              " not found. Check the MSYS2 MinGW bin folder on PATH.", file=sys.stderr, flush=True)
+        return -1
+    preprocessor = '"' + gcc_path + '"' if " " in gcc_path else gcc_path
+
     for src, dst in zip(source, target):
         command = [compiler, "--include-dir", ".", "--target=" + arch_aliases[env["arch"]],
+                   "--preprocessor=" + preprocessor,
+                   "--preprocessor-arg=-E", "--preprocessor-arg=-xc-header",
+                   "--preprocessor-arg=-DRC_INVOKED",
                    "-i", str(src), "-o", str(dst)]
         print("+ " + " ".join(command), flush=True)
         try:
