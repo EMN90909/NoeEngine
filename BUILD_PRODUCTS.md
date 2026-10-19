@@ -71,6 +71,28 @@ system Python. GCC toolchain and installer downloads require network
 access and disk space; the bootstrap does not bypass corporate
 machine policies or software-installation permissions.
 
+## MSYS2 damaged package database recovery
+
+If MSYS2 displays `could not open file /var/lib/pacman/local/.../desc`,
+the error is a missing local installed-package record, not a download mirror
+failure. `build.bat` invokes `misc/msys2_pacman_health.sh` before resolving
+packages and again after upgrading the MSYS2 runtime. It saves a complete
+backup of `/var/lib/pacman/local` before any attempted repair, and only uses
+`pacman -U --dbonly` with a **matching cached package archive**. It never
+silently deletes package records or overwrites unknown installed packages.
+When the matching archive is unavailable or the repair fails, the build
+stops and prints the backup path for manual MSYS2 repair or reinstall.
+
+## Source header policy
+
+`misc/compact_godot_headers.py --apply` changes the recognizable long
+standard Godot MIT banner in tracked C/C++ engine files to a concise SPDX MIT
+tag and original upstream **copyright lines**. It does not rewrite third-party
+license headers or revoke inherited rights. `LICENSE.txt`, `COPYRIGHT.txt`,
+`NOTICE.md`, and `AUTHORS.md` retain the full attribution. The one-time
+GitHub Actions migration runs the script and commits eligible source updates
+only if the main branch has not advanced concurrently.
+
 ## Build matrix
 
 | Command | Supported host | `Products/` output |

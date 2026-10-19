@@ -1,0 +1,50 @@
+name: Compact standard upstream MIT headers
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/compact-upstream-headers.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  rewrite:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout NoeEngine source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: true
+          fetch-depth: 2
+      - name: Verify banner conversion and attribution safety
+        run: |
+          python3 -m unittest discover -s tests/python_build -p 'test_compact_godot_headers.py' -v
+          test -s LICENSE.txt && test -s COPYRIGHT.txt && test -s NOTICE.md
+          python3 misc/compact_godot_headers.py
+      - name: Remove long Godot display banners, retain MIT copyrights and licenses
+        run: |
+          python3 misc/compact_godot_headers.py --apply
+          git diff --check
+          python3 -m unittest discover -s tests/python_build -p 'test_compact_godot_headers.py' -v
+          python3 misc/compact_godot_headers.py
+          git diff --stat | tail -n 5
+      - name: Commit all eligible header changes to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$(git status --porcelain)" ]]; then
+            echo "No matching headers. No commit needed."
+            exit 0
+          fi
+          git config user.name "noeengine-maintenance[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -u
+          git commit -m "Compact standard Godot MIT source banners while preserving copyright and license attribution"
+          git fetch --no-tags origin main
+          if [[ "$(git rev-parse HEAD^)" != "$(git rev-parse origin/main)" ]]; then
+            echo "Main advanced during migration. Refusing to overwrite new work."
+            exit 1
+          fi
+          git push origin HEAD:main
