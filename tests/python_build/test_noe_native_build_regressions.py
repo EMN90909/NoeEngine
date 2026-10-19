@@ -10,7 +10,7 @@ class NativeBuildRegressionTests(unittest.TestCase):
         source_header = (ROOT / "core/string/ustring.h").read_text(encoding="utf-8")
         self.assertIn("static String utf8(const char *p_utf8, int p_len = -1)", source_header)
         for file, count in (
-            ("editor/noe_account_workspace.cpp", 3),
+            ("editor/noe_account_workspace.cpp", 4),  # Includes the new authenticated bridge response.
             ("editor/noe_update_manager.cpp", 1),
         ):
             with self.subTest(file=file):
