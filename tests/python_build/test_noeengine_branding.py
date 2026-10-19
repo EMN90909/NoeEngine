@@ -34,7 +34,7 @@ class TestNoeEngineBranding(unittest.TestCase):
         theme = (ROOT / "editor/editor_themes.cpp").read_text(encoding="utf-8")
         self.assertIn('"interface/theme/preset", noe_default_theme', settings)
         self.assertIn('NoeHardwareProfile::use_classic_ui()', settings)
-        profile = (ROOT / "editor/noe_hardware_profile.h").read_text(encoding="utf-8")
+        profile = (ROOT / "editor/noe_hardware_profile.cpp").read_text(encoding="utf-8")
         self.assertIn('GlobalMemoryStatusEx', profile)
         self.assertIn('hw.memsize', profile)
         self.assertIn('/proc/meminfo', profile)
@@ -66,7 +66,7 @@ int main() {
             cpp.write_text(source, encoding="utf-8")
             built = subprocess.run(
                 [compiler, "-std=c++17", "-DLINUXBSD_ENABLED", "-I", str(ROOT),
-                 str(cpp), "-o", str(executable)],
+                 str(cpp), str(ROOT / "editor/noe_hardware_profile.cpp"), "-o", str(executable)],
                 cwd=ROOT, text=True, capture_output=True, timeout=45,
             )
             self.assertEqual(built.returncode, 0, built.stdout + built.stderr)

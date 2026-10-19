@@ -16,7 +16,7 @@ int main() {
         with tempfile.TemporaryDirectory() as temp:
             p = pathlib.Path(temp)
             (p/"test.cpp").write_text(source)
-            subprocess.run([cc,"-std=c++17","-DLINUXBSD_ENABLED","-I",str(ROOT),str(p/"test.cpp"),"-o",str(p/"test")],check=True,capture_output=True,text=True)
+            subprocess.run([cc,"-std=c++17","-DLINUXBSD_ENABLED","-I",str(ROOT),str(p/"test.cpp"),str(ROOT/"editor/noe_hardware_profile.cpp"),"-o",str(p/"test")],check=True,capture_output=True,text=True)
             subprocess.run([str(p/"test")],check=True,timeout=5)
     def test_display_text_and_compatibility(self):
         manager=(ROOT/"editor/project_manager.cpp").read_text()
