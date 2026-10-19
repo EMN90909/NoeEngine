@@ -723,6 +723,7 @@ void EditorSettings::_load_defaults(Ref<ConfigFile> p_extra_config) {
 
 	// Auto save
 	_initial_set("run/auto_save/save_before_running", true);
+	EDITOR_SETTING(Variant::INT, PROPERTY_HINT_RANGE, "run/auto_save/interval_seconds", 120, "0,900,15") // 0 disables periodic scene autosave.
 
 	// Output
 	EDITOR_SETTING(Variant::INT, PROPERTY_HINT_RANGE, "run/output/font_size", 13, "8,48,1")
