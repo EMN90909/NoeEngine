@@ -8,6 +8,7 @@ echo "[CI] Shell syntax"
 bash -n build.sh
 bash -n misc/capture_editor_snapshot.sh
 bash -n misc/ci_check.sh
+bash -n misc/msys2_pacman_health.sh
 echo "[CI] NoeEngine branding integrity"
 python3 misc/apply_noeengine_branding.py --check
 echo "[CI] Python syntax"

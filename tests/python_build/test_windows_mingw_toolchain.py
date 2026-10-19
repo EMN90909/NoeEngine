@@ -56,6 +56,14 @@ class TestWindowsMingwBuild(unittest.TestCase):
         self.assertIn("'windres.exe'", ps1)
         self.assertIn('Invoke-VisibleNative', ps1)
         self.assertIn("printf 'y\\n' | pacman", ps1)
+    def test_pacman_repair_creates_backup_and_preserves_metadata(self):
+        script = (ROOT / "misc/msys2_pacman_health.sh").read_text()
+        ps1 = (ROOT / "misc/setup_windows_build.ps1").read_text()
+        self.assertIn("cp -a --", script)
+        self.assertIn("--dbonly --noconfirm", script)
+        self.assertIn("msys2_pacman_health.sh", ps1)
+        self.assertIn("Verify Pacman metadata after runtime upgrade", ps1)
+        self.assertNotIn("rm -rf", script)
     def test_failure_stays_visible_unless_ci_opts_out(self):
         bat = (ROOT / "build.bat").read_text()
         self.assertIn("if /I not", bat)
