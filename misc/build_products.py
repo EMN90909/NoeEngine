@@ -109,9 +109,12 @@ def verify_toolchain(target, package_only=False):
         check_tool("g++")
         check_tool("pkg-config")
     if target == "windows":
-        # The native Windows pipeline now uses MinGW-w64, not Visual Studio.
-        for tool in ("x86_64-w64-mingw32-gcc", "x86_64-w64-mingw32-g++",
-                     "x86_64-w64-mingw32-windres"):
+        # Native MSYS2 UCRT64 has windres.exe without a target prefix.
+        # Linux MinGW cross builds use the target-prefixed resource compiler.
+        tools = ("gcc", "g++", "windres") if host == "windows" else (
+            "x86_64-w64-mingw32-gcc", "x86_64-w64-mingw32-g++",
+            "x86_64-w64-mingw32-windres")
+        for tool in tools:
             check_tool(tool)
     if target == "macos":
         check_tool("xcrun")

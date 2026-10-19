@@ -1,5 +1,6 @@
 import methods
 import os
+import shutil
 import subprocess
 import sys
 from platform_methods import detect_arch
@@ -201,37 +202,38 @@ def get_flags():
 
 
 def build_res_file(target, source, env):
+    # Use the real process exit status, not "stderr was nonempty". A warning
+    # on stderr must not fail a valid build and a failed windres with empty
+    # stderr must not be reported as success.
     arch_aliases = {
         "x86_32": "pe-i386",
         "x86_64": "pe-x86-64",
         "arm32": "armv7-w64-mingw32",
         "arm64": "aarch64-w64-mingw32",
     }
-    cmdbase = "windres --include-dir . --target=" + arch_aliases[env["arch"]]
+    prefixed = get_mingw_bin_prefix(env["mingw_prefix"], env["arch"]) + "windres"
+    # On MSYS2 UCRT64 the executable is windres.exe, without a triplet prefix.
+    # Linux MinGW cross compilers normally use x86_64-w64-mingw32-windres.
+    compiler = next((tool for tool in (prefixed, "windres") if shutil.which(tool)), None)
+    if compiler is None:
+        print("NoeEngine: MinGW windres resource compiler not found on PATH.", file=sys.stderr, flush=True)
+        return -1
 
-    mingw_bin_prefix = get_mingw_bin_prefix(env["mingw_prefix"], env["arch"])
-
-    for x in range(len(source)):
-        ok = True
-        # Try prefixed executable (MinGW on Linux).
-        cmd = mingw_bin_prefix + cmdbase + " -i " + str(source[x]) + " -o " + str(target[x])
+    for src, dst in zip(source, target):
+        command = [compiler, "--include-dir", ".", "--target=" + arch_aliases[env["arch"]],
+                   "-i", str(src), "-o", str(dst)]
+        print("+ " + " ".join(command), flush=True)
         try:
-            out = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE).communicate()
-            if len(out[1]):
-                ok = False
-        except Exception:
-            ok = False
-
-        # Try generic executable (MSYS2).
-        if not ok:
-            cmd = cmdbase + " -i " + str(source[x]) + " -o " + str(target[x])
-            try:
-                out = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE).communicate()
-                if len(out[1]):
-                    return -1
-            except Exception:
-                return -1
-
+            # Do not capture stdout or stderr. Errors must stream straight to
+            # the parent SCons/PowerShell process and be captured by transcript.
+            result = subprocess.run(command, check=False)
+        except OSError as exc:
+            print("NoeEngine windres launch failed: " + str(exc), file=sys.stderr, flush=True)
+            return -1
+        if result.returncode != 0:
+            print("NoeEngine windres failed with exit status " + str(result.returncode) +
+                  " while compiling " + str(src), file=sys.stderr, flush=True)
+            return -1
     return 0
 
 

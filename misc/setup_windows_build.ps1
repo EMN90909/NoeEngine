@@ -63,7 +63,9 @@ function Find-MsysRoot {
 function Has-Mingw([string]$MsysRoot) {
     if (-not $MsysRoot) { return $false }
     $bin = Join-Path $MsysRoot 'ucrt64\bin'
-    foreach ($exe in @('x86_64-w64-mingw32-gcc.exe', 'x86_64-w64-mingw32-g++.exe', 'x86_64-w64-mingw32-windres.exe')) {
+    # MSYS2 UCRT64 installs target-prefixed GCC/G++, but its resource tool
+    # is bin/windres.exe (not bin/x86_64-w64-mingw32-windres.exe).
+    foreach ($exe in @('x86_64-w64-mingw32-gcc.exe', 'x86_64-w64-mingw32-g++.exe', 'windres.exe')) {
         if (-not (Test-Path (Join-Path $bin $exe))) { return $false }
     }
     return $true

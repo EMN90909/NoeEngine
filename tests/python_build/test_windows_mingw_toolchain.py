@@ -19,13 +19,27 @@ class TestWindowsMingwBuild(unittest.TestCase):
                 self.assertIn("-j2", args)
                 self.assertFalse(any("msvc" in value.lower() for value in args))
     def test_preflight_checks_gcc_cpp_and_resource_compiler(self):
-        with patch.object(module, "host_platform", return_value="windows"), \
-             patch.object(module, "check_tool") as check:
-            module.verify_toolchain("windows")
-            tools = {call.args[0] for call in check.call_args_list}
-            self.assertTrue({"x86_64-w64-mingw32-gcc", "x86_64-w64-mingw32-g++",
-                             "x86_64-w64-mingw32-windres", "scons", "makensis"}.issubset(tools))
-            self.assertNotIn("cl", tools)
+        for host in ("windows", "linux"):
+            with self.subTest(host=host), patch.object(module, "host_platform", return_value=host), \
+                 patch.object(module, "check_tool") as check:
+                module.verify_toolchain("windows")
+                tools = {call.args[0] for call in check.call_args_list}
+                expected = ({"gcc", "g++", "windres"} if host == "windows" else
+                            {"x86_64-w64-mingw32-gcc", "x86_64-w64-mingw32-g++",
+                             "x86_64-w64-mingw32-windres"})
+                self.assertTrue(expected.union({"scons", "makensis"}).issubset(tools))
+                self.assertNotIn("cl", tools)
+    def test_windres_errors_are_visible_not_swallowed(self):
+        resource = (ROOT / "platform/windows/detect.py").read_text()
+        body = resource.split("def build_res_file(", 1)[1].split("def setup_msvc_manual(", 1)[0]
+        self.assertIn('subprocess.run(command, check=False)', body)
+        self.assertIn('file=sys.stderr', body)
+        self.assertIn('result.returncode != 0', body)
+        self.assertNotIn('stderr=subprocess.PIPE', body)
+        ps1 = (ROOT / "misc/setup_windows_build.ps1").read_text()
+        self.assertIn("'windres.exe'", ps1)
+        self.assertIn('Invoke-VisibleNative', ps1)
+        self.assertIn("printf 'y\\n' | pacman", ps1)
     def test_failure_stays_visible_unless_ci_opts_out(self):
         bat = (ROOT / "build.bat").read_text()
         self.assertIn("if /I not", bat)
