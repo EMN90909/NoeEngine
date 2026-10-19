@@ -8,11 +8,14 @@ This is **not** the whole Jamila-GD VS Code extension embedded inside Godot.
 
 ## What really happens
 
-1. Open a game project with `project.godot`, click **Jamila** and enter an HTTPS
-   OpenAI-compatible chat endpoint, model name, API key, and a game request.
+1. Open a game project with `project.godot`, **sign in to NoeEngine**, click
+   **Jamila**, choose an AI provider and specialist role, and enter a game request.
+   The desktop never asks for or stores provider API keys.
 2. Click **Generate plan for review**. The local MCP reads project name, asset
    names, and up to four small scripts/scenes. Only those samples, the inventory
-   and prompt are sent to the selected model. Don't put secrets in game files.
+   and prompt are sent to the selected model through the NoeEngine-Web authenticated
+   proxy and a server-side Go gateway. The selected model credentials never leave
+   the server. Don't put secrets in game files.
 3. Jamila proposes up to eight `.gd`, `.nqr`, `.tscn`, `.tres`, or shader
    files. Inspect **every proposed file's full text** and whether it overwrites
    an existing file.
