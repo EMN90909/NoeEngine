@@ -23,6 +23,19 @@ class BenchmarkHarnessTests(unittest.TestCase):
         source=(PATH/"runner.py").read_text()
         self.assertIn("render.png",source)
         self.assertIn("not screenshot.exists()",source)
+    def test_performance_comparison_requires_matched_device_driver_scene(self):
+        compare=load("noe_render_compare_metrics",PATH/"compare_metrics.py")
+        common=dict(renderer_requested="gl_compatibility",resolution_requested="1280x720",
+                    scene_source_sha256="abc",device_tag="Intel 2500",driver_tag="Mesa 25",
+                    gpu_profiler_requested=False,software_renderer_warning=False)
+        before=dict(common,frame_ms_p95=20)
+        after=dict(common,frame_ms_p95=18)
+        report=compare.compare(before,after)
+        self.assertEqual(report["metrics"]["frame_ms_p95"]["percent_change"],-10.0)
+        with self.assertRaises(ValueError):
+            compare.compare(before,dict(after,driver_tag="unknown"))
+        with self.assertRaises(ValueError):
+            compare.compare(before,dict(after,device_tag=""))
     def test_no_headless_forgery(self):
         with tempfile.TemporaryDirectory() as path:
             import os

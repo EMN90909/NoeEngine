@@ -6,6 +6,7 @@ are labeled as software and never count as physical GPU validation.
 """
 from __future__ import annotations
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -48,7 +49,14 @@ def run_benchmark(engine: str, output_dir: Path, renderer: str, timeout: int = 1
     metrics = parse_result(log)
     if not screenshot.exists() or screenshot.stat().st_size < 100:
         raise RuntimeError("No real rendered screenshot captured. Headless or GPU init failed.")
+    scene_hash = hashlib.sha256(
+        (PROJECT / "benchmark.gd").read_bytes() + (PROJECT / "benchmark.tscn").read_bytes()
+    ).hexdigest()
     metrics.update({"host_os": platform.platform(), "renderer_requested": renderer,
+                    "resolution_requested": "1280x720",
+                    "scene_source_sha256": scene_hash,
+                    "device_tag": os.environ.get("NOERENDER_DEVICE_TAG", ""),
+                    "driver_tag": os.environ.get("NOERENDER_DRIVER_TAG", ""),
                     "gpu_profiler_requested": gpu_profile,
                     "gpu_profiler_note": "Profiler output may be unavailable on this backend; frame_ms remains application timing.",
                     "duration_wall_seconds": round(elapsed, 3),
