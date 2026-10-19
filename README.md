@@ -37,3 +37,28 @@ NoeEngine is a **product of Noethric**, built on the [Godot Engine](https://godo
 - Further details: [NOTICE.md](NOTICE.md), [LOGO_LICENSE.md](LOGO_LICENSE.md), and third-party notices under `thirdparty/`.
 
 This product is independent of, and is not officially endorsed by, the Godot Engine project. Upstream file paths, classes, source headers, copyright notices, and `.godot` project compatibility remain unchanged where necessary.
+
+### Jamila native game agent
+
+The **Jamila** button in NoeEngine's editor title bar opens a toggled right-side
+panel over Inspector, Filter, and the other right-side docks. Existing dock
+positions are preserved when Jamila is hidden.
+
+The integration adapts the Jamila-GD project MCP and Godot-agent workflow. It
+does not embed the original VS Code extension or claim unrestricted AI control
+over the editor. The local helper requires Python 3 (or `NOE_JAMILA_PYTHON`),
+an HTTPS OpenAI-compatible model endpoint, model name, and API key. Provider
+keys remain in memory, never in editor settings. The selected provider receives
+the user's prompt and a limited project inventory.
+
+Jamila suggests up to eight game asset files. Full proposed content is shown
+before the user explicitly approves. The local MCP server only accepts game
+scene/script/resource file types inside the project, stores a backup before
+overwriting, and runs a real headless NoeEngine project check after applying.
+Failed checks are displayed, never treated as a successful game build.
+A second explicit button can export a PCK using a configured Project > Export
+preset and NoeEngine's actual `--export-pack` command. Standalone executables
+still require target export templates; a PCK is not an executable.
+
+On machines with at least 4 GiB RAM the panel uses native rounded cards. Less
+than 4 GiB keeps compact classic styling. Jamila cannot bypass Human Approval.
