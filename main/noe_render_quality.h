@@ -3,9 +3,24 @@
 #define NOE_RENDER_QUALITY_H
 #include "core/config/project_settings.h"
 #include "core/string/print_string.h"
-#include "editor/noe_hardware_profile.h"
+#include <cstdint>
+#include <cstdio>
 #include "main/noe_render_quality_policy.h"
 namespace NoePlus {
+// Only Linux procfs can be queried here without platform header macro leaks.
+// Unknown RAM is reported as 0: a heuristic must not masquerade as GPU probing.
+inline uint64_t physical_ram_bytes() {
+#if defined(LINUXBSD_ENABLED)
+    FILE *file = std::fopen("/proc/meminfo", "r");
+    if (!file) return 0;
+    unsigned long long kib = 0;
+    const int found = std::fscanf(file, "MemTotal: %llu kB", &kib);
+    std::fclose(file);
+    return found == 1 ? static_cast<uint64_t>(kib) * 1024ULL : 0;
+#else
+    return 0;
+#endif
+}
 inline Tier parse(const String &name) {
     const String n = name.strip_edges().to_lower();
     if (n == "lite") return Tier::LITE;
@@ -27,7 +42,7 @@ inline void configure(ProjectSettings *settings, const String &renderer, bool ed
     const Tier requested = parse(selected);
     if (requested == Tier::CUSTOM) return; // Honor hand-tuned project settings.
     const bool compatibility = renderer == "gl_compatibility";
-    const Tier effective = resolve(requested, compatibility, NoeHardwareProfile::installed_memory_bytes());
+    const Tier effective = resolve(requested, compatibility, physical_ram_bytes());
     const Preset p = preset(effective, compatibility);
     if (compatibility && requested != Tier::LITE && requested != Tier::AUTO)
         WARN_PRINT("Noe+: Forward+-only quality is unavailable in Compatibility; applying Lite.");

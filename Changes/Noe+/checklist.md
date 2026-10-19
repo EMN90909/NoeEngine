@@ -1,6 +1,6 @@
 # Noe+ / NoeShader Implementation Checklist
 
-> Status: PLANNED. This is a source-informed implementation plan, not a claim that any rendering changes have been implemented or benchmarked.
+> Status: PARTIALLY IMPLEMENTED. See IMPLEMENTATION_STATUS.md for validated source changes and outstanding native renderer tests.
 > Repository baseline verified: NoeEngine 0.1.0-dev, Godot 4.0.5 RC fork. Target: v0.1.1.
 > Owners: NoeEngine engineering team. Check items only after evidence is captured.
 
@@ -34,12 +34,12 @@
 - [ ] Test Linux Mesa, Windows drivers and macOS/MoltenVK independently before promising support.
 
 ## 3. Noe+ quality manager
-- [ ] Implement Lite, Balanced, High and Ultra quality presets; add Auto and Custom modes.
-- [ ] Keep rendering backend independent from graphics quality preset.
+- [x] Implement Lite, Balanced, High and Ultra quality policy values; add Auto and Custom modes (source-level, native runtime build pending).
+- [x] Keep rendering backend independent from graphics quality preset.
 - [ ] Map presets to explicit engine settings (3D scale, shadows, anti-aliasing, screen-space effects, GI, reflections, fog, anisotropy, texture budgets, particle counts).
 - [ ] Gate each option against renderer feature support; never enable Forward+ only effects on Compatibility.
 - [ ] Permit manual override and per-project persistence; support reset to auto-detected defaults.
-- [ ] Add hysteresis and cooldown to adaptive 3D render-scale changes; protect menu/editor readability by scaling only intended 3D viewports.
+- [x] Add hysteresis and cooldown to opt-in adaptive 3D render-scale changes; restrict to the game root 3D viewport (GPU runtime behavior still unverified).
 - [ ] Prefer stable frame time and measurable quality over a blanket FPS guarantee.
 - [ ] Ensure screenshots, editor viewport and exported game apply settings consistently where appropriate.
 

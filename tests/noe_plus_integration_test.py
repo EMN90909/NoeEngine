@@ -14,6 +14,10 @@ class NoePlusTests(unittest.TestCase):
     def test_runtime_affects_3d_only(self):
         code=(ROOT/"scene/main/scene_tree.cpp").read_text()
         self.assertIn("root->set_scaling_3d_scale(next_scale)",code)
+    def test_common_adapter_does_not_include_windows_platform_headers(self):
+        code=(ROOT/"main/noe_render_quality.h").read_text()
+        self.assertNotIn('"editor/noe_hardware_profile.h"',code)
+        self.assertNotIn("<windows.h>",code)
     def test_editor_isolation(self):
         code=(ROOT/"main/noe_render_quality.h").read_text()
         self.assertIn("if (editor_or_project_manager) return;",code)
