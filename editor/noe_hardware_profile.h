@@ -34,8 +34,8 @@ static inline uint64_t installed_memory_bytes() {
 #endif
 }
 static inline bool use_classic_ui(uint64_t installed_bytes) {
-    // Strict threshold: 4 GiB or less selects the legacy basic-black editor.
-    return installed_bytes == 0 || installed_bytes <= 4ULL * 1024 * 1024 * 1024;
+    // Strict threshold: Systems with less than 4 GiB select the lightweight classic theme.
+    return installed_bytes == 0 || installed_bytes < 4ULL * 1024 * 1024 * 1024;
 }
 static inline bool use_classic_ui() { return use_classic_ui(installed_memory_bytes()); }
 } // namespace NoeHardwareProfile

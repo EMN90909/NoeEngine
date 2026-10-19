@@ -144,7 +144,7 @@ void NoeAccountWorkspace::_make_page(Page page) {
         _add_label(mcp, TTR("Remote paired editor supports read-only MCP tools. Custom endpoints are saved as preferences until a transport is implemented."));
     } else if (page == EXTENSIONS) {
         _add_label(p, TTR("Extensions"));
-        _add_label(p, TTR("Godot-compatible editor extensions install per project via Project Settings > Plugins."));
+        _add_label(p, TTR("NoeEngine-compatible editor extensions install per project via Project Settings > Plugins."));
         _add_button(p, TTR("Browse MCP Toolkit (Godot-compatible)"), callable_mp(this, &NoeAccountWorkspace::_open_godot_mcp));
         _add_label(p, TTR("Extension installation and permissions are not managed by this panel yet."));
         _add_label(p, TTR("Team collaboration"));
@@ -332,7 +332,7 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
     bridge_timer->set_wait_time(5.0);
     bridge_timer->connect("timeout", callable_mp(this, &NoeAccountWorkspace::_poll_bridge));
     add_child(bridge_timer);
-        metrics_timer = memnew(Timer);
+    metrics_timer = memnew(Timer);
     metrics_timer->set_wait_time(1);
     metrics_timer->connect("timeout", callable_mp(this, &NoeAccountWorkspace::_tick_usage));
     add_child(metrics_timer);
@@ -843,9 +843,10 @@ Dictionary NoeAccountWorkspace::_read_scene_tree() const {
     Array nodes;
     Vector<Node *> pending;
     pending.push_back(scene);
-    while (!pending.is_empty() && nodes.size() < 120) {
-        Node *node = pending[0];
-        pending.remove_at(0);
+    // Avoid repeatedly shifting pending nodes while preserving the 120-node cap.
+    int next_node = 0;
+    while (next_node < pending.size() && nodes.size() < 120) {
+        Node *node = pending[next_node++];
         Dictionary row;
         row["name"] = String(node->get_name()).left(120);
         row["type"] = String(node->get_class()).left(120);
@@ -854,7 +855,7 @@ Dictionary NoeAccountWorkspace::_read_scene_tree() const {
             pending.push_back(node->get_child(i));
     }
     response["nodes"] = nodes;
-    response["truncated"] = !pending.is_empty();
+    response["truncated"] = next_node < pending.size();
     return response;
 }
 void NoeAccountWorkspace::_on_bridge_response(int result, int code, const PackedStringArray &headers,

@@ -455,7 +455,7 @@ Ref<Theme> create_editor_theme(const Ref<Theme> p_theme) {
 		preset_accent_color = Color(0.26, 0.76, 1.00);
 		preset_base_color = Color(0.24, 0.26, 0.28);
 		preset_contrast = default_contrast;
-	} else if (preset == "Godot 2") {
+	} else if (preset == "NoeEngine Retro" || preset == "Godot 2") {
 		preset_accent_color = Color(0.53, 0.67, 0.89);
 		preset_base_color = Color(0.24, 0.23, 0.27);
 		preset_contrast = default_contrast;
@@ -739,7 +739,8 @@ Ref<Theme> create_editor_theme(const Ref<Theme> p_theme) {
 	}
 	// Popups are separate windows by default in the editor. Windows currently don't support per-pixel transparency
 	// in 4.0, and even if it was, it may not always work in practice (e.g. running with compositing disabled).
-	style_popup->set_corner_radius_all(0);
+	// Rounded flat panels on capable devices without GPU-heavy effects.
+	style_popup->set_corner_radius_all(noe_soft_ui ? 8 * EDSCALE : 0);
 
 	Ref<StyleBoxLine> style_popup_separator(memnew(StyleBoxLine));
 	style_popup_separator->set_color(separator_color);
@@ -1085,6 +1086,7 @@ Ref<Theme> create_editor_theme(const Ref<Theme> p_theme) {
 	// on top of the popup border. This causes a 'gap' in the panel border when an item is highlighted,
 	// and it looks weird. 1px solves this.
 	style_popup_menu->set_content_margin_individual(EDSCALE, 2 * EDSCALE, EDSCALE, 2 * EDSCALE);
+	style_popup_menu->set_corner_radius_all(noe_soft_ui ? 8 * EDSCALE : 0);
 	// Always display a border for PopupMenus so they can be distinguished from their background.
 	style_popup_menu->set_border_width_all(EDSCALE);
 	if (draw_extra_borders) {
