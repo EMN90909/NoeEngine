@@ -192,8 +192,12 @@ bool NoeJamilaPanel::_launch_agent() {
 #else
             "python3";
 #endif
-    Ref<Crypto> crypto;
-    crypto.instantiate();
+    // Crypto is an abstract provider; obtain the platform backend factory.
+    Ref<Crypto> crypto = Crypto::create();
+    if (crypto.is_null()) {
+        status_label->set_text("Secure random generator unavailable.");
+        return false;
+    }
     const PackedByteArray secret = crypto->generate_random_bytes(32);
     const PackedByteArray port_seed = crypto->generate_random_bytes(2);
     if (secret.size() != 32 || port_seed.size() != 2) {
