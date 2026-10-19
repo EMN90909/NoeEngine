@@ -23,6 +23,13 @@ class NoeRenderTests(unittest.TestCase):
         self.assertIn("NoeRender::probe_vulkan()",main)
         self.assertIn("Vulkan DisplayServer failed, trying OpenGL Compatibility",main)
         self.assertIn("!noe_render_cli_override",main)
+    def test_low_resource_editor_and_diagnostics(self):
+        settings=(ROOT/"editor/editor_settings.cpp").read_text()
+        editor=(ROOT/"editor/editor_node.cpp").read_text()
+        scene=(ROOT/"scene/main/scene_tree.cpp").read_text()
+        self.assertIn("interface/noe_render/low_resource_mode",settings)
+        self.assertIn("interface/noe_render/focused_sleep_usec",editor)
+        self.assertIn("rendering/noe_render/debug/print_frame_diagnostics",scene)
     def test_runtime_affects_3d_only(self):
         code=(ROOT/"scene/main/scene_tree.cpp").read_text()
         self.assertIn("root->set_scaling_3d_scale(next_scale)",code)

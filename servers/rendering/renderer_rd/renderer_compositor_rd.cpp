@@ -43,6 +43,15 @@ void RendererCompositorRD::blit_render_targets_to_screen(DisplayServer::WindowID
 		return; // Window is minimized and does not have valid swapchain, skip drawing without printing errors.
 	}
 
+	// Purge stale blit cache entries after viewport recreation; valid RIDs
+	// are not freed or evicted, avoiding shader/buffer lifetime regressions.
+	if (render_target_descriptors.size() > 128 && (frame % 120) == 0) {
+		Vector<RID> stale;
+		for (const KeyValue<RID, RID> &entry : render_target_descriptors) {
+			if (!RD::get_singleton()->uniform_set_is_valid(entry.value)) stale.push_back(entry.key);
+		}
+		for (const RID &rid : stale) render_target_descriptors.erase(rid);
+	}
 	for (int i = 0; i < p_amount; i++) {
 		RID rd_texture = texture_storage->render_target_get_rd_texture(p_render_targets[i].render_target);
 		ERR_CONTINUE(rd_texture.is_null());

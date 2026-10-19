@@ -643,7 +643,10 @@ void EditorNode::_notification(int p_what) {
 				window->set_theme(theme);
 			}
 
-			OS::get_singleton()->set_low_processor_usage_mode_sleep_usec(int(EDITOR_GET("interface/editor/low_processor_mode_sleep_usec")));
+			const bool noe_low_resource = EDITOR_GET("interface/noe_render/low_resource_mode");
+			OS::get_singleton()->set_low_processor_usage_mode_sleep_usec(
+					noe_low_resource ? int(EDITOR_GET("interface/noe_render/focused_sleep_usec")) :
+					int(EDITOR_GET("interface/editor/low_processor_mode_sleep_usec")));
 			get_tree()->get_root()->set_as_audio_listener_3d(false);
 			get_tree()->get_root()->set_as_audio_listener_2d(false);
 			get_tree()->get_root()->set_snap_2d_transforms_to_pixel(false);
@@ -726,7 +729,10 @@ void EditorNode::_notification(int p_what) {
 
 		case NOTIFICATION_APPLICATION_FOCUS_IN: {
 			// Restore the original FPS cap after focusing back on the editor.
-			OS::get_singleton()->set_low_processor_usage_mode_sleep_usec(int(EDITOR_GET("interface/editor/low_processor_mode_sleep_usec")));
+			const bool noe_low_resource = EDITOR_GET("interface/noe_render/low_resource_mode");
+			OS::get_singleton()->set_low_processor_usage_mode_sleep_usec(
+					noe_low_resource ? int(EDITOR_GET("interface/noe_render/focused_sleep_usec")) :
+					int(EDITOR_GET("interface/editor/low_processor_mode_sleep_usec")));
 
 			EditorFileSystem::get_singleton()->scan_changes();
 			_scan_external_changes();
@@ -896,7 +902,11 @@ void EditorNode::_update_update_spinner() {
 		update_spinner->set_self_modulate(Color(1, 1, 1));
 	}
 
-	OS::get_singleton()->set_low_processor_usage_mode(!update_continuously);
+	const bool low_resource = EDITOR_GET("interface/noe_render/low_resource_mode");
+	OS::get_singleton()->set_low_processor_usage_mode(low_resource || !update_continuously);
+	if (low_resource) {
+		OS::get_singleton()->set_low_processor_usage_mode_sleep_usec(int(EDITOR_GET("interface/noe_render/focused_sleep_usec")));
+	}
 }
 
 void EditorNode::_on_plugin_ready(Object *p_script, const String &p_activate_name) {

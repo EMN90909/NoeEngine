@@ -448,6 +448,22 @@ bool SceneTree::process(double p_time) {
 	MainLoop::process(p_time);
 
 	process_time = p_time;
+	// Opt-in local performance counters; no telemetry and no GPU timing claim.
+	if (noe_render_diagnostics_enabled && p_time > 0 && p_time < 1.0) {
+		noe_render_report_ms += p_time * 1000.0;
+		if (++noe_render_report_frames >= 120) {
+			const uint64_t draws = RS::get_singleton()->get_rendering_info(RS::RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME);
+			const uint64_t primitives = RS::get_singleton()->get_rendering_info(RS::RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME);
+			const uint64_t gpu_bytes = RS::get_singleton()->get_rendering_info(RS::RENDERING_INFO_VIDEO_MEM_USED);
+			print_line(vformat("NoeRender diagnostics: backend=%s driver=%s avg_mainloop_ms=%.2f draws=%d primitives=%d video_mem_estimate_bytes=%d scale=%.2f",
+					OS::get_singleton()->get_current_rendering_method(),
+					OS::get_singleton()->get_current_rendering_driver_name(),
+					noe_render_report_ms / noe_render_report_frames, draws, primitives, gpu_bytes,
+					root->get_scaling_3d_scale()));
+			noe_render_report_ms = 0.0;
+			noe_render_report_frames = 0;
+		}
+	}
 
 	// Use smoothed main-loop frame times as a conservative scaling signal.
 	// Only the 3D root viewport is affected, never editor/2D UI resolution.
@@ -1439,6 +1455,8 @@ SceneTree::SceneTree() {
 
 	const int msaa_mode_3d = GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "rendering/anti_aliasing/quality/msaa_3d", PROPERTY_HINT_ENUM, String::utf8("Disabled (Fastest),2× (Average),4× (Slow),8× (Slowest)")), 0);
 	root->set_msaa_3d(Viewport::MSAA(msaa_mode_3d));
+	noe_render_diagnostics_enabled = GLOBAL_DEF_BASIC("rendering/noe_render/debug/print_frame_diagnostics", false) &&
+			!Engine::get_singleton()->is_editor_hint();
 
 	// Project Settings is read before engine startup, and quality presets are
 	// applied only to game processes. Custom leaves existing settings intact.

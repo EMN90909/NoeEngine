@@ -95,6 +95,9 @@ private:
 	Window *root = nullptr;
 	NoeRender::AdaptiveScale noe_render_scaler;
 	bool noe_render_adaptive_active = false;
+	bool noe_render_diagnostics_enabled = false;
+	uint32_t noe_render_report_frames = 0;
+	double noe_render_report_ms = 0.0;
 
 	uint64_t tree_version = 1;
 	double physics_process_time = 0.0;
