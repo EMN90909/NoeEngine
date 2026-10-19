@@ -26,6 +26,8 @@
 #include "editor/editor_themes.h"
 #include "editor/editor_vcs_interface.h"
 #include "main/main.h"
+#include "main/noe_core_policy.h"
+#include <thread>
 #include "scene/gui/center_container.h"
 #include "scene/gui/check_box.h"
 #include "scene/gui/line_edit.h"
@@ -423,6 +425,14 @@ private:
 			quality_preset_selection->set_item_disabled(4, limited_backend);
 			if (limited_backend && (quality_preset_selection->get_selected() == 3 || quality_preset_selection->get_selected() == 4)) {
 				quality_preset_selection->select(0);
+		// Recommendation is descriptive only. New projects keep Auto and user choice wins.
+		NoeCore::Hardware noe_hardware;
+		noe_hardware.cpu_threads = std::thread::hardware_concurrency();
+		noe_hardware.ram_bytes = NoeHardwareProfile::installed_memory_bytes();
+		// The project manager has not created a render device: GPU/VRAM remain unknown.
+		const String noe_recommendation = NoeCore::profile_name(NoeCore::recommend(noe_hardware));
+		quality_preset_selection->set_tooltip_text(vformat(TTR("NoeCore conservative estimate: %s. GPU capabilities are not verified here. The selection is yours."), noe_recommendation));
+
 		_renderer_selected(); // Apply backend limits after the quality widget exists.
 			}
 		}
