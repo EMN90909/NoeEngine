@@ -33,6 +33,14 @@ class TestWindowsMingwBuild(unittest.TestCase):
                              "x86_64-w64-mingw32-windres"})
                 self.assertTrue(expected.union({"scons", "makensis"}).issubset(tools))
                 self.assertNotIn("cl", tools)
+    def test_windows_compiler_detection_avoids_shell_and_reports_failure(self):
+        detector = (ROOT / "platform/windows/detect.py").read_text()
+        probe = detector.split("def try_cmd(", 1)[1].split("def can_build(", 1)[0]
+        self.assertIn("shutil.which(executable)", probe)
+        self.assertIn("subprocess.run(", probe)
+        self.assertNotIn("shell=True", probe.split("# SCons", 1)[-1])
+        self.assertIn("result.returncode == 0", probe)
+        self.assertIn("file=sys.stderr", probe)
     def test_windres_errors_are_visible_not_swallowed(self):
         resource = (ROOT / "platform/windows/detect.py").read_text()
         body = resource.split("def build_res_file(", 1)[1].split("def setup_msvc_manual(", 1)[0]
