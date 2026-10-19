@@ -1,0 +1,21 @@
+name: NoeProfiler frame-time regression tests
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  frame-time-policy:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Verify frame attribution and spike policy
+        run: c++ -std=c++17 -Wall -Wextra -Werror -I . tests/noe_profiler_analysis_test.cpp -o /tmp/noeprofiler-policy && /tmp/noeprofiler-policy
+      - name: Verify exported capture comparison
+        run: python3 -m unittest discover -s tests/noe_profiler -p 'test_*.py' -v
