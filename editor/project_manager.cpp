@@ -448,6 +448,7 @@ private:
 			quality_preset_selection->set_item_disabled(4, limited_backend);
 			if (limited_backend && (quality_preset_selection->get_selected() == 3 || quality_preset_selection->get_selected() == 4)) {
 				quality_preset_selection->select(0);
+		_renderer_selected(); // Apply backend limits after the quality widget exists.
 			}
 		}
 
