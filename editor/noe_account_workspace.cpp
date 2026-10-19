@@ -509,7 +509,7 @@ void NoeAccountWorkspace::_save_collaboration_url() {
         return;
     }
     while (candidate.ends_with("/")) candidate = candidate.substr(0, candidate.length() - 1);
-    if (candidate.contains("/", 8)) {
+    if (candidate.find("/", 8) >= 0) {
         collab_status->set_text(TTR("Enter the bridge origin only, without a path."));
         return;
     }
