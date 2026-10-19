@@ -68,13 +68,55 @@ function Has-Mingw([string]$MsysRoot) {
     }
     return $true
 }
-function Invoke-Msys([string]$MsysRoot, [string]$Command) {
+function Invoke-VisibleNative {
+    # PowerShell 5.1 promotes a native program's stderr to NativeCommandError
+    # when ErrorActionPreference=Stop. Merge both streams explicitly so GCC,
+    # SCons, pacman and windres errors ALWAYS appear in the batch window and
+    # Start-Transcript. Never swallow the program's actual exit code.
+    param(
+        [string]$File,
+        [string[]]$ArgumentList,
+        [string]$Phase,
+        [switch]$AllowCoreRestart
+    )
+    Write-Host "[NoeEngine] >>> $Phase"
+    $previousPreference = $ErrorActionPreference
+    $state = @{ CoreRestart = $false }
+    $exitStatus = 1
+    try {
+        $ErrorActionPreference = 'Continue'
+        & $File @ArgumentList 2>&1 | ForEach-Object {
+            $line = [string]$_
+            if ($line -match 'To complete this update all MSYS2 processes') {
+                $state.CoreRestart = $true
+            }
+            if ($line -match '(?i)(fatal error|\berror:|\bfailed\b|Traceback|undefined reference|collect2:)') {
+                Write-Host $line -ForegroundColor Red
+            } elseif ($line -match '(?i)\bwarning[: ]') {
+                Write-Host $line -ForegroundColor Yellow
+            } else {
+                Write-Host $line
+            }
+        }
+        $exitStatus = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousPreference
+    }
+    if ($exitStatus -ne 0) {
+        if ($AllowCoreRestart -and $state.CoreRestart) {
+            # MSYS2 deliberately kills its own bash/pacman after updating
+            # msys2-runtime. Only this identified case may continue.
+            Write-Host '[NoeEngine] MSYS2 core updated and closed its shell. Starting a fresh shell.' -ForegroundColor Yellow
+            return $true
+        }
+        throw "$Phase failed (exit $exitStatus). The complete errors are printed above and saved in the transcript."
+    }
+    return $state.CoreRestart
+}
+function Invoke-Msys([string]$MsysRoot, [string]$Command, [string]$Phase, [switch]$AllowCoreRestart) {
     $env:MSYSTEM = 'UCRT64'
     $env:CHERE_INVOKING = 'yes'
-    & (Join-Path $MsysRoot 'usr\bin\bash.exe') -lc $Command
-    if ($LASTEXITCODE -ne 0) {
-        throw "MSYS2 failed (exit $LASTEXITCODE): $Command. Open MSYS2 UCRT64 and review pacman messages above."
-    }
+    return Invoke-VisibleNative -File (Join-Path $MsysRoot 'usr\bin\bash.exe') -ArgumentList @('-lc', $Command) -Phase $Phase -AllowCoreRestart:$AllowCoreRestart
 }
 
 try {
@@ -102,11 +144,24 @@ try {
     }
     if (-not (Has-Mingw $msysRoot)) {
         if ($SkipInstall) { throw 'MSYS2 UCRT64 GCC/G++/windres missing. Run build.bat to install them.' }
-        Write-Host '[NoeEngine] Updating MSYS2 core packages...'
-        Invoke-Msys $msysRoot 'pacman --noconfirm -Syuu'
-        Invoke-Msys $msysRoot 'pacman --noconfirm -Syuu'
+        Write-Host '[NoeEngine] Updating MSYS2 in separate, restart-safe shells...'
+        # Core upgrades show a *second* confirmation ("close all MSYS2
+        # processes") that pacman --noconfirm does NOT necessarily answer.
+        # Feed the single expected 'y' without requiring keyboard input.
+        # Open a new bash per pass because the core runtime may kill itself.
+        $msysUpdated = $false
+        for ($pass = 1; $pass -le 4; $pass++) {
+            $restart = Invoke-Msys $msysRoot "printf 'y\n' | pacman --noconfirm -Syuu" "MSYS2 full update pass $pass" -AllowCoreRestart
+            if (-not $restart) {
+                $msysUpdated = $true
+                break
+            }
+        }
+        if (-not $msysUpdated) {
+            throw 'MSYS2 requested core restart more than four times. Open MSYS2 UCRT64 and finish updating before retrying.'
+        }
         Write-Host '[NoeEngine] Installing lightweight GCC/MinGW-w64 toolchain...'
-        Invoke-Msys $msysRoot 'pacman --noconfirm --needed -S mingw-w64-ucrt-x86_64-gcc'
+        Invoke-Msys $msysRoot 'pacman --noconfirm --needed -S mingw-w64-ucrt-x86_64-gcc' 'Install MSYS2 UCRT64 GCC' | Out-Null
     }
     if (-not (Has-Mingw $msysRoot)) {
         throw 'MinGW-w64 compiler still missing. Open MSYS2 UCRT64 and install mingw-w64-ucrt-x86_64-gcc.'
@@ -115,8 +170,7 @@ try {
     $env:PATH = "$gccBin;$env:PATH"
     $env:MSYSTEM = 'UCRT64'
     Write-Host "[NoeEngine] Compiler: $gccBin"
-    & (Join-Path $gccBin 'x86_64-w64-mingw32-gcc.exe') --version
-    if ($LASTEXITCODE -ne 0) { throw 'GCC could not start.' }
+    Invoke-VisibleNative -File (Join-Path $gccBin 'x86_64-w64-mingw32-gcc.exe') -ArgumentList @('--version') -Phase 'Verify GCC compiler' | Out-Null
 
     if (-not (Get-Command makensis.exe -ErrorAction SilentlyContinue)) { Install-Package 'NSIS.NSIS' }
     Refresh-ToolPath
@@ -145,14 +199,13 @@ try {
     }
 
     Write-Host '[NoeEngine] Checking MinGW-w64 Windows toolchain...'
-    & $python.Path @($python.Args) misc/build_products.py windows --preflight
-    if ($LASTEXITCODE -ne 0) { throw 'Windows MinGW preflight failed.' }
+    Invoke-VisibleNative -File $python.Path -ArgumentList (@($python.Args) + @('-u', 'misc/build_products.py', 'windows', '--preflight')) -Phase 'Check Windows GCC, windres and NSIS prerequisites' | Out-Null
     if ($CheckOnly) {
         Write-Host '[NoeEngine] PASS: MinGW-w64 preflight (no source compiled).'
     } else {
         Write-Host "[NoeEngine] Building Windows x64 editor with $Jobs GCC job(s)..."
-        & $python.Path @($python.Args) misc/build_products.py windows --jobs $Jobs
-        if ($LASTEXITCODE -ne 0) { throw "Windows compilation/packaging failed (exit $LASTEXITCODE)." }
+        Write-Host '[NoeEngine] --- Compiler messages will stream below in real time ---'
+        Invoke-VisibleNative -File $python.Path -ArgumentList (@($python.Args) + @('-u', 'misc/build_products.py', 'windows', '--jobs', [string]$Jobs)) -Phase 'SCons MinGW-w64 compilation and NSIS packaging' | Out-Null
         $installer = Join-Path $root 'Products\NoeEngine-setup.exe'
         if (-not (Test-Path $installer) -or (Get-Item $installer).Length -lt 100000) {
             throw 'NoeEngine-setup.exe missing or too small.'
