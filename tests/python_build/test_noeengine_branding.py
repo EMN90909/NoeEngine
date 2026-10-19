@@ -49,18 +49,17 @@ class TestNoeEngineBranding(unittest.TestCase):
         compiler = shutil.which("c++") or shutil.which("g++")
         if not compiler:
             self.skipTest("Native C++ compiler unavailable")
-        source = (
-            '#include "editor/noe_hardware_profile.h"\\n'
-            'int main() {\\n'
-            '  constexpr unsigned long long gib = 1024ULL * 1024 * 1024;\\n'
-            '  if (!NoeHardwareProfile::use_classic_ui(0)) return 1;\\n'
-            '  if (!NoeHardwareProfile::use_classic_ui(3 * gib)) return 2;\\n'
-            '  if (!NoeHardwareProfile::use_classic_ui(4 * gib)) return 3;\\n'
-            '  if (NoeHardwareProfile::use_classic_ui(4 * gib + 1)) return 4;\\n'
-            '  if (NoeHardwareProfile::use_classic_ui(6 * gib)) return 5;\\n'
-            '  return 0;\\n'
-            '}\\n'
-        ).replace('\\\\n','\\n')
+        source = """#include "editor/noe_hardware_profile.h"
+int main() {
+  constexpr unsigned long long gib = 1024ULL * 1024 * 1024;
+  if (!NoeHardwareProfile::use_classic_ui(0)) return 1;
+  if (!NoeHardwareProfile::use_classic_ui(3 * gib)) return 2;
+  if (!NoeHardwareProfile::use_classic_ui(4 * gib)) return 3;
+  if (NoeHardwareProfile::use_classic_ui(4 * gib + 1)) return 4;
+  if (NoeHardwareProfile::use_classic_ui(6 * gib)) return 5;
+  return 0;
+}
+"""
         with tempfile.TemporaryDirectory() as directory:
             cpp = Path(directory) / "profile.cpp"
             executable = Path(directory) / "profile"
