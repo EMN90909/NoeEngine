@@ -927,7 +927,7 @@ public:
 
 		Button *rs_button = memnew(CheckBox);
 		rs_button->set_button_group(renderer_button_group);
-		rs_button->set_text(TTR("Forward+"));
+		rs_button->set_text(TTR("NoeRender"));
 #if defined(WEB_ENABLED)
 		rs_button->set_disabled(true);
 #endif
