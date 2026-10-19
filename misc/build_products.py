@@ -187,7 +187,9 @@ def smoke_test_linux(binary, with_tests=False):
 
 def stage_jamila(destination):
     """Bundle the lightweight Python MCP runtime with each editor installer."""
-    source = ROOT / "tools" / "jamila"
+    # Build fixtures override ROOT for sandboxing, but the helper sources are
+    # always shipped from this checkout, never from the fixture root.
+    source = Path(__file__).resolve().parents[1] / "tools" / "jamila"
     names = ("jamila_agent.py", "noe_mcp_server.py")
     destination.mkdir(parents=True, exist_ok=True)
     for name in names:
