@@ -26,13 +26,13 @@ MAX_FILES = 8
 SYSTEM = """You are Jamila, a NoeEngine game-building assistant ported from Jamila-GD.
 Work in ordered specialist stages: plan, scene, gameplay, integration, QA. Inspect the supplied script/scene samples; preserve file references and scene node paths. If a build_error is supplied, propose corrective asset changes and set overwrite=true for existing files.
 Return ONLY a JSON object: {"summary":"what will be built","actions":[{"tool":"noe_write_asset","arguments":{"path":"scenes/main.tscn","content":"full literal UTF-8 file content","overwrite":false}}, ...]}.
-Allowed action tools: noe_write_asset only. The local agent automatically runs
+Allowed actions: noe_write_asset and noe_set_main_scene (for a runnable project). Put scene creation before setting it as the main scene. The local agent automatically runs
 noe_validate_project and a bounded scene playtest after applying approved writes. Never invent success or
 claim that a game was tested. Create a small playable slice and keep existing
 assets untouched unless the user explicitly requested an overwrite.
 Scene files must be valid NoeEngine/Godot .tscn text; GDScript scripts must match
 scene node paths. For a runnable demo use res:// scripts and suitable scene names.
-Return at most 8 full files, each <= 96 kB; no shell commands, paths outside the
+Return at most 8 approved actions, each file <= 96 kB; no shell commands, paths outside the
 project, remote downloads, secrets, installers, or network tools.
 The user must review and explicitly approve ALL file edits before execution."""
 
@@ -71,19 +71,29 @@ def normalize_plan(output):
         raise ValueError("Model must propose 1 to 8 project files")
     normalized = []
     for item in actions:
-        if not isinstance(item,dict) or item.get("tool")!="noe_write_asset":
-            raise ValueError("Only approved project file writes are supported")
+        if not isinstance(item,dict) or item.get("tool") not in ("noe_write_asset","noe_set_main_scene"):
+            raise ValueError("Only approved game writes and main scene setup are supported")
         args=item.get("arguments")
         if not isinstance(args,dict):
-            raise ValueError("Missing write arguments")
+            raise ValueError("Missing action arguments")
         path=args.get("path")
-        content=args.get("content")
-        if not isinstance(path,str) or not path or len(path)>320 or not isinstance(content,str) or len(content.encode())>96000:
-            raise ValueError("Invalid game asset proposal")
-        normalized.append({"tool":"noe_write_asset","arguments":{
-            "path":path,"content":content,"overwrite":args.get("overwrite") is True
-        }})
-    if len({a["arguments"]["path"] for a in normalized}) != len(normalized):
+        if not isinstance(path,str) or not path or len(path)>320:
+            raise ValueError("Invalid game asset path")
+        if item["tool"]=="noe_set_main_scene":
+            if not path.endswith(".tscn"):
+                raise ValueError("Main scene must be a .tscn file")
+            normalized.append({"tool":"noe_set_main_scene","arguments":{
+                "path":path, "overwrite":args.get("overwrite") is True
+            }})
+        else:
+            content=args.get("content")
+            if not isinstance(content,str) or len(content.encode())>96000:
+                raise ValueError("Invalid game asset proposal")
+            normalized.append({"tool":"noe_write_asset","arguments":{
+                "path":path,"content":content,"overwrite":args.get("overwrite") is True
+            }})
+    writes=[a["arguments"]["path"] for a in normalized if a["tool"]=="noe_write_asset"]
+    if len(set(writes)) != len(writes):
         raise ValueError("Duplicate asset paths in plan")
     return {"summary":output["summary"][:1200], "actions":normalized}
 
@@ -169,19 +179,32 @@ class JamilaService:
         from noe_mcp_server import ProjectTools
         validator=ProjectTools(self.bridge.project,self.bridge.engine)
         baselines={}
+        created=set()
+        config_baseline=None
         for action in model_plan["actions"]:
-            path=validator.path(action["arguments"]["path"],writing=True)
+            relative=action["arguments"]["path"]
+            path=validator.path(relative,writing=True)
+            if action["tool"]=="noe_set_main_scene":
+                if relative not in created and not path.is_file():
+                    raise ValueError("Main scene must exist or be created by an earlier action")
+                config_path=Path(self.bridge.project)/"project.godot"
+                config_text=config_path.read_text(encoding="utf8")
+                if "run/main_scene=" in config_text and not action["arguments"]["overwrite"]:
+                    raise ValueError("A main scene is already selected; the plan must request overwrite")
+                config_baseline=hashlib.sha256(config_path.read_bytes()).hexdigest()
+                continue
             if path.exists() and not action["arguments"]["overwrite"]:
                 raise ValueError("Model tried to overwrite an existing asset without approval: "+path.name)
             if path.exists() and (not path.is_file() or path.stat().st_size > 96000):
                 raise ValueError("Cannot overwrite oversized or non-file asset")
-            baselines[action["arguments"]["path"]] = (
+            baselines[relative] = (
                 hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else None
             )
+            created.add(relative)
         token=secrets.token_hex(16)
         with self.lock:
             self.plans={k:v for k,v in self.plans.items() if v["expires"]>time.time()}
-            self.plans[token]={"plan":model_plan,"baselines":baselines,"expires":time.time()+600}
+            self.plans[token]={"plan":model_plan,"baselines":baselines,"config_baseline":config_baseline,"expires":time.time()+600}
         return {"plan_id":token, **model_plan}
 
     def apply(self,payload):
@@ -201,6 +224,11 @@ class JamilaService:
             current=hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
             if current != digest:
                 raise ValueError("Asset changed since planning: "+relative+"; generate a new plan")
+        if selected.get("config_baseline"):
+            config_path=Path(self.bridge.project)/"project.godot"
+            current=hashlib.sha256(config_path.read_bytes()).hexdigest()
+            if current != selected["config_baseline"]:
+                raise ValueError("Project settings changed since planning; generate a new plan")
         outcomes=[]
         for item in selected["plan"]["actions"]:
             try:
