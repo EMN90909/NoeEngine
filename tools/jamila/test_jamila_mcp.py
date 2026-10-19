@@ -93,6 +93,21 @@ class JamilaIntegrationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.tools.call("noe_export_release", {"preset":"Unconfigured", **auth})
 
+    def test_main_scene_setup_requires_approval_and_preserves_settings(self):
+        with self.assertRaises(PermissionError):
+            self.tools.call("noe_set_main_scene", {"path":"scenes/main.tscn"})
+        result = self.tools.call("noe_set_main_scene", {
+            "path":"scenes/main.tscn", "approval_token":"test-approval-token"
+        })
+        self.assertEqual(result["main_scene"], "res://scenes/main.tscn")
+        self.assertIn('run/main_scene="res://scenes/main.tscn"',
+                      (self.root/"project.godot").read_text())
+        with self.assertRaises(ValueError):
+            self.tools.call("noe_set_main_scene", {
+                "path":"scenes/main.tscn", "approval_token":"test-approval-token"
+            })
+        self.assertTrue((self.root/"project.godot.jamila-backup").exists())
+
     def test_generate_approve_validate_playtest_then_release(self):
         service = JamilaService(self.root, self.engine)
         plan = {"summary":"Create a script", "actions":[
@@ -100,6 +115,9 @@ class JamilaIntegrationTests(unittest.TestCase):
                 "path":"scripts/player.gd",
                 "content":"extends Node2D\nfunc _ready():\n    pass\n",
                 "overwrite":False
+            }},
+            {"tool":"noe_set_main_scene","arguments":{
+                "path":"scenes/main.tscn", "overwrite":False
             }}
         ]}
         with patch("jamila_agent.call_model", return_value=plan):
@@ -109,6 +127,7 @@ class JamilaIntegrationTests(unittest.TestCase):
         result = service.apply({"plan_id": proposal["plan_id"]})
         self.assertTrue(result["ok"], result)
         self.assertTrue((self.root / "scripts/player.gd").is_file())
+        self.assertIn('run/main_scene="res://scenes/main.tscn"', (self.root/"project.godot").read_text())
         build = service.export_game({"preset":"Linux/X11","mode":"release"})
         self.assertTrue(build["ok"], build)
         self.assertTrue((self.root / "builds/Jamila-Game.x86_64").is_file())
