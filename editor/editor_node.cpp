@@ -622,6 +622,14 @@ void EditorNode::_notification(int p_what) {
 				_update_title();
 			}
 
+			if (noe_autosave_timer) {
+				const int interval = CLAMP(int(EDITOR_GET("run/auto_save/interval_seconds")), 0, 900);
+				if (interval == 0) {
+					if (!noe_autosave_timer->is_stopped()) noe_autosave_timer->stop();
+				} else if (noe_autosave_timer->is_stopped() || !Math::is_equal_approx(noe_autosave_timer->get_wait_time(), double(interval))) {
+					noe_autosave_timer->start(double(interval));
+				}
+			}
 			if (settings_changed) {
 				_update_from_settings();
 				settings_changed = false;
@@ -1881,6 +1889,22 @@ void EditorNode::_save_scene(String p_file, int idx) {
 	}
 
 	scene->propagate_notification(NOTIFICATION_EDITOR_POST_SAVE);
+}
+
+void EditorNode::_noe_autosave_scenes() {
+	const int interval = CLAMP(int(EDITOR_GET("run/auto_save/interval_seconds")), 0, 900);
+	if (interval == 0) {
+		noe_autosave_timer->stop();
+		return;
+	}
+	if (!Math::is_equal_approx(noe_autosave_timer->get_wait_time(), double(interval))) {
+		noe_autosave_timer->start(double(interval));
+		return;
+	}
+	if (editor_data.get_edited_scene_count() == 0 || !EditorUndoRedoManager::get_singleton()) return;
+	// Reuse the native editor save operation so changes remain compatible with
+	// existing scene resources, external tools and recovery procedures.
+	_save_all_scenes();
 }
 
 void EditorNode::save_all_scenes() {
@@ -4711,7 +4735,7 @@ String EditorNode::_get_system_info() const {
 		driver_name = "GLES3";
 	}
 	if (rendering_method == "forward_plus") {
-		rendering_method = "Forward+";
+		rendering_method = "NoeRender";
 	} else if (rendering_method == "mobile") {
 		rendering_method = "Mobile";
 	} else if (rendering_method == "gl_compatibility") {
@@ -7747,7 +7771,7 @@ EditorNode::EditorNode() {
 
 		// Add the renderers name to the UI.
 		if (rendering_method == "forward_plus") {
-			renderer->add_item(TTR("Forward+"));
+			renderer->add_item(TTR("NoeRender"));
 		}
 		if (rendering_method == "mobile") {
 			renderer->add_item(TTR("Mobile"));
@@ -8247,6 +8271,13 @@ EditorNode::EditorNode() {
 
 	ED_SHORTCUT_AND_COMMAND("editor/editor_next", TTR("Open the next Editor"));
 	ED_SHORTCUT_AND_COMMAND("editor/editor_prev", TTR("Open the previous Editor"));
+
+	// Interval follows Editor Settings -> Run -> Auto Save; zero disables it.
+	noe_autosave_timer = memnew(Timer);
+	noe_autosave_timer->set_one_shot(false);
+	noe_autosave_timer->connect("timeout", callable_mp(this, &EditorNode::_noe_autosave_scenes));
+	add_child(noe_autosave_timer);
+	noe_autosave_timer->start(120.0);
 
 	screenshot_timer = memnew(Timer);
 	screenshot_timer->set_one_shot(true);

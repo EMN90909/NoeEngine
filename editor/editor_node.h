@@ -369,6 +369,8 @@ private:
 	Button *write_movie_button = nullptr;
 
 	Timer *screenshot_timer = nullptr;
+	Timer *noe_autosave_timer = nullptr;
+	void _noe_autosave_scenes();
 
 	PluginConfigDialog *plugin_config_dialog = nullptr;
 

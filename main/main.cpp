@@ -1136,7 +1136,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 			main_args.push_back(I->get());
 #ifndef DISABLE_DEPRECATED
 		} else if (I->get() == "--export") { // For users used to 3.x syntax.
-			OS::get_singleton()->print("The Godot 3 --export option was changed to more explicit --export-release / --export-debug / --export-pack options.\nSee the --help output for details.\n");
+			OS::get_singleton()->print("The legacy --export option is unsupported in NoeEngine. Use --export-release, --export-debug, or --export-pack.\nSee --help for details.\n");
 			goto error;
 		} else if (I->get() == "--convert-3to4") {
 			// Actually handling is done in start().

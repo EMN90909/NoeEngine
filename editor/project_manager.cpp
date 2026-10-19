@@ -530,7 +530,7 @@ private:
 					EditorSettings::get_singleton()->save();
 
 					if (renderer_type == "forward_plus") {
-						project_features.push_back("Forward Plus");
+						project_features.push_back("Forward Plus"); // Retain on-disk feature ID for Godot-compatible project files.
 					} else if (renderer_type == "mobile") {
 						project_features.push_back("Mobile");
 					} else if (renderer_type == "gl_compatibility") {
@@ -927,7 +927,7 @@ public:
 
 		Button *rs_button = memnew(CheckBox);
 		rs_button->set_button_group(renderer_button_group);
-		rs_button->set_text(TTR("Forward+"));
+		rs_button->set_text(TTR("NoeRender"));
 #if defined(WEB_ENABLED)
 		rs_button->set_disabled(true);
 #endif
