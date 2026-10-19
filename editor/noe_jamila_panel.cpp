@@ -106,6 +106,18 @@ NoeJamilaPanel::NoeJamilaPanel() {
     apply_button->set_disabled(true);
     apply_button->connect("pressed", callable_mp(this, &NoeJamilaPanel::_apply));
     body->add_child(apply_button);
+    Label *preset_label = memnew(Label);
+    preset_label->set_text("Game export preset");
+    body->add_child(preset_label);
+    export_preset = memnew(LineEdit);
+    export_preset->set_placeholder("Exact preset name from Project > Export");
+    body->add_child(export_preset);
+    export_button = memnew(Button);
+    export_button->set_text("Export validated game (.pck)");
+    export_button->set_tooltip_text("Builds a PCK using NoeEngine --export-pack with a configured export preset.");
+    export_button->set_disabled(true);
+    export_button->connect("pressed", callable_mp(this, &NoeJamilaPanel::_export_game));
+    body->add_child(export_button);
 
     status_label = memnew(Label);
     status_label->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
@@ -244,12 +256,14 @@ void NoeJamilaPanel::_plan() {
     }
     plan_id.clear();
     apply_button->set_disabled(true);
+    export_button->set_disabled(true);
     review_field->clear();
     if (!_launch_agent()) {
         return;
     }
     running = true;
     applying = false;
+    exporting = false;
     plan_button->set_disabled(true);
     status_label->set_text("Inspecting project MCP tools, planning game changes...");
     pending_plan = true;
@@ -273,6 +287,7 @@ void NoeJamilaPanel::_apply() {
     }
     running = true;
     applying = true;
+    exporting = false;
     apply_button->set_disabled(true);
     plan_button->set_disabled(true);
     status_label->set_text("Applying approved MCP writes, then running headless project validation...");
@@ -280,6 +295,18 @@ void NoeJamilaPanel::_apply() {
     payload["plan_id"] = plan_id;
     plan_id.clear(); // Prevent double-spend / double click of a plan.
     _send("/v1/apply", payload);
+}
+void NoeJamilaPanel::_export_game() {
+    if (running || export_preset->get_text().strip_edges().is_empty()) return;
+    running = true;
+    applying = false;
+    exporting = true;
+    export_button->set_disabled(true);
+    plan_button->set_disabled(true);
+    status_label->set_text("Validating and exporting game data package...");
+    Dictionary args;
+    args["preset"] = export_preset->get_text().strip_edges();
+    _send("/v1/export", args);
 }
 void NoeJamilaPanel::_on_response(int result, int status, const PackedStringArray &headers, const PackedByteArray &body) {
     running = false;
@@ -292,6 +319,19 @@ void NoeJamilaPanel::_on_response(int result, int status, const PackedStringArra
     const Dictionary response = parsed;
     if (status != 200) {
         status_label->set_text("Jamila: " + String(response.get("error", "Unexpected backend failure.")));
+        return;
+    }
+    if (exporting) {
+        const Dictionary info = response.get("export", Dictionary());
+        if ((bool)response.get("ok", false)) {
+            status_label->set_text("Export successful: builds/Jamila-Game.pck");
+            review_field->set_text("Real game package exported: " + String(info.get("path", "")));
+            export_button->set_disabled(false);
+        } else {
+            status_label->set_text("Game export failed. Check your project preset and installed export templates.");
+            review_field->set_text(String(info.get("output", response.get("error", "Export unavailable"))));
+        }
+        exporting = false;
         return;
     }
     if (!applying) {
@@ -320,7 +360,8 @@ void NoeJamilaPanel::_on_response(int result, int status, const PackedStringArra
         }
         report += "\n" + String(validation.get("output", validation.get("error", ""))).right(3500);
         review_field->set_text(report);
-        status_label->set_text((bool)response.get("ok", false) ? "Jamila finished. Check the editor's FileSystem dock for the created assets." :
+        export_button->set_disabled(!(bool)response.get("ok", false));
+        status_label->set_text((bool)response.get("ok", false) ? "Game changes saved and validated. Export a .pck when ready." :
                                 "Jamila could not validate the game. Review the reported errors.");
     }
 }
