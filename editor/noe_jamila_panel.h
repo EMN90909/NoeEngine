@@ -22,6 +22,8 @@ class NoeJamilaPanel : public PanelContainer {
     Button *toggle_button = nullptr;
     Button *plan_button = nullptr;
     Button *apply_button = nullptr;
+    Button *export_button = nullptr;
+    LineEdit *export_preset = nullptr;
     Label *status_label = nullptr;
     LineEdit *endpoint_field = nullptr;
     LineEdit *model_field = nullptr;
@@ -37,11 +39,13 @@ class NoeJamilaPanel : public PanelContainer {
     bool pending_plan = false;
     bool running = false;
     bool applying = false;
+    bool exporting = false;
 
     static void _bind_methods() {}
     void _toggle();
     void _plan();
     void _apply();
+    void _export_game();
     void _start_pending();
     void _on_response(int p_result, int p_status, const PackedStringArray &p_headers, const PackedByteArray &p_body);
     bool _launch_agent();
