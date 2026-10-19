@@ -118,6 +118,12 @@ NoeJamilaPanel::NoeJamilaPanel() {
     export_button->set_disabled(true);
     export_button->connect("pressed", callable_mp(this, &NoeJamilaPanel::_export_game));
     body->add_child(export_button);
+    release_button = memnew(Button);
+    release_button->set_text("Build playable release");
+    release_button->set_tooltip_text("Uses NoeEngine --export-release and installed export templates for the selected platform.");
+    release_button->set_disabled(true);
+    release_button->connect("pressed", callable_mp(this, &NoeJamilaPanel::_export_release));
+    body->add_child(release_button);
 
     status_label = memnew(Label);
     status_label->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
@@ -257,6 +263,7 @@ void NoeJamilaPanel::_plan() {
     plan_id.clear();
     apply_button->set_disabled(true);
     export_button->set_disabled(true);
+    release_button->set_disabled(true);
     review_field->clear();
     if (!_launch_agent()) {
         return;
@@ -302,12 +309,33 @@ void NoeJamilaPanel::_export_game() {
     applying = false;
     exporting = true;
     export_button->set_disabled(true);
+    release_button->set_disabled(true);
+    exporting_release = false;
     plan_button->set_disabled(true);
     status_label->set_text("Validating and exporting game data package...");
     Dictionary args;
     args["preset"] = export_preset->get_text().strip_edges();
+    args["mode"] = "pack";
     _send("/v1/export", args);
 }
+void NoeJamilaPanel::_export_release() {
+    if (running || export_preset->get_text().strip_edges().is_empty()) {
+        return;
+    }
+    running = true;
+    applying = false;
+    exporting = true;
+    exporting_release = true;
+    export_button->set_disabled(true);
+    release_button->set_disabled(true);
+    plan_button->set_disabled(true);
+    status_label->set_text("Validating project and building a playable release...");
+    Dictionary args;
+    args["preset"] = export_preset->get_text().strip_edges();
+    args["mode"] = "release";
+    _send("/v1/export", args);
+}
+
 void NoeJamilaPanel::_on_response(int result, int status, const PackedStringArray &headers, const PackedByteArray &body) {
     running = false;
     plan_button->set_disabled(false);
@@ -324,11 +352,13 @@ void NoeJamilaPanel::_on_response(int result, int status, const PackedStringArra
     if (exporting) {
         const Dictionary info = response.get("export", Dictionary());
         if ((bool)response.get("ok", false)) {
-            status_label->set_text("Export successful: builds/Jamila-Game.pck");
-            review_field->set_text("Real game package exported: " + String(info.get("path", "")));
+            const String built_path = info.get("path", "");
+            status_label->set_text(exporting_release ? "Playable release exported." : "Game data package exported.");
+            review_field->set_text("NoeEngine export: " + built_path + "\n" + String(info.get("output", "")).right(1500));
             export_button->set_disabled(false);
+            release_button->set_disabled(false);
         } else {
-            status_label->set_text("Game export failed. Check your project preset and installed export templates.");
+            status_label->set_text("Game export failed. Check your preset, installed templates and build output.");
             review_field->set_text(String(info.get("output", response.get("error", "Export unavailable"))));
         }
         exporting = false;
@@ -360,7 +390,14 @@ void NoeJamilaPanel::_on_response(int result, int status, const PackedStringArra
         }
         report += "\n" + String(validation.get("output", validation.get("error", ""))).right(3500);
         review_field->set_text(report);
+        const Dictionary playtest = response.get("playtest", Dictionary());
+        if (playtest.has("output")) {
+            report += "\nSCENE PLAYTEST:\n" + String(playtest.get("output", "")).right(2500);
+        } else if (playtest.has("error")) {
+            report += "\nSCENE PLAYTEST ERROR: " + String(playtest.get("error", ""));
+        }
         export_button->set_disabled(!(bool)response.get("ok", false));
+        release_button->set_disabled(!(bool)response.get("ok", false));
         status_label->set_text((bool)response.get("ok", false) ? "Game changes saved and validated. Export a .pck when ready." :
                                 "Jamila could not validate the game. Review the reported errors.");
     }
