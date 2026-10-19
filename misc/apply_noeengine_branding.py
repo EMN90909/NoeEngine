@@ -89,7 +89,7 @@ def png_image(width, height, splash=False):
     icon_size = min(height - (6 if splash else 10), width - 10)
     left = (width - icon_size) // 2
     top = (height - icon_size) // 2
-    paths = re.findall(r'<path\\b[^>]*\\bd="([^"]+)"', VIPER_ICON)
+    paths = re.findall(r'<path\b[^>]*\bd="([^"]+)"', VIPER_ICON)
     colors = ((249, 250, 255), (255, 124, 5))
 
     for path, rgb in zip(paths, colors):
@@ -117,13 +117,13 @@ def png_image(width, height, splash=False):
                     else:
                         pixels[at:at + 3] = bytes(rgb)
 
-    raw = b"".join(b"\\x00" + pixels[y * width * 3:(y + 1) * width * 3] for y in range(height))
+    raw = b"".join(b"\x00" + pixels[y * width * 3:(y + 1) * width * 3] for y in range(height))
 
     def chunk(kind, data):
         return (struct.pack(">I", len(data)) + kind + data
                 + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF))
 
-    return (b"\\x89PNG\\r\\n\\x1a\\n"
+    return (b"\x89PNG\r\n\x1a\n"
             + chunk(b"IHDR", struct.pack(">2I5B", width, height, 8, 2, 0, 0, 0))
             + chunk(b"IDAT", zlib.compress(raw, 9))
             + chunk(b"IEND", b""))
