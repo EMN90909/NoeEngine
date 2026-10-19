@@ -38,7 +38,8 @@ class TestWindowsMingwBuild(unittest.TestCase):
         probe = detector.split("def try_cmd(", 1)[1].split("def can_build(", 1)[0]
         self.assertIn("shutil.which(executable)", probe)
         self.assertIn("subprocess.run(", probe)
-        self.assertNotIn("shell=True", probe.split("# SCons", 1)[-1])
+        # A source comment may mention shell=True; reject the actual kwarg.
+        self.assertNotIn("shell=True,", probe)
         self.assertIn("result.returncode == 0", probe)
         self.assertIn("file=sys.stderr", probe)
     def test_windres_errors_are_visible_not_swallowed(self):
