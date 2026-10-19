@@ -2,7 +2,7 @@
 #include "main/noe_render_quality_policy.h"
 #include <cassert>
 #include <cmath>
-using namespace NoePlus;
+using namespace NoeRender;
 int main() {
     assert(resolve(Tier::AUTO,true,16ULL<<30)==Tier::LITE);
     assert(resolve(Tier::AUTO,false,6ULL<<30)==Tier::LITE);
