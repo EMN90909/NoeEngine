@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Noethric.
 // SPDX-License-Identifier: LicenseRef-Noethric-Proprietary
 #include "noe_jamila_panel.h"
+#include "editor/noe_account_workspace.h"
 
 #include "core/config/project_settings.h"
 #include "core/crypto/crypto.h"
@@ -13,6 +14,7 @@
 #include "scene/gui/button.h"
 #include "scene/gui/label.h"
 #include "scene/gui/line_edit.h"
+#include "scene/gui/option_button.h"
 #include "scene/gui/scroll_container.h"
 #include "scene/gui/text_edit.h"
 #include "scene/main/http_request.h"
@@ -65,18 +67,26 @@ NoeJamilaPanel::NoeJamilaPanel() {
     body->add_child(guide);
 
     Label *api_label = memnew(Label);
-    api_label->set_text("Model API (HTTPS, OpenAI compatible)");
+    api_label->set_text("Cloud provider (API keys stay on NoeEngine servers)");
     body->add_child(api_label);
-    endpoint_field = memnew(LineEdit);
-    endpoint_field->set_text("https://api.openai.com/v1/chat/completions");
-    body->add_child(endpoint_field);
-    model_field = memnew(LineEdit);
-    model_field->set_placeholder("Model identifier");
-    body->add_child(model_field);
-    key_field = memnew(LineEdit);
-    key_field->set_placeholder("API key (memory only)");
-    key_field->set_secret(true);
-    body->add_child(key_field);
+    provider_field = memnew(OptionButton);
+    provider_field->add_item("OpenAI", 0);
+    provider_field->add_item("Google Gemini", 1);
+    provider_field->add_item("OpenRouter", 2);
+    provider_field->add_item("DeepSeek", 3);
+    provider_field->select(0);
+    body->add_child(provider_field);
+    Label *role_label = memnew(Label);
+    role_label->set_text("Agent");
+    body->add_child(role_label);
+    role_field = memnew(OptionButton);
+    role_field->add_item("Builder", 0);
+    role_field->add_item("Planner", 1);
+    role_field->add_item("Scene specialist", 2);
+    role_field->add_item("Gameplay specialist", 3);
+    role_field->add_item("QA specialist", 4);
+    role_field->select(0);
+    body->add_child(role_field);
 
     Label *task_label = memnew(Label);
     task_label->set_text("Describe the game or change");
@@ -127,7 +137,7 @@ NoeJamilaPanel::NoeJamilaPanel() {
 
     status_label = memnew(Label);
     status_label->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
-    status_label->set_text("Jamila is idle. Requires Python 3 and an AI provider key.\nGame context is sent to your selected provider.");
+    status_label->set_text("Jamila uses your signed-in NoeEngine session. Provider keys stay in the web backend.\nGenerated project context is sent to the selected provider.");
     body->add_child(status_label);
 
     http = memnew(HTTPRequest);
@@ -149,9 +159,7 @@ NoeJamilaPanel::~NoeJamilaPanel() {
         OS::get_singleton()->kill(helper_pid);
     }
     server_token.clear();
-    if (key_field) {
-        key_field->clear();
-    }
+
 }
 
 NoeJamilaPanel *NoeJamilaPanel::install(Control *root, HBoxContainer *toolbar) {
@@ -273,6 +281,13 @@ void NoeJamilaPanel::_plan() {
     exporting = false;
     plan_button->set_disabled(true);
     status_label->set_text("Inspecting project MCP tools, planning game changes...");
+    if (NoeAccountWorkspace::get_jamila_desktop_token().is_empty() ||
+            NoeAccountWorkspace::get_jamila_gateway_url().is_empty()) {
+        running = false;
+        plan_button->set_disabled(false);
+        status_label->set_text("Sign in through Account before using Jamila Cloud.");
+        return;
+    }
     pending_plan = true;
     startup->start(); // Launch is asynchronous; never block the editor UI.
 }
@@ -283,9 +298,14 @@ void NoeJamilaPanel::_start_pending() {
     pending_plan = false;
     Dictionary payload;
     payload["prompt"] = task_field->get_text().strip_edges().left(3000);
-    payload["api_url"] = endpoint_field->get_text().strip_edges();
-    payload["model"] = model_field->get_text().strip_edges();
-    payload["api_key"] = key_field->get_text();
+    payload["gateway_url"] = NoeAccountWorkspace::get_jamila_gateway_url();
+    payload["desktop_token"] = NoeAccountWorkspace::get_jamila_desktop_token();
+    const char *providers[] = { "openai", "google", "openrouter", "deepseek" };
+    const char *roles[] = { "builder", "planner", "scene", "gameplay", "qa" };
+    const int provider_id = provider_field->get_selected_id();
+    const int role_id = role_field->get_selected_id();
+    payload["provider"] = providers[provider_id >= 0 && provider_id < 4 ? provider_id : 0];
+    payload["role"] = roles[role_id >= 0 && role_id < 5 ? role_id : 0];
     _send("/v1/plan", payload);
 }
 void NoeJamilaPanel::_apply() {
