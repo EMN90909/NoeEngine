@@ -413,6 +413,7 @@ void EditorProfiler::_update_spike_summary(const Metric &p_metric) {
 }
 
 void EditorProfiler::_spike_threshold_changed(double p_value) {
+	EditorSettings::get_singleton()->set("debugger/noe_profiler/spike_threshold_ms", p_value);
 	if (total_metrics > 0) {
 		_update_frame();
 	}
