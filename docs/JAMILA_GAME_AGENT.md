@@ -38,7 +38,7 @@ This is **not** the whole Jamila-GD VS Code extension embedded inside Godot.
 - Read/write paths deny absolute paths, hidden directories, symlinks,
   directory traversal, and non-game extensions. No arbitrary shell tool.
 - Mutations, scene execution, and export require the agent's approval token.
-  Plans expire after ten minutes. API keys are kept in editor memory only.
+  Plans expire after ten minutes. Provider keys are only stored in the private web gateway configuration; no provider keys are entered in the editor.
 - Runtime smoke tests are not a substitute for interactive graphics, physics,
   multi-platform export verification, security review or human QA.
 - No unrestricted filesystem/process control, VS Code terminal integration, or
