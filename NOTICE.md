@@ -55,3 +55,11 @@ See `thirdparty/README.md`, `LICENSE.txt`, `COPYRIGHT.txt`,
 individual source file notices, and relevant license inventories. A
 proprietary distribution may contain independently licensed open-source
 components whose rights must remain available to recipients.
+
+Jamila-GD (NoeEngine project MCP integration)
+------------------------------------------------
+The local Jamila MCP helper is adapted from EMN90909/Jamila-GD.
+That repository declares the Apache License, Version 2.0, in its package.
+The VS Code extension itself is not embedded in NoeEngine. Only the project
+MCP adapter and game-agent workflow were adapted into NoeEngine's native UI
+and Python helper. Source: https://github.com/EMN90909/Jamila-GD
