@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-Noethric-Proprietary
 #include "noe_account_workspace.h"
 #include "editor/editor_node.h"
+#include "editor/noe_hardware_profile.h"
 #include "editor/editor_paths.h"
 #include "editor/editor_scale.h"
 #include "core/io/http_client.h"
@@ -36,7 +37,7 @@ protected:
     static void _bind_methods() {}
     void _notification(int what) {
         if (what == NOTIFICATION_ENTER_TREE || what == NOTIFICATION_THEME_CHANGED) {
-            set_icon(get_theme_icon(SNAME("Godot"), SNAME("EditorIcons")));
+            set_icon(get_theme_icon(SNAME("NoeViper"), SNAME("EditorIcons")));
         }
     }
 };
@@ -220,13 +221,25 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
     VBoxContainer *body = memnew(VBoxContainer);
     body->set_h_size_flags(Control::SIZE_EXPAND_FILL);
     scroll->add_child(body);
+    const bool bento_account = !NoeHardwareProfile::use_classic_ui();
     for (int i = 0; i < 5; ++i) {
         pages[i] = memnew(VBoxContainer);
-        body->add_child(pages[i]);
+        if (bento_account) {
+            page_cards[i] = memnew(PanelContainer);
+            page_cards[i]->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+            page_cards[i]->add_theme_style_override("panel",
+                get_theme_stylebox(SNAME("NoeBentoPanel"), SNAME("EditorStyles")));
+            body->add_child(page_cards[i]);
+            page_cards[i]->add_child(pages[i]);
+        } else {
+            body->add_child(pages[i]);
+        }
         _make_page((Page)i);
         pages[i]->hide();
+        if (page_cards[i]) page_cards[i]->hide();
     }
     pages[PROFILE]->show();
+    if (page_cards[PROFILE]) page_cards[PROFILE]->show();
     navigation_buttons[PROFILE]->set_pressed_no_signal(true);
     // Security page controls are constructed before initial URL configuration is shown.
     if (website_url_field) website_url_field->set_text(auth_base);
@@ -390,6 +403,7 @@ void NoeAccountWorkspace::_show_page(int idx) {
     if (idx < 0 || idx >= 5) return;
     for (int i = 0; i < 5; ++i) {
         pages[i]->set_visible(i == idx);
+        if (page_cards[i]) page_cards[i]->set_visible(i == idx);
         navigation_buttons[i]->set_pressed_no_signal(i == idx);
     }
     // Switching tabs should not move or resize a settings dialog that is already open.

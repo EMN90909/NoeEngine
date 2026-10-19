@@ -17,6 +17,7 @@ class MenuButton;
 class NoeUsageCharts;
 class Resource;
 class PopupMenu;
+class PanelContainer;
 class Timer;
 class VBoxContainer;
 
@@ -30,6 +31,7 @@ class NoeAccountWorkspace : public AcceptDialog {
     enum RequestKind { REQUEST_NONE, REQUEST_DEVICE_START, REQUEST_DEVICE_POLL, REQUEST_ME };
     MenuButton *avatar_button = nullptr;
     VBoxContainer *pages[5] = {};
+    PanelContainer *page_cards[5] = {};
     Button *navigation_buttons[5] = {};
     Label *name_label = nullptr;
     Label *profile_avatar_label = nullptr;
