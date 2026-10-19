@@ -131,7 +131,7 @@ NoeJamilaPanel::NoeJamilaPanel() {
     body->add_child(status_label);
 
     http = memnew(HTTPRequest);
-    http->set_timeout(95.0);
+    http->set_timeout(310.0);
     http->set_body_size_limit(950000);
     http->set_max_redirects(0);
     http->connect("request_completed", callable_mp(this, &NoeJamilaPanel::_on_response));
