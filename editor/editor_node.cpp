@@ -1947,9 +1947,6 @@ void EditorNode::_noe_autosave_tick() {
 	}
 	noe_autosave_elapsed_seconds = 0;
 	for (int i = 0; i < editor_data.get_edited_scene_count(); i++) {
-		if (!editor_data.is_scene_changed(i)) {
-			continue;
-		}
 		Node *scene = editor_data.get_edited_scene_root(i);
 		if (!scene) {
 			continue;
@@ -1957,6 +1954,10 @@ void EditorNode::_noe_autosave_tick() {
 		const String filename = scene->get_scene_file_path();
 		if (filename.is_empty() || !DirAccess::exists(filename.get_base_dir())) {
 			continue; // Never invent a path or overwrite a missing directory.
+		}
+		const int history_id = editor_data.get_scene_history_id_from_path(filename);
+		if (!history_id || !EditorUndoRedoManager::get_singleton()->is_history_unsaved(history_id)) {
+			continue;
 		}
 		_save_scene(filename, i);
 	}
