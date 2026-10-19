@@ -62,3 +62,5 @@ still require target export templates; a PCK is not an executable.
 
 On machines with at least 4 GiB RAM the panel uses native rounded cards. Less
 than 4 GiB keeps compact classic styling. Jamila cannot bypass Human Approval.
+
+Details, threat model, testing and release builds: [Jamila game agent guide](docs/JAMILA_GAME_AGENT.md).
