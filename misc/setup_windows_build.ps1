@@ -16,7 +16,7 @@ function Refresh-ToolPath {
     }
 }
 function Get-Python {
-    foreach ($exe in @('py.exe','python.exe')) {
+    foreach ($exe in @('python.exe','py.exe')) {
         $command = Get-Command $exe -ErrorAction SilentlyContinue
         if (-not $command) { continue }
         $args = if ($exe -eq 'py.exe') { @('-3') } else { @() }

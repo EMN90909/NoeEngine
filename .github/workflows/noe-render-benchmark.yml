@@ -1,5 +1,10 @@
 name: NoeRender real-render GPU benchmark (manual)
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/noe_render_benchmark/**'
+      - '.github/workflows/noe-render-benchmark.yml'
   workflow_dispatch:
     inputs:
       runner:
@@ -20,7 +25,7 @@ permissions:
   contents: read
 jobs:
   software:
-    if: inputs.runner == 'software'
+    if: github.event_name == 'push' || inputs.runner == 'software'
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -28,7 +33,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb mesa-utils libgl1-mesa-dri scons g++ pkg-config libx11-dev libxcursor-dev libxinerama-dev libxi-dev libxrandr-dev libxrender-dev libasound2-dev libpulse-dev libudev-dev libfreetype6-dev libfontconfig1-dev libssl-dev libwayland-dev libxkbcommon-dev libvulkan-dev
-          ./build.sh linux 2
+          scons platform=linuxbsd target=editor arch=x86_64 module_mono_enabled=no module_gdscript_enabled=yes module_noqeri_enabled=yes tests=no debug_symbols=no -j2
       - name: Record software rasterizer identity and rendered scene
         run: |
           xvfb-run -a sh -c 'glxinfo -B; LIBGL_ALWAYS_SOFTWARE=1 python3 tests/noe_render_benchmark/runner.py --engine ./bin/noeengine.linuxbsd.editor.x86_64 --renderer gl_compatibility --output Products/noe-render-software'
@@ -39,7 +44,7 @@ jobs:
           path: Products/noe-render-software/
           if-no-files-found: warn
   physical_gpu:
-    if: inputs.runner == 'hardware'
+    if: github.event_name == 'workflow_dispatch' && inputs.runner == 'hardware'
     runs-on: [self-hosted, linux, x64, noe-render-gpu]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262

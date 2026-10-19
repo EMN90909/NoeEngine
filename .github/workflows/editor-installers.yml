@@ -17,6 +17,8 @@ on:
       - 'NOETHRIC-PROPRIETARY-LICENSE.txt'
       - 'NOTICE.md'
       - 'build.sh'
+      - 'build.bat'
+      - 'misc/setup_windows_build.ps1'
       - 'version.py'
       - 'LICENSE.txt'
       - 'COPYRIGHT.txt'
@@ -73,6 +75,10 @@ jobs:
       - name: Build and package Linux
         if: matrix.target == 'linux'
         run: python3 misc/build_products.py linux --jobs 2
+      - name: Verify checked-in Windows bootstrap (no downloads)
+        if: matrix.target == 'windows'
+        shell: pwsh
+        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File misc/setup_windows_build.ps1 -CheckOnly -SkipInstall
       - name: Build and package Windows
         if: matrix.target == 'windows'
         shell: pwsh

@@ -19,6 +19,10 @@ class BenchmarkHarnessTests(unittest.TestCase):
     def test_parses_metrics(self):
         metrics=runner.parse_result('NOERENDER_BENCHMARK:{"frames":240,"frame_ms_p95":21.0}')
         self.assertEqual(metrics["frames"],240)
+    def test_source_code_exposes_screenshot_requirement(self):
+        source=(PATH/"runner.py").read_text()
+        self.assertIn("render.png",source)
+        self.assertIn("not screenshot.exists()",source)
     def test_no_headless_forgery(self):
         with tempfile.TemporaryDirectory() as path:
             import os

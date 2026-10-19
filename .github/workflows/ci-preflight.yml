@@ -9,6 +9,8 @@ on:
       - 'misc/ci_check.sh'
       - 'misc/capture_editor_snapshot.sh'
       - 'tests/python_build/**'
+      - 'tests/test_noe_render_benchmark.py'
+      - 'tests/noe_render_benchmark/**'
       - 'modules/noqeri/**'
       - 'tests/noqeri_scene/**'
       - 'NOTICE.md'
