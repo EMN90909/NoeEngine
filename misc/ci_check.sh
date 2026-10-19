@@ -17,6 +17,10 @@ echo "[CI] NoeRender benchmark harness tests"
 python3 -m unittest discover -s tests -p 'test_noe_render_benchmark.py' -v
 echo "[CI] Installer packaging tests"
 python3 -m unittest discover -s tests/python_build -p 'test_no*.py' -v
+echo "[CI] MSYS2 package database recovery safety tests"
+python3 -m unittest discover -s tests/python_build -p 'test_msys2_pacman_health.py' -v
+echo "[CI] Legacy Godot banner compaction safety tests"
+python3 -m unittest discover -s tests/python_build -p 'test_compact_godot_headers.py' -v
 echo "[CI] Windows MinGW compiler selection and BAT error handling"
 python3 -m unittest discover -s tests/python_build -p 'test_windows_mingw_toolchain.py' -v
 if command -v actionlint >/dev/null 2>&1; then
