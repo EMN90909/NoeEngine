@@ -64,6 +64,16 @@ class TestWindowsMingwBuild(unittest.TestCase):
         self.assertIn("msys2_pacman_health.sh", ps1)
         self.assertIn("Verify Pacman metadata after runtime upgrade", ps1)
         self.assertNotIn("rm -rf", script)
+    def test_native_windows_bootstrap_parsed_by_ci(self):
+        checker = (ROOT / "misc/check_windows_build_syntax.ps1").read_text()
+        workflow = (ROOT / ".github/workflows/editor-installers.yml").read_text()
+        bootstrap = (ROOT / "misc/setup_windows_build.ps1").read_text()
+        self.assertIn("System.Management.Automation.Language.Parser", checker)
+        self.assertIn("misc/check_windows_build_syntax.ps1", workflow)
+        self.assertIn("Get-MingwStatus", bootstrap)
+        self.assertIn("Show-MingwDiagnostics", bootstrap)
+        self.assertIn("pacman --noconfirm -S mingw-w64-ucrt-x86_64-binutils", bootstrap)
+        self.assertNotIn("pacman --noconfirm --needed -S", bootstrap)
     def test_failure_stays_visible_unless_ci_opts_out(self):
         bat = (ROOT / "build.bat").read_text()
         self.assertIn("if /I not", bat)
