@@ -97,48 +97,38 @@ def normalize_plan(output):
         raise ValueError("Duplicate asset paths in plan")
     return {"summary":output["summary"][:1200], "actions":normalized}
 
-def provider_url(value):
-    if not isinstance(value,str) or len(value)>400:
-        raise ValueError("Invalid AI provider URL")
-    url=urllib.parse.urlparse(value)
-    if url.scheme!="https" or not url.hostname or url.username or url.password or url.fragment:
-        raise ValueError("Use an HTTPS model endpoint")
-    if url.port and url.port!=443:
-        raise ValueError("Use HTTPS port 443")
+def call_model(gateway_url, desktop_token, provider, role, prompt, context):
+    """Authenticate with the website; provider API keys remain in its backend."""
+    if not isinstance(desktop_token,str) or not 30 <= len(desktop_token) <= 5000:
+        raise ValueError("Sign in to NoeEngine before using Jamila")
+    if provider not in ("openai","google","gemini","openrouter","deepseek"):
+        raise ValueError("Unknown cloud provider")
+    if role not in ("builder","planner","scene","gameplay","qa"):
+        raise ValueError("Unknown agent role")
+    url=urllib.parse.urlparse(gateway_url)
+    if (url.scheme!="https" or not url.hostname or url.username or url.password or
+        url.query or url.fragment or url.port not in (None,443) or url.path!="/api/jamila/plan"):
+        raise ValueError("Jamila requires the trusted NoeEngine HTTPS backend")
+    body=json.dumps({"provider":provider,"role":role,"messages":[
+        {"role":"system","content":SYSTEM},
+        {"role":"user","content":json.dumps({"request":prompt,"project_context":context})}
+    ]}).encode()
+    if len(body)>130000: raise ValueError("Project context too large")
+    req=urllib.request.Request(gateway_url,body,method="POST",headers={
+        "Authorization":"Bearer "+desktop_token,"Content-Type":"application/json",
+        "Accept":"application/json"})
     try:
-        ip=ipaddress.ip_address(url.hostname)
-        if not ip.is_global:
-            raise ValueError("Private model IP destinations are not supported")
-    except ValueError as exc:
-        if "Private model" in str(exc):
-            raise
-    if url.hostname in ("localhost", "localhost.localdomain") or url.hostname.endswith(".local"):
-        raise ValueError("Local model endpoints need a separate trusted adapter")
-    return value
-
-def call_model(url, api_key, model, prompt, context):
-    if not isinstance(api_key,str) or not 8<=len(api_key)<=4096:
-        raise ValueError("Provide the model API key")
-    if not isinstance(model,str) or not 1<=len(model)<=128:
-        raise ValueError("Provide the model name")
-    url=provider_url(url)
-    body=json.dumps({"model":model,"temperature":0.2,"max_tokens":6500,
-        "messages":[{"role":"system","content":SYSTEM},
-                    {"role":"user","content":json.dumps({"request":prompt,"project_context":context})}]}).encode()
-    req=urllib.request.Request(url,body,method="POST",headers={
-        "Authorization":"Bearer "+api_key,"Content-Type":"application/json","Accept":"application/json"
-    })
-    try:
-        with urllib.request.urlopen(req,timeout=48) as response:
-            raw=response.read(600_000)
+        with urllib.request.urlopen(req,timeout=84) as response:
+            raw=response.read(650001)
+    except urllib.error.HTTPError as exc:
+        if exc.code in (401,403): raise ValueError("Session expired; sign in again") from None
+        if exc.code==429: raise ValueError("Jamila rate limit reached") from None
+        raise RuntimeError("Jamila gateway rejected the request") from None
     except (urllib.error.URLError,TimeoutError) as exc:
-        raise RuntimeError("Model request failed") from exc
-    data=json.loads(raw)
-    message=data["choices"][0]["message"]["content"]
-    if isinstance(message,list):
-        message="".join(x.get("text","") for x in message if isinstance(x,dict))
-    if not isinstance(message,str):
-        raise ValueError("Model did not return a text plan")
+        raise RuntimeError("Jamila gateway unavailable") from exc
+    if len(raw)>650000: raise RuntimeError("Response too large")
+    message=json.loads(raw)["choices"][0]["message"]["content"]
+    if not isinstance(message,str): raise ValueError("Model response missing plan")
     message=message.strip()
     if message.startswith("```"):
         message=message.partition("\n")[2].rsplit("```",1)[0].strip()
@@ -173,8 +163,8 @@ class JamilaService:
             except (ValueError, RuntimeError, KeyError, subprocess.TimeoutExpired):
                 continue
         context={"project":info,"assets":assets["assets"][:70], "source_samples":samples}
-        model_plan=call_model(payload.get("api_url",""),payload.get("api_key",""),
-                              payload.get("model",""),prompt,context)
+        model_plan=call_model(payload.get("gateway_url",""),payload.get("desktop_token",""),
+                              payload.get("provider",""),payload.get("role","builder"),prompt,context)
         # MCP validates proposed paths before the user sees the plan.
         from noe_mcp_server import ProjectTools
         validator=ProjectTools(self.bridge.project,self.bridge.engine)
