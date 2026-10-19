@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Noethric.
 // SPDX-License-Identifier: LicenseRef-Noethric-Proprietary
 #include "noe_jamila_panel.h"
+#include "editor/noe_account_workspace.h"
 
 #include "core/config/project_settings.h"
 #include "core/crypto/crypto.h"
@@ -13,6 +14,7 @@
 #include "scene/gui/button.h"
 #include "scene/gui/label.h"
 #include "scene/gui/line_edit.h"
+#include "scene/gui/option_button.h"
 #include "scene/gui/scroll_container.h"
 #include "scene/gui/text_edit.h"
 #include "scene/main/http_request.h"
@@ -65,18 +67,26 @@ NoeJamilaPanel::NoeJamilaPanel() {
     body->add_child(guide);
 
     Label *api_label = memnew(Label);
-    api_label->set_text("Model API (HTTPS, OpenAI compatible)");
+    api_label->set_text("Cloud provider (API keys stay on NoeEngine servers)");
     body->add_child(api_label);
-    endpoint_field = memnew(LineEdit);
-    endpoint_field->set_text("https://api.openai.com/v1/chat/completions");
-    body->add_child(endpoint_field);
-    model_field = memnew(LineEdit);
-    model_field->set_placeholder("Model identifier");
-    body->add_child(model_field);
-    key_field = memnew(LineEdit);
-    key_field->set_placeholder("API key (memory only)");
-    key_field->set_secret(true);
-    body->add_child(key_field);
+    provider_field = memnew(OptionButton);
+    provider_field->add_item("OpenAI", 0);
+    provider_field->add_item("Google Gemini", 1);
+    provider_field->add_item("OpenRouter", 2);
+    provider_field->add_item("DeepSeek", 3);
+    provider_field->select(0);
+    body->add_child(provider_field);
+    Label *role_label = memnew(Label);
+    role_label->set_text("Agent");
+    body->add_child(role_label);
+    role_field = memnew(OptionButton);
+    role_field->add_item("Builder", 0);
+    role_field->add_item("Planner", 1);
+    role_field->add_item("Scene specialist", 2);
+    role_field->add_item("Gameplay specialist", 3);
+    role_field->add_item("QA specialist", 4);
+    role_field->select(0);
+    body->add_child(role_field);
 
     Label *task_label = memnew(Label);
     task_label->set_text("Describe the game or change");
@@ -87,7 +97,7 @@ NoeJamilaPanel::NoeJamilaPanel() {
     body->add_child(task_field);
 
     plan_button = memnew(Button);
-    plan_button->set_text("Generate editable plan");
+    plan_button->set_text("Generate plan for review");
     plan_button->set_tooltip_text("Generate a proposal only. No files are changed.");
     plan_button->connect("pressed", callable_mp(this, &NoeJamilaPanel::_plan));
     body->add_child(plan_button);
@@ -102,7 +112,7 @@ NoeJamilaPanel::NoeJamilaPanel() {
 
     apply_button = memnew(Button);
     apply_button->set_text("Approve changes, build and validate");
-    apply_button->set_tooltip_text("Creates approved game assets, then runs NoeEngine --headless --editor --quit.");
+    apply_button->set_tooltip_text("Creates approved game assets, then runs NoeEngine --headless --editor --quit-after 2.");
     apply_button->set_disabled(true);
     apply_button->connect("pressed", callable_mp(this, &NoeJamilaPanel::_apply));
     body->add_child(apply_button);
@@ -118,14 +128,20 @@ NoeJamilaPanel::NoeJamilaPanel() {
     export_button->set_disabled(true);
     export_button->connect("pressed", callable_mp(this, &NoeJamilaPanel::_export_game));
     body->add_child(export_button);
+    release_button = memnew(Button);
+    release_button->set_text("Build playable release");
+    release_button->set_tooltip_text("Uses NoeEngine --export-release and installed export templates for the selected platform.");
+    release_button->set_disabled(true);
+    release_button->connect("pressed", callable_mp(this, &NoeJamilaPanel::_export_release));
+    body->add_child(release_button);
 
     status_label = memnew(Label);
     status_label->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
-    status_label->set_text("Jamila is idle. Requires Python 3 and an AI provider key.\nGame context is sent to your selected provider.");
+    status_label->set_text("Jamila uses your signed-in NoeEngine session. Provider keys stay in the web backend.\nGenerated project context is sent to the selected provider.");
     body->add_child(status_label);
 
     http = memnew(HTTPRequest);
-    http->set_timeout(95.0);
+    http->set_timeout(310.0);
     http->set_body_size_limit(950000);
     http->set_max_redirects(0);
     http->connect("request_completed", callable_mp(this, &NoeJamilaPanel::_on_response));
@@ -143,9 +159,7 @@ NoeJamilaPanel::~NoeJamilaPanel() {
         OS::get_singleton()->kill(helper_pid);
     }
     server_token.clear();
-    if (key_field) {
-        key_field->clear();
-    }
+
 }
 
 NoeJamilaPanel *NoeJamilaPanel::install(Control *root, HBoxContainer *toolbar) {
@@ -257,7 +271,15 @@ void NoeJamilaPanel::_plan() {
     plan_id.clear();
     apply_button->set_disabled(true);
     export_button->set_disabled(true);
+    release_button->set_disabled(true);
     review_field->clear();
+    if (NoeAccountWorkspace::get_jamila_desktop_token().is_empty() ||
+            NoeAccountWorkspace::get_jamila_gateway_url().is_empty()) {
+        running = false;
+        plan_button->set_disabled(false);
+        status_label->set_text("Sign in through Account before using Jamila Cloud.");
+        return;
+    }
     if (!_launch_agent()) {
         return;
     }
@@ -266,6 +288,7 @@ void NoeJamilaPanel::_plan() {
     exporting = false;
     plan_button->set_disabled(true);
     status_label->set_text("Inspecting project MCP tools, planning game changes...");
+
     pending_plan = true;
     startup->start(); // Launch is asynchronous; never block the editor UI.
 }
@@ -276,9 +299,14 @@ void NoeJamilaPanel::_start_pending() {
     pending_plan = false;
     Dictionary payload;
     payload["prompt"] = task_field->get_text().strip_edges().left(3000);
-    payload["api_url"] = endpoint_field->get_text().strip_edges();
-    payload["model"] = model_field->get_text().strip_edges();
-    payload["api_key"] = key_field->get_text();
+    payload["gateway_url"] = NoeAccountWorkspace::get_jamila_gateway_url();
+    payload["desktop_token"] = NoeAccountWorkspace::get_jamila_desktop_token();
+    const char *providers[] = { "openai", "google", "openrouter", "deepseek" };
+    const char *roles[] = { "builder", "planner", "scene", "gameplay", "qa" };
+    const int provider_id = provider_field->get_selected_id();
+    const int role_id = role_field->get_selected_id();
+    payload["provider"] = providers[provider_id >= 0 && provider_id < 4 ? provider_id : 0];
+    payload["role"] = roles[role_id >= 0 && role_id < 5 ? role_id : 0];
     _send("/v1/plan", payload);
 }
 void NoeJamilaPanel::_apply() {
@@ -302,12 +330,33 @@ void NoeJamilaPanel::_export_game() {
     applying = false;
     exporting = true;
     export_button->set_disabled(true);
+    release_button->set_disabled(true);
+    exporting_release = false;
     plan_button->set_disabled(true);
     status_label->set_text("Validating and exporting game data package...");
     Dictionary args;
     args["preset"] = export_preset->get_text().strip_edges();
+    args["mode"] = "pack";
     _send("/v1/export", args);
 }
+void NoeJamilaPanel::_export_release() {
+    if (running || export_preset->get_text().strip_edges().is_empty()) {
+        return;
+    }
+    running = true;
+    applying = false;
+    exporting = true;
+    exporting_release = true;
+    export_button->set_disabled(true);
+    release_button->set_disabled(true);
+    plan_button->set_disabled(true);
+    status_label->set_text("Validating project and building a playable release...");
+    Dictionary args;
+    args["preset"] = export_preset->get_text().strip_edges();
+    args["mode"] = "release";
+    _send("/v1/export", args);
+}
+
 void NoeJamilaPanel::_on_response(int result, int status, const PackedStringArray &headers, const PackedByteArray &body) {
     running = false;
     plan_button->set_disabled(false);
@@ -324,11 +373,13 @@ void NoeJamilaPanel::_on_response(int result, int status, const PackedStringArra
     if (exporting) {
         const Dictionary info = response.get("export", Dictionary());
         if ((bool)response.get("ok", false)) {
-            status_label->set_text("Export successful: builds/Jamila-Game.pck");
-            review_field->set_text("Real game package exported: " + String(info.get("path", "")));
+            const String built_path = info.get("path", "");
+            status_label->set_text(exporting_release ? "Playable release exported." : "Game data package exported.");
+            review_field->set_text("NoeEngine export: " + built_path + "\n" + String(info.get("output", "")).right(1500));
             export_button->set_disabled(false);
+            release_button->set_disabled(false);
         } else {
-            status_label->set_text("Game export failed. Check your project preset and installed export templates.");
+            status_label->set_text("Game export failed. Check your preset, installed templates and build output.");
             review_field->set_text(String(info.get("output", response.get("error", "Export unavailable"))));
         }
         exporting = false;
@@ -341,9 +392,14 @@ void NoeJamilaPanel::_on_response(int result, int status, const PackedStringArra
         for (int i = 0; i < actions.size(); ++i) {
             Dictionary action = actions[i];
             Dictionary params = action.get("arguments", Dictionary());
-            review += "FILE: " + String(params.get("path", "?"));
-            review += (bool)params.get("overwrite", false) ? " (OVERWRITE)\n" : " (CREATE)\n";
-            review += String(params.get("content", "")) + "\n\n";
+            if (String(action.get("tool", "")) == "noe_set_main_scene") {
+                review += "PROJECT SETTING: run/main_scene = res://" + String(params.get("path", "?"));
+                review += (bool)params.get("overwrite", false) ? " (REPLACE EXISTING)\n\n" : " (SET IF EMPTY)\n\n";
+            } else {
+                review += "FILE: " + String(params.get("path", "?"));
+                review += (bool)params.get("overwrite", false) ? " (OVERWRITE)\n" : " (CREATE)\n";
+                review += String(params.get("content", "")) + "\n\n";
+            }
         }
         review_field->set_text(review);
         apply_button->set_disabled(plan_id.is_empty() || actions.is_empty());
@@ -360,7 +416,14 @@ void NoeJamilaPanel::_on_response(int result, int status, const PackedStringArra
         }
         report += "\n" + String(validation.get("output", validation.get("error", ""))).right(3500);
         review_field->set_text(report);
+        const Dictionary playtest = response.get("playtest", Dictionary());
+        if (playtest.has("output")) {
+            report += "\nSCENE PLAYTEST:\n" + String(playtest.get("output", "")).right(2500);
+        } else if (playtest.has("error")) {
+            report += "\nSCENE PLAYTEST ERROR: " + String(playtest.get("error", ""));
+        }
         export_button->set_disabled(!(bool)response.get("ok", false));
+        release_button->set_disabled(!(bool)response.get("ok", false));
         status_label->set_text((bool)response.get("ok", false) ? "Game changes saved and validated. Export a .pck when ready." :
                                 "Jamila could not validate the game. Review the reported errors.");
     }

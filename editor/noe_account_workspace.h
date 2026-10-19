@@ -154,6 +154,9 @@ protected:
     void _notification(int p_what);
 
 public:
+    // Expose only the memory-only authenticated desktop token to native Jamila.
+    static String get_jamila_desktop_token();
+    static String get_jamila_gateway_url();
     // The owning UI tree manages this dialog. The toolbar must be part of it.
     static NoeAccountWorkspace *install(Control *p_parent, HBoxContainer *p_toolbar);
     NoeAccountWorkspace();
