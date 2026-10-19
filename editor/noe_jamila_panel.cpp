@@ -371,9 +371,14 @@ void NoeJamilaPanel::_on_response(int result, int status, const PackedStringArra
         for (int i = 0; i < actions.size(); ++i) {
             Dictionary action = actions[i];
             Dictionary params = action.get("arguments", Dictionary());
-            review += "FILE: " + String(params.get("path", "?"));
-            review += (bool)params.get("overwrite", false) ? " (OVERWRITE)\n" : " (CREATE)\n";
-            review += String(params.get("content", "")) + "\n\n";
+            if (String(action.get("tool", "")) == "noe_set_main_scene") {
+                review += "PROJECT SETTING: run/main_scene = res://" + String(params.get("path", "?"));
+                review += (bool)params.get("overwrite", false) ? " (REPLACE EXISTING)\n\n" : " (SET IF EMPTY)\n\n";
+            } else {
+                review += "FILE: " + String(params.get("path", "?"));
+                review += (bool)params.get("overwrite", false) ? " (OVERWRITE)\n" : " (CREATE)\n";
+                review += String(params.get("content", "")) + "\n\n";
+            }
         }
         review_field->set_text(review);
         apply_button->set_disabled(plan_id.is_empty() || actions.is_empty());
