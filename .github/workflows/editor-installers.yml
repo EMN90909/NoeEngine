@@ -60,6 +60,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends scons build-essential pkg-config dpkg-dev libx11-dev libxcursor-dev libxinerama-dev libxi-dev libxrandr-dev libxrender-dev libgl1-mesa-dev libudev-dev libasound2-dev libpulse-dev libfreetype6-dev libfontconfig1-dev libssl-dev libwayland-dev libxkbcommon-dev libvulkan-dev
       - name: Install MSYS2 MinGW-w64 GCC (no Visual Studio)
         if: matrix.target == 'windows'
+        id: msys2
         uses: msys2/setup-msys2@v2
         with:
           msystem: UCRT64
@@ -85,10 +86,14 @@ jobs:
       - name: Verify checked-in Windows bootstrap (no downloads)
         if: matrix.target == 'windows'
         shell: pwsh
+        env:
+          NOEENGINE_MSYS2_ROOT: ${{ steps.msys2.outputs.msys2-location }}
         run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File misc/setup_windows_build.ps1 -CheckOnly -SkipInstall
       - name: Build and package Windows with MinGW (without MSVC)
         if: matrix.target == 'windows'
         shell: pwsh
+        env:
+          NOEENGINE_MSYS2_ROOT: ${{ steps.msys2.outputs.msys2-location }}
         run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File misc/setup_windows_build.ps1 -Jobs 2 -SkipInstall
       - name: Build and package macOS
         if: matrix.target == 'macos'
