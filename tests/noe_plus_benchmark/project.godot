@@ -1,0 +1,11 @@
+config_version=5
+
+[application]
+
+config/name="NoePlus benchmark smoke"
+run/main_scene="res://benchmark.tscn"
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+noe_plus/quality/preset="Custom"

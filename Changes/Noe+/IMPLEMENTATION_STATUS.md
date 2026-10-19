@@ -21,6 +21,11 @@
 - [Windows build 39273318847](https://github.com/EMN90909/NoeEngine/actions/runs/39273318847) exposed macro pollution via `windows.h` in the shared startup translation unit. Fixed by removing that include from the Noe+ adapter. New native compilation still required to verify.
 - [Linux editor build 39273318456](https://github.com/EMN90909/NoeEngine/actions/runs/39273318456): running when this record was created.
 
+## Reproducible smoke fixture
+- `tests/noe_plus_benchmark/` creates an 81-box 3D scene, collects 180 main-loop frame intervals and quits.
+- Linux editor build workflow now launches it using `--headless` and requires a machine-readable result line.
+- **These results are not GPU measurements** and cannot validate Vulkan, OpenGL, visual quality or low-end FPS.
+
 ## Limitations and unimplemented acceptance gates
 - Hardware **GPU** capabilities, Vulkan feature probing and crash-safe fallback are **not yet implemented**. RAM-based selection is a conservative heuristic, not a GPU driver test.
 - No graphics-path profiler evidence or actual measured GPU frame-time feedback: the adaptive controller currently uses application frame time as a proxy. Do not advertise GPU-dynamic scaling.
