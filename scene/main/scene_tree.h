@@ -93,8 +93,8 @@ private:
 	};
 
 	Window *root = nullptr;
-	NoeRender::AdaptiveScale noe_plus_scaler;
-	bool noe_plus_adaptive_active = false;
+	NoeRender::AdaptiveScale noe_render_scaler;
+	bool noe_render_adaptive_active = false;
 
 	uint64_t tree_version = 1;
 	double physics_process_time = 0.0;
