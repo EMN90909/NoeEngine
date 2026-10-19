@@ -145,7 +145,7 @@ void NoeAccountWorkspace::_make_page(Page page) {
     } else if (page == EXTENSIONS) {
         _add_label(p, TTR("Extensions"));
         _add_label(p, TTR("Godot-compatible editor extensions install per project via Project Settings > Plugins."));
-        _add_button(p, TTR("Discover Godot MCP Toolkit"), callable_mp(this, &NoeAccountWorkspace::_open_godot_mcp));
+        _add_button(p, TTR("Browse MCP Toolkit (Godot-compatible)"), callable_mp(this, &NoeAccountWorkspace::_open_godot_mcp));
         _add_label(p, TTR("Extension installation and permissions are not managed by this panel yet."));
         _add_label(p, TTR("Team collaboration"));
         _add_label(p, TTR("Paste the one-time 64-character pairing key from the website at Account > Remote MCP access. Sign in to the same account first."));
@@ -283,19 +283,19 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
     mcp_dialog->connect("confirmed", callable_mp(this, &NoeAccountWorkspace::_save_mcp));
     add_child(mcp_dialog);
     marketplace_dialog = memnew(AcceptDialog);
-    marketplace_dialog->set_title(TTR("Godot MCP Marketplace"));
+    marketplace_dialog->set_title(TTR("NoeEngine MCP Marketplace"));
     VBoxContainer *marketplace_root = memnew(VBoxContainer);
     marketplace_root->set_custom_minimum_size(Size2(560, 370) * EDSCALE);
     marketplace_root->add_theme_constant_override("separation", 10 * EDSCALE);
     marketplace_dialog->add_child(marketplace_root);
-    _add_label(marketplace_root, TTR("Discover Godot-related MCP servers from the official MCP Registry."));
+    _add_label(marketplace_root, TTR("Discover compatible MCP tools from the official MCP Registry."));
     ScrollContainer *marketplace_scroll = memnew(ScrollContainer);
     marketplace_scroll->set_custom_minimum_size(Size2(535, 250) * EDSCALE);
     marketplace_root->add_child(marketplace_scroll);
     marketplace_results = memnew(VBoxContainer);
     marketplace_results->set_h_size_flags(Control::SIZE_EXPAND_FILL);
     marketplace_scroll->add_child(marketplace_results);
-    _add_button(marketplace_root, TTR("Open Godot MCP Toolkit page"), callable_mp(this, &NoeAccountWorkspace::_open_godot_mcp));
+    _add_button(marketplace_root, TTR("Open compatible MCP Toolkit page"), callable_mp(this, &NoeAccountWorkspace::_open_godot_mcp));
     add_child(marketplace_dialog);
     registry_request = memnew(HTTPRequest);
     registry_request->set_timeout(15.0);
@@ -567,17 +567,21 @@ void NoeAccountWorkspace::_tick_usage() {
     last_tick_msec = now;
     total_session_ms += delta;
     if (EditorNode::get_singleton() && EditorNode::get_singleton()->is_run_playing()) total_render_ms += delta;
-    session_label->set_text(vformat(TTR("Current session: %d min"), (int)((now - start_msec) / 60000)));
-    totals_label->set_text(vformat(TTR("Total app time: %d min"), (int)(total_session_ms / 60000)));
-    render_label->set_text(vformat(TTR("Playtest runtime: %d min. GPU rendering hours not instrumented."), (int)(total_render_ms / 60000)));
-    charts->update_data(total_session_ms, total_render_ms);
-    // Providers will report counts here once AI requests are instrumented.
-    // Until then, explicitly render zero activity instead of fabricated usage.
-    const uint64_t ai_local = (uint64_t)(int64_t)config->get_value("ai_usage", "local_requests", (int64_t)0);
-    const uint64_t ai_cloud = (uint64_t)(int64_t)config->get_value("ai_usage", "cloud_requests", (int64_t)0);
-    ai_charts->update_data(ai_local + ai_cloud, ai_cloud);
-    ai_label->set_text(vformat(TTR("AI calls: %d local, %d cloud. Provider quota unavailable until connected."),
-            (int)ai_local, (int)ai_cloud));
+    // Do not rebuild usage charts, text meshes and layouts every second while
+    // the Account dialog is hidden. Session timers and persistence still run.
+    if (is_visible()) {
+        session_label->set_text(vformat(TTR("Current session: %d min"), (int)((now - start_msec) / 60000)));
+        totals_label->set_text(vformat(TTR("Total app time: %d min"), (int)(total_session_ms / 60000)));
+        render_label->set_text(vformat(TTR("Playtest runtime: %d min. GPU rendering hours not instrumented."), (int)(total_render_ms / 60000)));
+        charts->update_data(total_session_ms, total_render_ms);
+        // Providers will report counts here once AI requests are instrumented.
+        // Until then, explicitly render zero activity instead of fabricated usage.
+        const uint64_t ai_local = (uint64_t)(int64_t)config->get_value("ai_usage", "local_requests", (int64_t)0);
+        const uint64_t ai_cloud = (uint64_t)(int64_t)config->get_value("ai_usage", "cloud_requests", (int64_t)0);
+        ai_charts->update_data(ai_local + ai_cloud, ai_cloud);
+        ai_label->set_text(vformat(TTR("AI calls: %d local, %d cloud. Provider quota unavailable until connected."),
+                (int)ai_local, (int)ai_cloud));
+    }
     if (now >= next_save_msec) { _save_usage(); next_save_msec = now + 60000; }
 }
 // The vault requires a locally entered passphrase for each edit. Neither the key
