@@ -69,6 +69,15 @@ class JamilaMcpTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.server.call("noe_validate_project", {"approval_token": "approved-secret"})
 
+    def test_export_refuses_unapproved_or_missing_game_build(self):
+        with self.assertRaises(PermissionError):
+            self.server.call("noe_export_pack", {"preset":"Linux/X11"})
+        with self.assertRaises(ValueError):
+            self.server.call("noe_export_pack", {
+                "preset":"Linux/X11","approval_token":"approved-secret"
+            })
+        self.assertFalse((self.root/"builds/Jamila-Game.pck").exists())
+
     def test_mcp_stdio_protocol(self):
         reqs = [
             {"jsonrpc":"2.0","id":1,"method":"initialize","params":{}},
@@ -85,7 +94,7 @@ class JamilaMcpTests(unittest.TestCase):
         replies = [json.loads(line) for line in proc.stdout.splitlines()]
         self.assertEqual(replies[0]["result"]["serverInfo"]["name"], "jamila-noeengine")
         names={t["name"] for t in replies[1]["result"]["tools"]}
-        self.assertTrue({"noe_write_asset","noe_validate_project","noe_read_asset"} <= names)
+        self.assertTrue({"noe_write_asset","noe_validate_project","noe_export_pack","noe_read_asset"} <= names)
         self.assertTrue(replies[2]["result"]["isError"])
         self.assertFalse((self.root/"scripts/demo.gd").exists())
 
