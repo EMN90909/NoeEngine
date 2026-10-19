@@ -370,7 +370,7 @@ String NoeAccountWorkspace::get_jamila_desktop_token() {
 }
 String NoeAccountWorkspace::get_jamila_gateway_url() {
     return noe_active_account && noe_active_account->online_session && noe_active_account->_is_https_url(noe_active_account->auth_base)
-        ? noe_active_account->auth_base + "/api/jamila/plan" : String();
+        ? noe_active_account->auth_base.trim_suffix("/") + "/api/jamila/plan" : String();
 }
 
 NoeAccountWorkspace *NoeAccountWorkspace::install(Control *parent, HBoxContainer *toolbar) {
