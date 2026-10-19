@@ -17,6 +17,12 @@ import noe_mcp_server as mcp
 
 
 class JamilaMcpTests(unittest.TestCase):
+    def test_mcp_server_has_single_entrypoint(self):
+        source = (JAMILA/"noe_mcp_server.py").read_text(encoding="utf8")
+        self.assertEqual(source.count("def main():"), 1)
+        self.assertEqual(source.count("raise SystemExit(main())"), 1)
+
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
