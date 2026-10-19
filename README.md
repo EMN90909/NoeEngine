@@ -47,8 +47,9 @@ positions are preserved when Jamila is hidden.
 The integration adapts the Jamila-GD project MCP and Godot-agent workflow. It
 does not embed the original VS Code extension or claim unrestricted AI control
 over the editor. The local helper requires Python 3 (or `NOE_JAMILA_PYTHON`),
-an HTTPS OpenAI-compatible model endpoint, model name, and API key. Provider
-keys remain in memory, never in editor settings. The selected provider receives
+an authenticated NoeEngine desktop session. All OpenAI, Google Gemini,
+OpenRouter and DeepSeek API keys remain on the private Go gateway; the engine
+uses the website's verified desktop bearer token. The selected provider receives
 the user's prompt and a limited project inventory.
 
 Jamila suggests up to eight game asset files. Full proposed content is shown
