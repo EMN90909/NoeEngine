@@ -108,7 +108,8 @@ def verify_toolchain(target, package_only=False):
     if target == "linux":
         check_tool("g++")
         check_tool("pkg-config")
-    if target == "windows" and host == "linux":
+    if target == "windows":
+        # The native Windows pipeline now uses MinGW-w64, not Visual Studio.
         for tool in ("x86_64-w64-mingw32-gcc", "x86_64-w64-mingw32-g++",
                      "x86_64-w64-mingw32-windres"):
             check_tool(tool)
@@ -143,9 +144,9 @@ def compile_editor(target, jobs, with_tests=False):
             "module_gdscript_enabled=yes", "module_noqeri_enabled=yes",
             "tests=" + ("yes" if with_tests else "no"),
             "debug_symbols=no", "-j" + str(jobs)]
-    if target == "windows" and host == "linux":
-        check_tool("x86_64-w64-mingw32-gcc")
-        check_tool("x86_64-w64-mingw32-g++")
+    if target == "windows":
+        # SCons normally auto-selects MSVC on Windows when it is installed.
+        # Force GCC/MinGW-w64 on both native Windows and Linux cross builds.
         args.append("use_mingw=yes")
     command(args)
 
