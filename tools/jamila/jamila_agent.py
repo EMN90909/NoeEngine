@@ -6,6 +6,7 @@ random bearer. The model can suggest files but cannot execute arbitrary shell.
 Adapted from Jamila-GD's game-agent stages and NoeEngine project MCP.
 """
 import argparse
+import hashlib
 import ipaddress
 import json
 import os
@@ -23,10 +24,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 MAX_REQUEST = 130_000
 MAX_FILES = 8
 SYSTEM = """You are Jamila, a NoeEngine game-building assistant ported from Jamila-GD.
-Work in ordered specialist stages: plan, scene, gameplay, integration, QA.
+Work in ordered specialist stages: plan, scene, gameplay, integration, QA. Inspect the supplied script/scene samples; preserve file references and scene node paths. If a build_error is supplied, propose corrective asset changes and set overwrite=true for existing files.
 Return ONLY a JSON object: {"summary":"what will be built","actions":[{"tool":"noe_write_asset","arguments":{"path":"scenes/main.tscn","content":"full literal UTF-8 file content","overwrite":false}}, ...]}.
 Allowed action tools: noe_write_asset only. The local agent automatically runs
-noe_validate_project after applying approved writes. Never invent success or
+noe_validate_project and a bounded scene playtest after applying approved writes. Never invent success or
 claim that a game was tested. Create a small playable slice and keep existing
 assets untouched unless the user explicitly requested an overwrite.
 Scene files must be valid NoeEngine/Godot .tscn text; GDScript scripts must match
@@ -146,21 +147,40 @@ class JamilaService:
             raise ValueError("Write a game-building task (1 to 3000 characters)")
         info=self.bridge.call("noe_project_info")
         assets=self.bridge.call("noe_list_assets",{"limit":70})
-        # Never send project.godot secrets or editor auth settings to the provider.
-        context={"project":info,"assets":assets["assets"][:70]}
+        # Only explicitly supported game source files are sampled. No project
+        # auth files, hidden directories, environment variables, or export credentials.
+        samples = {}
+        for path in assets["assets"]:
+            if len(samples) >= 4:
+                break
+            if Path(path).suffix.lower() not in {".gd", ".nqr", ".tscn", ".gdshader"}:
+                continue
+            try:
+                source = self.bridge.call("noe_read_asset", {"path": path})["content"]
+                if len(source.encode("utf8")) <= 7000:
+                    samples[path] = source
+            except (ValueError, RuntimeError, KeyError, subprocess.TimeoutExpired):
+                continue
+        context={"project":info,"assets":assets["assets"][:70], "source_samples":samples}
         model_plan=call_model(payload.get("api_url",""),payload.get("api_key",""),
                               payload.get("model",""),prompt,context)
         # MCP validates proposed paths before the user sees the plan.
         from noe_mcp_server import ProjectTools
         validator=ProjectTools(self.bridge.project,self.bridge.engine)
+        baselines={}
         for action in model_plan["actions"]:
             path=validator.path(action["arguments"]["path"],writing=True)
             if path.exists() and not action["arguments"]["overwrite"]:
                 raise ValueError("Model tried to overwrite an existing asset without approval: "+path.name)
+            if path.exists() and (not path.is_file() or path.stat().st_size > 96000):
+                raise ValueError("Cannot overwrite oversized or non-file asset")
+            baselines[action["arguments"]["path"]] = (
+                hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else None
+            )
         token=secrets.token_hex(16)
         with self.lock:
             self.plans={k:v for k,v in self.plans.items() if v["expires"]>time.time()}
-            self.plans[token]={"plan":model_plan,"expires":time.time()+600}
+            self.plans[token]={"plan":model_plan,"baselines":baselines,"expires":time.time()+600}
         return {"plan_id":token, **model_plan}
 
     def apply(self,payload):
@@ -171,6 +191,15 @@ class JamilaService:
             selected=self.plans.pop(plan_id,None)
         if not selected or selected["expires"]<time.time():
             raise ValueError("Plan expired; request a new plan")
+        # Recheck at approval time, not just when the proposal was generated.
+        # This prevents an agent overwriting edits made by a user while reviewing.
+        from noe_mcp_server import ProjectTools
+        validator=ProjectTools(self.bridge.project,self.bridge.engine)
+        for relative, digest in selected["baselines"].items():
+            path=validator.path(relative,writing=True)
+            current=hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
+            if current != digest:
+                raise ValueError("Asset changed since planning: "+relative+"; generate a new plan")
         outcomes=[]
         for item in selected["plan"]["actions"]:
             try:
@@ -186,8 +215,19 @@ class JamilaService:
                 check={"ok":False,"error":str(exc)[:400]}
         else:
             check={"ok":False,"error":"Validation skipped because a write failed"}
-        self.validated=bool(outcomes and all(x["ok"] for x in outcomes) and check.get("ok"))
-        return {"files":outcomes,"validation":check,"ok":self.validated}
+        # A headless scene start catches runtime issues missed by editor import.
+        # We do not claim the result verifies graphics, player input, or gameplay.
+        smoke={"ok":False,"skipped":True,"reason":"No scene changed or validation failed"}
+        scenes=[entry["arguments"]["path"] for entry in selected["plan"]["actions"]
+                if entry["arguments"]["path"].endswith(".tscn")]
+        if check.get("ok") and scenes:
+            try:
+                smoke=self.bridge.call("noe_run_scene",{"path":scenes[0]},approved=True)
+            except (ValueError,RuntimeError,subprocess.TimeoutExpired) as exc:
+                smoke={"ok":False,"error":str(exc)[:400]}
+        self.validated=bool(outcomes and all(x["ok"] for x in outcomes)
+                            and check.get("ok") and (not scenes or smoke.get("ok")))
+        return {"files":outcomes,"validation":check,"playtest":smoke,"ok":self.validated}
 
     def export_game(self,payload):
         if not self.validated:
@@ -201,8 +241,12 @@ class JamilaService:
         if not checks.get("ok"):
             self.validated=False
             return {"ok":False,"validation":checks,"error":"Project validation failed before export"}
-        export=self.bridge.call("noe_export_pack",{"preset":preset},approved=True)
-        return {"ok":bool(export.get("ok")),"export":export}
+        mode=payload.get("mode","pack")
+        if mode not in ("pack","release"):
+            raise ValueError("Unknown export mode")
+        tool="noe_export_release" if mode=="release" else "noe_export_pack"
+        export=self.bridge.call(tool,{"preset":preset},approved=True)
+        return {"ok":bool(export.get("ok")),"export":export,"mode":mode}
 
 def make_handler(service,token):
     class AgentHandler(BaseHTTPRequestHandler):
