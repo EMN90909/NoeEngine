@@ -32,6 +32,7 @@
 #define SCENE_TREE_H
 
 #include "core/os/main_loop.h"
+#include "main/noe_render_quality_policy.h"
 #include "core/os/thread_safe.h"
 #include "core/templates/self_list.h"
 #include "scene/resources/mesh.h"
@@ -92,6 +93,8 @@ private:
 	};
 
 	Window *root = nullptr;
+	NoePlus::AdaptiveScale noe_plus_scaler;
+	bool noe_plus_adaptive_active = false;
 
 	uint64_t tree_version = 1;
 	double physics_process_time = 0.0;

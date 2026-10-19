@@ -917,7 +917,7 @@ public:
 		// New projects on low-memory desktops default to OpenGL Compatibility.
 		// Respect any renderer the user previously selected and saved.
 #if defined(GLES3_ENABLED)
-		String default_renderer_type = NoeHardwareProfile::use_classic_ui() ? "gl_compatibility" : "forward_plus";
+		String default_renderer_type = NoeHardwareProfile::prefer_compatibility_renderer() ? "gl_compatibility" : "forward_plus";
 #else
 		String default_renderer_type = "forward_plus";
 #endif

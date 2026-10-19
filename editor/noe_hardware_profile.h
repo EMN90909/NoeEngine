@@ -38,5 +38,13 @@ static inline bool use_classic_ui(uint64_t installed_bytes) {
     return installed_bytes == 0 || installed_bytes < 4ULL * 1024 * 1024 * 1024;
 }
 static inline bool use_classic_ui() { return use_classic_ui(installed_memory_bytes()); }
+// New-project rendering recommendation, separate from classic UI threshold.
+// RAM is a heuristic, never a substitute for real Vulkan feature probing.
+static inline bool prefer_compatibility_renderer(uint64_t bytes) {
+    return bytes == 0 || bytes < 8ULL * 1024 * 1024 * 1024;
+}
+static inline bool prefer_compatibility_renderer() {
+    return prefer_compatibility_renderer(installed_memory_bytes());
+}
 } // namespace NoeHardwareProfile
 #endif // NOE_HARDWARE_PROFILE_H

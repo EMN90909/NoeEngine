@@ -449,6 +449,15 @@ bool SceneTree::process(double p_time) {
 
 	process_time = p_time;
 
+	// Use smoothed main-loop frame times as a conservative scaling signal.
+	// Only the 3D root viewport is affected, never editor/2D UI resolution.
+	if (noe_plus_adaptive_active && root != nullptr) {
+		float next_scale = 1.0f;
+		if (noe_plus_scaler.sample(p_time * 1000.0, &next_scale)) {
+			root->set_scaling_3d_scale(next_scale);
+		}
+	}
+
 	if (multiplayer_poll) {
 		multiplayer->poll();
 		for (KeyValue<NodePath, Ref<MultiplayerAPI>> &E : custom_multiplayers) {
@@ -1430,6 +1439,23 @@ SceneTree::SceneTree() {
 
 	const int msaa_mode_3d = GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT, "rendering/anti_aliasing/quality/msaa_3d", PROPERTY_HINT_ENUM, String::utf8("Disabled (Fastest),2× (Average),4× (Slow),8× (Slowest)")), 0);
 	root->set_msaa_3d(Viewport::MSAA(msaa_mode_3d));
+
+	// Project Settings is read before engine startup, and quality presets are
+	// applied only to game processes. Custom leaves existing settings intact.
+	const int noe_scale_mode = GLOBAL_DEF_BASIC(PropertyInfo(Variant::INT,
+			"rendering/scaling_3d/mode", PROPERTY_HINT_ENUM, "Bilinear,FSR 1.0"), 0);
+	const float noe_scale = GLOBAL_DEF_BASIC(PropertyInfo(Variant::FLOAT,
+			"rendering/scaling_3d/scale", PROPERTY_HINT_RANGE, "0.5,2,0.01"), 1.0);
+	if (!Engine::get_singleton()->is_editor_hint()) {
+		root->set_scaling_3d_mode(Viewport::Scaling3DMode(noe_scale_mode));
+		root->set_scaling_3d_scale(noe_scale);
+		const bool adaptive = GLOBAL_DEF_BASIC("rendering/noe_plus/quality/adaptive_active", false);
+		noe_plus_adaptive_active = adaptive && noe_scale_mode == 1;
+		if (noe_plus_adaptive_active) {
+			const float target_ms = GLOBAL_GET("rendering/noe_plus/quality/target_frame_ms");
+			noe_plus_scaler.reset(noe_scale, 0.65f, 1.0f, target_ms);
+		}
+	}
 
 	const bool transparent_background = GLOBAL_DEF("rendering/viewport/transparent_background", false);
 	root->set_transparent_background(transparent_background);

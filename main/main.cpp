@@ -56,6 +56,7 @@
 #include "drivers/register_driver_types.h"
 #include "main/app_icon.gen.h"
 #include "main/main_timer_sync.h"
+#include "main/noe_render_quality.h"
 #include "main/performance.h"
 #include "main/splash.gen.h"
 #include "modules/register_module_types.h"
@@ -1669,6 +1670,10 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 			rendering_driver = GLOBAL_GET("rendering/rendering_device/driver");
 		}
 	}
+
+	// Resolve Noe+ game graphics quality while preserving legacy renderer IDs.
+	// SceneTree subsequently consumes the resulting settings at initialization.
+	NoePlus::configure(globals, rendering_method, editor || project_manager);
 
 	// note this is the desired rendering driver, it doesn't mean we will get it.
 	// TODO - make sure this is updated in the case of fallbacks, so that the user interface
