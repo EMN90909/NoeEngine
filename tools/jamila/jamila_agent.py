@@ -97,6 +97,26 @@ def normalize_plan(output):
         raise ValueError("Duplicate asset paths in plan")
     return {"summary":output["summary"][:1200], "actions":normalized}
 
+def provider_url(value):
+    """Reject insecure/private AI destinations, retained for regression safety."""
+    if not isinstance(value,str) or len(value)>500:
+        raise ValueError('Invalid AI gateway URL')
+    parsed=urllib.parse.urlparse(value)
+    if parsed.scheme!='https' or not parsed.hostname or parsed.username or parsed.password:
+        raise ValueError('AI gateways require an HTTPS URL without credentials')
+    if parsed.fragment or parsed.query or parsed.port not in (None,443):
+        raise ValueError('AI gateway URL must not contain query/fragment/custom port')
+    hostname=parsed.hostname.lower()
+    if hostname in ('localhost','localhost.localdomain') or hostname.endswith('.local'):
+        raise ValueError('Loopback/private AI gateways are disallowed')
+    try:
+        address=ipaddress.ip_address(hostname)
+    except ValueError:
+        pass
+    else:
+        if not address.is_global:
+            raise ValueError('Private IP gateway destinations are disallowed')
+    return value
 def call_model(gateway_url, desktop_token, provider, role, prompt, context):
     """Authenticate with the website; provider API keys remain in its backend."""
     if not isinstance(desktop_token,str) or not 30 <= len(desktop_token) <= 5000:
@@ -105,6 +125,7 @@ def call_model(gateway_url, desktop_token, provider, role, prompt, context):
         raise ValueError("Unknown cloud provider")
     if role not in ("builder","planner","scene","gameplay","qa"):
         raise ValueError("Unknown agent role")
+    gateway_url=provider_url(gateway_url)
     url=urllib.parse.urlparse(gateway_url)
     if (url.scheme!="https" or not url.hostname or url.username or url.password or
         url.query or url.fragment or url.port not in (None,443) or url.path!="/api/jamila/plan"):
