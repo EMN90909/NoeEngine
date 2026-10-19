@@ -12,6 +12,8 @@ echo "[CI] NoeEngine branding integrity"
 python3 misc/apply_noeengine_branding.py --check
 echo "[CI] Python syntax"
 python3 -m py_compile version.py misc/build_products.py misc/bootstrap_build_deps.py misc/apply_noeengine_branding.py tools/jamila/jamila_agent.py tools/jamila/noe_mcp_server.py
+echo "[CI] NoeRender benchmark harness tests"
+python3 -m unittest discover -s tests -p 'test_noe_render_benchmark.py' -v
 echo "[CI] Installer packaging tests"
 python3 -m unittest discover -s tests/python_build -p 'test_no*.py' -v
 if command -v actionlint >/dev/null 2>&1; then

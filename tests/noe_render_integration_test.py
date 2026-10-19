@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Noe+ source-level integration regressions (NOT a graphics smoke test)."""
+"""NoeRender source-level integration regressions (NOT a graphics smoke test)."""
 from pathlib import Path
 import unittest
 ROOT=Path(__file__).resolve().parents[1]

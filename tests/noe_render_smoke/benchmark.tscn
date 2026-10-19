@@ -2,5 +2,5 @@
 
 [ext_resource type="Script" path="res://benchmark.gd" id="1_bench"]
 
-[node name="NoePlusBenchmark3D" type="Node3D"]
+[node name="NoeRenderBenchmark3D" type="Node3D"]
 script = ExtResource("1_bench")

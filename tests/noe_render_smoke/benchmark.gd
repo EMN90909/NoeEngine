@@ -37,5 +37,5 @@ func _process(delta):
         "engine": Engine.get_version_info().get("string", "unknown"),
         "warning": "main-loop frame times, not GPU benchmark"
     }
-    print("NOE_PLUS_BENCHMARK:" + JSON.stringify(report))
+    print("NOERENDER_SMOKE:" + JSON.stringify(report))
     get_tree().quit()

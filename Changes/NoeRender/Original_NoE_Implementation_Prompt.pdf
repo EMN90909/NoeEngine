@@ -1,0 +1,312 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R 7 0 R 9 0 R 11 0 R 13 0 R 15 0 R 17 0 R 19 0 R] /Count 8 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 6 0 R >>
+endobj
+6 0 obj
+<< /Length 2559 >>
+stream
+0.985 0.99 1 rg 0 0 612 792 re f
+0.09 0.15 0.26 rg 0 752 612 40 re f
+1 1 1 rg BT /F2 9 Tf 1 0 0 1 40 767 Tm (NOETHRIC  /  NOEENGINE  /  RENDERING ENGINEERING) Tj ET
+0.12 0.16 0.22 rg BT /F2 21 Tf 1 0 0 1 40 717 Tm (NOE+ / NOESHADER) Tj ET
+0.37 0.43 0.51 rg BT /F1 11 Tf 1 0 0 1 40 692 Tm (Engineering implementation prompt | NoeEngine v0.1.1) Tj ET
+0.70 0.75 0.83 RG 1 w 40 677 m 572 677 l S
+0.90 0.94 0.99 rg 45 594 522 50 re f
+0.12 0.16 0.22 rg BT /F2 12 Tf 1 0 0 1 62 621 Tm (NoeEngine startup : probe API, GPU capabilities, driver) Tj ET
+0.89 0.96 0.94 rg 46 512 247 55 re f
+0.92 0.90 0.97 rg 319 512 247 55 re f
+0.12 0.16 0.22 rg BT /F2 10 Tf 1 0 0 1 60 547 Tm (NoeShader / Forward+ \(Vulkan\)) Tj ET
+0.12 0.16 0.22 rg BT /F1 9 Tf 1 0 0 1 60 530 Tm (High-capability rendering path) Tj ET
+0.12 0.16 0.22 rg BT /F2 10 Tf 1 0 0 1 330 547 Tm (Noe+ Lite / Compatibility) Tj ET
+0.12 0.16 0.22 rg BT /F1 9 Tf 1 0 0 1 330 530 Tm (Older supported OpenGL GPUs) Tj ET
+0.70 0.75 0.83 RG 1 w 307 572 m 307 494 l S
+0.94 0.96 0.99 rg 75 430 462 40 re f
+0.12 0.16 0.22 rg BT /F2 10 Tf 1 0 0 1 92 453 Tm (Quality policy : Auto / Lite / Balanced / High / Ultra) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 406 Tm (Purpose: Extend the existing Godot Forward+ renderer, present it as NoeShader, and introduce) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 393 Tm (adaptive Noe+ graphics quality while preserving a first-class low-end Compatibility renderer.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 367 Tm (Repository: EMN90909/NoeEngine \(main\). Source baseline documented as Godot 4.0.5 RC / NoeEngine) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 354 Tm (0.1.0-dev. This is an implementation specification, not evidence that work has shipped.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 328 Tm (Non-negotiable: Preserve scene/project compatibility, existing source licensing and) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 315 Tm (attributions, startup safety, low-resource editor usability, and stable frame pacing.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 289 Tm (Deliverables: audited source changes, Auto/Lite/Balanced/High/Ultra presets, GPU feature) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 276 Tm (probing, safe renderer choice, tests, benchmark scenes, screenshots, documentation and) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 263 Tm (validated Linux build.) Tj ET
+0.70 0.75 0.83 RG 1 w 40 47 m 572 47 l S
+0.42 0.48 0.55 rg BT /F1 8 Tf 1 0 0 1 40 30 Tm (Noe+ implementation brief | Plan only | 1/8) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 8 0 R >>
+endobj
+8 0 obj
+<< /Length 2445 >>
+stream
+0.985 0.99 1 rg 0 0 612 792 re f
+0.09 0.15 0.26 rg 0 752 612 40 re f
+1 1 1 rg BT /F2 9 Tf 1 0 0 1 40 767 Tm (NOETHRIC  /  NOEENGINE  /  RENDERING ENGINEERING) Tj ET
+0.12 0.16 0.22 rg BT /F2 21 Tf 1 0 0 1 40 717 Tm (SYSTEM ARCHITECTURE) Tj ET
+0.37 0.43 0.51 rg BT /F1 11 Tf 1 0 0 1 40 692 Tm (One product, two existing rendering paths) Tj ET
+0.70 0.75 0.83 RG 1 w 40 677 m 572 677 l S
+0.90 0.94 0.99 rg 45 594 522 50 re f
+0.12 0.16 0.22 rg BT /F2 12 Tf 1 0 0 1 62 621 Tm (NoeEngine startup : probe API, GPU capabilities, driver) Tj ET
+0.89 0.96 0.94 rg 46 512 247 55 re f
+0.92 0.90 0.97 rg 319 512 247 55 re f
+0.12 0.16 0.22 rg BT /F2 10 Tf 1 0 0 1 60 547 Tm (NoeShader / Forward+ \(Vulkan\)) Tj ET
+0.12 0.16 0.22 rg BT /F1 9 Tf 1 0 0 1 60 530 Tm (High-capability rendering path) Tj ET
+0.12 0.16 0.22 rg BT /F2 10 Tf 1 0 0 1 330 547 Tm (Noe+ Lite / Compatibility) Tj ET
+0.12 0.16 0.22 rg BT /F1 9 Tf 1 0 0 1 330 530 Tm (Older supported OpenGL GPUs) Tj ET
+0.70 0.75 0.83 RG 1 w 307 572 m 307 494 l S
+0.94 0.96 0.99 rg 75 430 462 40 re f
+0.12 0.16 0.22 rg BT /F2 10 Tf 1 0 0 1 92 453 Tm (Quality policy : Auto / Lite / Balanced / High / Ultra) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 406 Tm (NOE+ is the adaptive graphics family. NoeShader is the user-facing label for the existing) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 393 Tm (Forward+ clustered renderer. Noe+ Lite uses the existing GLES3/OpenGL Compatibility renderer.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 367 Tm (Detect API/driver/device capabilities at startup. Select a supported backend before rendering;) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 354 Tm (choose a separate quality preset. A manual override must be permitted and verified before) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 341 Tm (application.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 315 Tm (Adapt resolution and expensive optional effects at runtime within the already chosen backend.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 302 Tm (Do not attempt a mid-frame Vulkan/OpenGL backend swap.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 276 Tm (High fidelity is an aspiration to measure. A label change by itself does not increase graphical) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 263 Tm (quality.) Tj ET
+0.70 0.75 0.83 RG 1 w 40 47 m 572 47 l S
+0.42 0.48 0.55 rg BT /F1 8 Tf 1 0 0 1 40 30 Tm (Noe+ implementation brief | Plan only | 2/8) Tj ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 10 0 R >>
+endobj
+10 0 obj
+<< /Length 3310 >>
+stream
+0.985 0.99 1 rg 0 0 612 792 re f
+0.09 0.15 0.26 rg 0 752 612 40 re f
+1 1 1 rg BT /F2 9 Tf 1 0 0 1 40 767 Tm (NOETHRIC  /  NOEENGINE  /  RENDERING ENGINEERING) Tj ET
+0.12 0.16 0.22 rg BT /F2 21 Tf 1 0 0 1 40 717 Tm (FILE MAP / CHANGE TARGETS) Tj ET
+0.37 0.43 0.51 rg BT /F1 11 Tf 1 0 0 1 40 692 Tm (Source-verified paths and responsibilities) Tj ET
+0.70 0.75 0.83 RG 1 w 40 677 m 572 677 l S
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 656 Tm (main/main.cpp : trace rendering_method / rendering_driver CLI and startup selection; integrate) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 643 Tm (feature-probe and safe fallback without hijacking explicit overrides.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 617 Tm (editor/project_manager.cpp : label Forward+ as NoeShader and show readable renderer guidance) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 604 Tm (while retaining serialized internal IDs.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 578 Tm (servers/rendering/renderer_rd/forward_clustered/render_forward_clustered.cpp \(+ header\): core) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 565 Tm (clustered forward render passes, MSAA and attachments; benchmark before altering scheduling or) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 552 Tm (buffers.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 526 Tm (servers/rendering/renderer_rd/renderer_scene_render_rd.cpp \(+ header\): shared lighting,) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 513 Tm (shadows, sky, GI and environment integration. Guard options by supported capabilities.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 487 Tm (servers/rendering/renderer_rd/renderer_compositor_rd.cpp : confirmed shader cache setup;) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 474 Tm (profile caching, invalidation and GPU rendering lifecycle.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 448 Tm (servers/rendering/renderer_rd/effects/fsr.cpp : existing FSR compute pipeline and fallback;) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 435 Tm (investigate connecting quality controls and dynamic scaling.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 409 Tm (servers/rendering/renderer_rd/storage_rd/render_scene_buffers_rd.cpp : scaling/sharpness and) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 396 Tm (render targets; instrument memory and viewport behavior.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 370 Tm (servers/rendering/renderer_rd/forward_mobile/render_forward_mobile.cpp : preserve mobile Vulkan) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 357 Tm (path; do not mix with OpenGL compatibility.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 331 Tm (drivers/gles3/rasterizer_gles3.cpp : Compatibility fallback validation. Review GLES3) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 318 Tm (limitations for Lite presets.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 292 Tm (platform/linuxbsd/detect.py, build.sh, BUILD_PRODUCTS.md : native toolchain and packaging) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 279 Tm (checks. Inspect additional platform-specific driver initialization paths before editing.) Tj ET
+0.70 0.75 0.83 RG 1 w 40 47 m 572 47 l S
+0.42 0.48 0.55 rg BT /F1 8 Tf 1 0 0 1 40 30 Tm (Noe+ implementation brief | Plan only | 3/8) Tj ET
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 12 0 R >>
+endobj
+12 0 obj
+<< /Length 3629 >>
+stream
+0.985 0.99 1 rg 0 0 612 792 re f
+0.09 0.15 0.26 rg 0 752 612 40 re f
+1 1 1 rg BT /F2 9 Tf 1 0 0 1 40 767 Tm (NOETHRIC  /  NOEENGINE  /  RENDERING ENGINEERING) Tj ET
+0.12 0.16 0.22 rg BT /F2 21 Tf 1 0 0 1 40 717 Tm (AI ENGINEERING EXECUTION PROMPT) Tj ET
+0.37 0.43 0.51 rg BT /F1 11 Tf 1 0 0 1 40 692 Tm (Copy these instructions into a coding agent) Tj ET
+0.70 0.75 0.83 RG 1 w 40 677 m 572 677 l S
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 656 Tm (Act as a senior C++ renderer engineer maintaining a Godot 4.0.5 RC fork. Work in) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 643 Tm (EMN90909/NoeEngine, branch from a known main SHA, and treat Changes/Noe+/checklist.md as the) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 630 Tm (acceptance register.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 604 Tm (Phase A \(READ\): trace renderer selection from CLI and project manager into) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 591 Tm (RenderingServer/compositor and platform drivers. Inspect full source and shader files, not only) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 578 Tm (the listed snippets. Record affected call graph and configuration keys.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 552 Tm (Phase B \(MEASURE\): compile an unmodified baseline; collect Linux editor start time, CPU/RAM,) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 539 Tm (GPU/driver information, frame times and screenshots for matched scenes. Flag any unmeasured) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 526 Tm (assumptions.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 500 Tm (Phase C \(DESIGN\): implement a small capabilities and quality-policy layer without replacing) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 487 Tm (Godot Forward+. Separate backend startup choice from runtime graphic preset. Keep historical) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 474 Tm (renderer IDs and CLI compatibility.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 448 Tm (Phase D \(IMPLEMENT\): change only presentation strings for Forward+ naming; wire) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 435 Tm (Auto/Lite/Balanced/High/Ultra with feature-gated values, manual overrides, and conservative) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 422 Tm (recovery when Vulkan is unavailable.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 396 Tm (Phase E \(OPTIMIZE\): use profiler evidence to target specific shader cache stalls,) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 383 Tm (GI/fog/reflection costs, render buffer allocations and scaling behavior. Avoid speculative) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 370 Tm (large renderer rewrites.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 344 Tm (Phase F \(VERIFY\): unit, integration and graphics smoke checks; compare screenshots and) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 331 Tm (frame-time distributions; record cross-platform coverage. Fix regressions or explicitly) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 318 Tm (document blocking failures.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 292 Tm (Phase G \(DELIVER\): provide changed files, rationale, commits, metrics, known limitations and) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 279 Tm (completed checklist entries. No unsupported 'production-ready' claim and no CI green claim) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 266 Tm (without a real compiled/run test.) Tj ET
+0.70 0.75 0.83 RG 1 w 40 47 m 572 47 l S
+0.42 0.48 0.55 rg BT /F1 8 Tf 1 0 0 1 40 30 Tm (Noe+ implementation brief | Plan only | 4/8) Tj ET
+endstream
+endobj
+13 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 14 0 R >>
+endobj
+14 0 obj
+<< /Length 2489 >>
+stream
+0.985 0.99 1 rg 0 0 612 792 re f
+0.09 0.15 0.26 rg 0 752 612 40 re f
+1 1 1 rg BT /F2 9 Tf 1 0 0 1 40 767 Tm (NOETHRIC  /  NOEENGINE  /  RENDERING ENGINEERING) Tj ET
+0.12 0.16 0.22 rg BT /F2 21 Tf 1 0 0 1 40 717 Tm (QUALITY POLICY) Tj ET
+0.37 0.43 0.51 rg BT /F1 11 Tf 1 0 0 1 40 692 Tm (Adaptive settings must be capabilities-driven) Tj ET
+0.70 0.75 0.83 RG 1 w 40 677 m 572 677 l S
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 656 Tm (Auto: probe supported API features and available resources; use conservative defaults, optional) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 643 Tm (bounded calibration, and persist a user override. Hardware model-name lookup alone is) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 630 Tm (insufficient.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 604 Tm (Lite: Compatibility where required; prioritize memory use, simplified shadows and effects, 3D) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 591 Tm (render scaling if actually supported, and editor responsiveness.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 565 Tm (Balanced: midrange features on an appropriate renderer. Keep volumetrics, GI and reflection) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 552 Tm (costs controlled and profile shader complexity.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 526 Tm (High: higher quality shadows, probe/reflection selection, GI and postprocessing only when) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 513 Tm (device capabilities and frame budget permit.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 487 Tm (Ultra: quality-first settings on capable hardware; do not automatically require ray tracing or) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 474 Tm (features the old engine does not provide.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 448 Tm (Adaptive controller: sample smoothed frame times, use hysteresis, cooldown, min/max render) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 435 Tm (scale and stability guardrails. Never alter active rendering backend in a frame.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 409 Tm (Failure behavior: preserve explicit overrides when supported; when unsupported, log reason and) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 396 Tm (offer safe fallback rather than silently corrupting settings.) Tj ET
+0.70 0.75 0.83 RG 1 w 40 47 m 572 47 l S
+0.42 0.48 0.55 rg BT /F1 8 Tf 1 0 0 1 40 30 Tm (Noe+ implementation brief | Plan only | 5/8) Tj ET
+endstream
+endobj
+15 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 16 0 R >>
+endobj
+16 0 obj
+<< /Length 2631 >>
+stream
+0.985 0.99 1 rg 0 0 612 792 re f
+0.09 0.15 0.26 rg 0 752 612 40 re f
+1 1 1 rg BT /F2 9 Tf 1 0 0 1 40 767 Tm (NOETHRIC  /  NOEENGINE  /  RENDERING ENGINEERING) Tj ET
+0.12 0.16 0.22 rg BT /F2 21 Tf 1 0 0 1 40 717 Tm (TEST MATRIX) Tj ET
+0.37 0.43 0.51 rg BT /F1 11 Tf 1 0 0 1 40 692 Tm (Evidence-based release validation) Tj ET
+0.70 0.75 0.83 RG 1 w 40 677 m 572 677 l S
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 656 Tm (Linux low-end: Celeron 1005M / 6 GB / older Intel integrated GPU on antiX is a desired test) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 643 Tm (target, not a confirmed compatible configuration. Verify OpenGL requirements, driver versions,) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 630 Tm (editor startup and 1366x768 usability.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 604 Tm (Linux modern: run Vulkan-capable Intel/AMD/NVIDIA hardware with multiple driver versions. Test) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 591 Tm (cold/warm shader caches, renderer picker, compatibility fallback and GPU feature reporting.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 565 Tm (Windows and macOS: test separately. Never infer driver behavior from a Linux pass. MoltenVK and) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 552 Tm (native OpenGL differences require platform-specific validation.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 526 Tm (Scenes: blank editor; simple 2D; basic 3D; clustered lights stress; shadows;) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 513 Tm (GI/fog/reflections; transparencies/particles; resize and multi-viewports; scene reopen.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 487 Tm (Metrics: startup cold/warm duration, peak/resident RAM, GPU memory where available, p50/p95/p99) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 474 Tm (frame time, frame stalls, compile-time, artifact size and draw calls.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 448 Tm (Regressions: compare screenshots at equivalent settings. Test unsupported Vulkan, missing) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 435 Tm (extensions, shader cache corruption, OOM conditions and manual rendering overrides.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 409 Tm (Release gate: reproducible native build plus actual editor/game execution, no critical) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 396 Tm (compatibility regressions, preset serialization tests and documented platform coverage.) Tj ET
+0.70 0.75 0.83 RG 1 w 40 47 m 572 47 l S
+0.42 0.48 0.55 rg BT /F1 8 Tf 1 0 0 1 40 30 Tm (Noe+ implementation brief | Plan only | 6/8) Tj ET
+endstream
+endobj
+17 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 18 0 R >>
+endobj
+18 0 obj
+<< /Length 2450 >>
+stream
+0.985 0.99 1 rg 0 0 612 792 re f
+0.09 0.15 0.26 rg 0 752 612 40 re f
+1 1 1 rg BT /F2 9 Tf 1 0 0 1 40 767 Tm (NOETHRIC  /  NOEENGINE  /  RENDERING ENGINEERING) Tj ET
+0.12 0.16 0.22 rg BT /F2 21 Tf 1 0 0 1 40 717 Tm (RISKS / NON-GOALS) Tj ET
+0.37 0.43 0.51 rg BT /F1 11 Tf 1 0 0 1 40 692 Tm (Protect the fork from expensive mistakes) Tj ET
+0.70 0.75 0.83 RG 1 w 40 677 m 572 677 l S
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 656 Tm (Risk HIGH: Godot 4.0.5 RC is an old baseline. Compare modern upstream fixes and backport) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 643 Tm (selectively only with compatibility testing. Do not mass-merge unrelated engine rewrites.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 617 Tm (Risk HIGH: repository build documentation explicitly says native engine build is not yet) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 604 Tm (verified. Source presence does not equal runtime support.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 578 Tm (Risk MEDIUM: Forward+ buffer attachments and GI/reflection features may consume considerable) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 565 Tm (memory. Change lifetime and formats only after instrumenting allocations.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 539 Tm (Risk MEDIUM: documentation describing editor features can lag actual source. Preserve current) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 526 Tm (Noe-specific account/update manager and Noqeri editor integrations.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 500 Tm (Non-goal in v0.1.1: custom ray-tracing system, custom virtual geometry, new standalone renderer) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 487 Tm (or parity with Unreal Engine 5.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 461 Tm (Non-goal: NoeEngine Cloud GPU-rendering service. Remote batch rendering is a separate paid) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 448 Tm (service, not part of the local NoeShader Vulkan/OpenGL backend decision.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 422 Tm (Legal: Godot-derived MIT source and attribution remain intact. Do not indiscriminately rename) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 409 Tm (internal API names, filename headers, source copyrights or license notices.) Tj ET
+0.70 0.75 0.83 RG 1 w 40 47 m 572 47 l S
+0.42 0.48 0.55 rg BT /F1 8 Tf 1 0 0 1 40 30 Tm (Noe+ implementation brief | Plan only | 7/8) Tj ET
+endstream
+endobj
+19 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 20 0 R >>
+endobj
+20 0 obj
+<< /Length 2457 >>
+stream
+0.985 0.99 1 rg 0 0 612 792 re f
+0.09 0.15 0.26 rg 0 752 612 40 re f
+1 1 1 rg BT /F2 9 Tf 1 0 0 1 40 767 Tm (NOETHRIC  /  NOEENGINE  /  RENDERING ENGINEERING) Tj ET
+0.12 0.16 0.22 rg BT /F2 21 Tf 1 0 0 1 40 717 Tm (ACCEPTANCE AND HANDOFF) Tj ET
+0.37 0.43 0.51 rg BT /F1 11 Tf 1 0 0 1 40 692 Tm (What done actually means) Tj ET
+0.70 0.75 0.83 RG 1 w 40 677 m 572 677 l S
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 656 Tm (Backend: Auto startup selects supported NoeShader/Compatibility path, respects safe user) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 643 Tm (overrides, and explains fallback. Historical Godot project renderer IDs remain functional.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 617 Tm (Quality: Auto plus four documented presets, manual controls and support gating work. Adaptive) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 604 Tm (3D scaling does not degrade editor UI or repeatedly oscillate.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 578 Tm (Performance: measured results demonstrate improvements or trade-offs against the same engine) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 565 Tm (baseline on identical hardware/scenes. Include regressions transparently.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 539 Tm (Compatibility: GDScript, native Noqeri bridge, editor accounts, project manager, export) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 526 Tm (templates, project reopen and packaged runtime remain functional.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 500 Tm (Testing: native Linux binary actually compiled and launched. Other platforms pass independently) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 487 Tm (or are visibly marked unverified.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 461 Tm (Reporting: complete Changes/Noe+/checklist.md, record source files touched, tests, benchmark) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 448 Tm (methodology, screenshots, risks, fallback limitations and follow-up scope.) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 422 Tm (Suggested phases: \(1\) baseline & renderer choice \(2\) presets & UI \(3\) profiling-based) Tj ET
+0.12 0.16 0.22 rg BT /F1 9.6 Tf 1 0 0 1 42 409 Tm (optimizations \(4\) broad validation. Avoid committing everything as one opaque patch.) Tj ET
+0.70 0.75 0.83 RG 1 w 40 47 m 572 47 l S
+0.42 0.48 0.55 rg BT /F1 8 Tf 1 0 0 1 40 30 Tm (Noe+ implementation brief | Plan only | 8/8) Tj ET
+endstream
+endobj
+xref
+0 21
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000162 00000 n 
+0000000232 00000 n 
+0000000307 00000 n 
+0000000443 00000 n 
+0000003053 00000 n 
+0000003189 00000 n 
+0000005685 00000 n 
+0000005822 00000 n 
+0000009184 00000 n 
+0000009322 00000 n 
+0000013003 00000 n 
+0000013141 00000 n 
+0000015682 00000 n 
+0000015820 00000 n 
+0000018503 00000 n 
+0000018641 00000 n 
+0000021143 00000 n 
+0000021281 00000 n 
+trailer
+<< /Size 21 /Root 1 0 R >>
+startxref
+23790
+%%EOF

@@ -1,4 +1,4 @@
-name: Noe+ policy tests
+name: NoeRender policy tests
 on:
   push:
     branches: [main]
@@ -6,14 +6,14 @@ on:
       - 'main/noe_render_quality*.h'
       - 'main/main.cpp'
       - 'scene/main/scene_tree.*'
-      - 'tests/noe_plus_*'
-      - '.github/workflows/noe-plus-policy.yml'
+      - 'tests/noe_render_*'
+      - '.github/workflows/noe-render-policy.yml'
   pull_request:
     paths:
       - 'main/noe_render_quality*.h'
       - 'main/main.cpp'
       - 'scene/main/scene_tree.*'
-      - 'tests/noe_plus_*'
+      - 'tests/noe_render_*'
   workflow_dispatch:
 permissions:
   contents: read
@@ -27,9 +27,9 @@ jobs:
           persist-credentials: false
       - name: Compile and run C++17 quality tests
         run: |
-          g++ -std=c++17 -Wall -Wextra -Werror -I. tests/noe_plus_quality_policy_test.cpp -o /tmp/noe-plus-test
-          /tmp/noe-plus-test
+          g++ -std=c++17 -Wall -Wextra -Werror -I. tests/noe_render_quality_policy_test.cpp -o /tmp/noe-render-test
+          /tmp/noe-render-test
       - name: Run source integration tests
         run: |
-          python3 tests/noe_plus_integration_test.py
+          python3 tests/noe_render_integration_test.py
           python3 tests/noe_render_identity_test.py
