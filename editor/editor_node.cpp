@@ -1930,6 +1930,38 @@ void EditorNode::restart_editor() {
 	OS::get_singleton()->set_restart_on_exit(true, args);
 }
 
+void EditorNode::_noe_autosave_tick() {
+	// Saves only dirty, already-named scenes, without preview rendering or
+	// interrupting a running game. Editor Settings -> Run -> Auto Save controls it.
+	if (!bool(EDITOR_GET("run/auto_save/save_modified_scenes_periodically")) || exiting) {
+		noe_autosave_elapsed_seconds = 0;
+		return;
+	}
+	if (editor_run.get_status() != EditorRun::STATUS_STOP) {
+		return;
+	}
+	noe_autosave_elapsed_seconds += 5;
+	const int interval = CLAMP(int(EDITOR_GET("run/auto_save/interval_seconds")), 30, 1800);
+	if (noe_autosave_elapsed_seconds < interval) {
+		return;
+	}
+	noe_autosave_elapsed_seconds = 0;
+	for (int i = 0; i < editor_data.get_edited_scene_count(); i++) {
+		if (!editor_data.is_scene_changed(i)) {
+			continue;
+		}
+		Node *scene = editor_data.get_edited_scene_root(i);
+		if (!scene) {
+			continue;
+		}
+		const String filename = scene->get_scene_file_path();
+		if (filename.is_empty() || !DirAccess::exists(filename.get_base_dir())) {
+			continue; // Never invent a path or overwrite a missing directory.
+		}
+		_save_scene(filename, i);
+	}
+}
+
 void EditorNode::_save_all_scenes() {
 	bool all_saved = true;
 	for (int i = 0; i < editor_data.get_edited_scene_count(); i++) {
@@ -7235,6 +7267,15 @@ EditorNode::EditorNode() {
 	dock_drag_timer->set_wait_time(0.5);
 	dock_drag_timer->set_one_shot(true);
 	dock_drag_timer->connect("timeout", callable_mp(this, &EditorNode::_save_docks));
+
+	// A lightweight five-second heartbeat avoids reconfiguring a timer every
+	// time the user changes the auto-save interval in Editor Settings.
+	noe_autosave_timer = memnew(Timer);
+	noe_autosave_timer->set_wait_time(5.0);
+	noe_autosave_timer->set_one_shot(false);
+	add_child(noe_autosave_timer);
+	noe_autosave_timer->connect("timeout", callable_mp(this, &EditorNode::_noe_autosave_tick));
+	noe_autosave_timer->start();
 
 	top_split = memnew(VSplitContainer);
 	center_split->add_child(top_split);
