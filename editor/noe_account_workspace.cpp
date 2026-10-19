@@ -312,6 +312,17 @@ NoeAccountWorkspace::NoeAccountWorkspace() {
     poll_timer = memnew(Timer);
     poll_timer->connect("timeout", callable_mp(this, &NoeAccountWorkspace::_poll_device_flow));
     add_child(poll_timer);
+    // Device inventory is opt-in through successful authenticated editor pairing.
+    mcp_sync_request = memnew(HTTPRequest);
+    mcp_sync_request->set_timeout(9.0);
+    mcp_sync_request->set_body_size_limit(8192);
+    mcp_sync_request->set_max_redirects(0);
+    add_child(mcp_sync_request);
+    mcp_sync_timer = memnew(Timer);
+    mcp_sync_timer->set_one_shot(true);
+    mcp_sync_timer->set_wait_time(2.5);
+    mcp_sync_timer->connect("timeout",callable_mp(this,&NoeAccountWorkspace::_sync_mcp_inventory));
+    add_child(mcp_sync_timer);
     collab_request = memnew(HTTPRequest);
     collab_request->set_timeout(10.0);
     collab_request->set_body_size_limit(65536);
@@ -485,6 +496,7 @@ void NoeAccountWorkspace::_on_auth_response(int result, int status, const Packed
         _save_usage();
         login_dialog->hide();
         _refresh_profile();
+        _schedule_mcp_sync();
         _show_page(PROFILE);
     }
 }
@@ -694,11 +706,52 @@ void NoeAccountWorkspace::_save_mcp() {
     config->set_value("mcp", "url_" + itos(count), url);
     config->set_value("mcp", "enabled_" + itos(count), false);
     _save_usage(); _render_integrations();
+    _schedule_mcp_sync();
 }
 void NoeAccountWorkspace::_toggle_mcp(bool enabled, int index) {
     if (index < 0 || index >= (int)config->get_value("mcp", "count", 0)) return;
     config->set_value("mcp", "enabled_" + itos(index), enabled);
     _save_usage();
+    _schedule_mcp_sync();
+}
+void NoeAccountWorkspace::_schedule_mcp_sync() {
+    // A bridge pairing is required: the ID itself is a public random handle,
+    // while the authenticated desktop bearer remains memory-only.
+    if (mcp_sync_timer && online_session && !access_token.is_empty() &&
+            bridge_endpoint_id.length() == 32 && bridge_endpoint_id.is_valid_hex_number(false) &&
+            _is_https_url(auth_base)) {
+        mcp_sync_timer->start();
+    }
+}
+void NoeAccountWorkspace::_sync_mcp_inventory() {
+    if (!online_session || access_token.is_empty() || !_is_https_url(auth_base) ||
+            bridge_endpoint_id.length() != 32 || !bridge_endpoint_id.is_valid_hex_number(false) ||
+            !mcp_sync_request) return;
+    if (mcp_sync_request->get_http_client_status() != HTTPClient::STATUS_DISCONNECTED) {
+        mcp_sync_timer->start(5.0);
+        return;
+    }
+    // Never transmit locally stored MCP URLs, API keys or headers.
+    Array entries;
+    const int count = CLAMP((int)config->get_value("mcp", "count", 0), 0, 64);
+    for (int i=0; i<count; ++i) {
+        String name = String(config->get_value("mcp", "name_" + itos(i), "")).strip_edges().left(80);
+        if (name.is_empty()) continue;
+        Dictionary item;
+        item["name"] = name;
+        item["enabled"] = (bool)config->get_value("mcp", "enabled_" + itos(i), false);
+        entries.push_back(item);
+    }
+    Dictionary payload;
+    payload["device_id"] = bridge_endpoint_id;
+    payload["items"] = entries;
+    PackedStringArray headers;
+    headers.push_back("Content-Type: application/json");
+    headers.push_back("Authorization: Bearer " + access_token);
+    if (mcp_sync_request->request(auth_base + "/api/engine/mcp-sync",headers,
+        HTTPClient::METHOD_POST,JSON::stringify(payload)) != OK) {
+        WARN_PRINT("NoeEngine MCP inventory synchronization unavailable.");
+    }
 }
 void NoeAccountWorkspace::_render_integrations() {
     if (!api_list || !mcp_list) return;
@@ -891,6 +944,7 @@ void NoeAccountWorkspace::_on_bridge_response(int result, int code, const Packed
         collab_status->set_text(TTR("Paired. MCP endpoint: ") + bridge_public_url +
             TTR("\nExternal clients also require the private bearer key shown on the website."));
         _poll_bridge();
+        _schedule_mcp_sync();
     } else if (phase == BRIDGE_POLL && code == 200) {
         Variant raw = reply.get("tasks", Array());
         if (raw.get_type() != Variant::ARRAY) return;

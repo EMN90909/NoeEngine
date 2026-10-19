@@ -65,6 +65,8 @@ class NoeAccountWorkspace : public AcceptDialog {
     ConfirmationDialog *mcp_dialog = nullptr;
     HTTPRequest *auth_request = nullptr;
     HTTPRequest *collab_request = nullptr;
+    HTTPRequest *mcp_sync_request = nullptr;
+    Timer *mcp_sync_timer = nullptr;
     Timer *collab_timer = nullptr;
     LineEdit *collab_project = nullptr;
     Label *collab_status = nullptr;
@@ -131,6 +133,8 @@ class NoeAccountWorkspace : public AcceptDialog {
     void _save_api();
     void _show_mcp_form();
     void _save_mcp();
+    void _schedule_mcp_sync();
+    void _sync_mcp_inventory();
     void _toggle_mcp(bool p_enabled, int p_index);
     void _render_integrations();
     void _show_mcp_marketplace();
