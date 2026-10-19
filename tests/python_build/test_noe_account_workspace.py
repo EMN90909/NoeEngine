@@ -71,7 +71,8 @@ class TestNoeAccountWorkspace(unittest.TestCase):
 
     def test_mcp_registry_discovery_does_not_launch_tools(self):
         self.assertIn("registry.modelcontextprotocol.io/v0.1/servers?search=godot", self.source)
-        self.assertIn("No MCP process is executed or connected yet.", self.source)
+        self.assertIn("Custom endpoints are saved as preferences", self.source)
+        self.assertIn("void NoeAccountWorkspace::_on_bridge_response(", self.source)
         self.assertIn("NoeAccountWorkspace::_marketplace_select(", self.source)
         self.assertIn('cb->connect("toggled"', self.source)
         self.assertNotIn("OS::execute(", self.source)
