@@ -30,6 +30,7 @@
 
 #include "project_manager.h"
 #include "editor/noe_account_workspace.h"
+#include "editor/noe_hardware_profile.h"
 #include "editor/noe_update_manager.h"
 
 #include "core/config/project_settings.h"
@@ -913,7 +914,13 @@ public:
 		Container *rvb = memnew(VBoxContainer);
 		rshc->add_child(rvb);
 
+		// New projects on low-memory desktops default to OpenGL Compatibility.
+		// Respect any renderer the user previously selected and saved.
+#if defined(GLES3_ENABLED)
+		String default_renderer_type = NoeHardwareProfile::use_classic_ui() ? "gl_compatibility" : "forward_plus";
+#else
 		String default_renderer_type = "forward_plus";
+#endif
 		if (EditorSettings::get_singleton()->has_setting("project_manager/default_renderer")) {
 			default_renderer_type = EditorSettings::get_singleton()->get_setting("project_manager/default_renderer");
 		}
