@@ -369,8 +369,11 @@ String NoeAccountWorkspace::get_jamila_desktop_token() {
     return noe_active_account && noe_active_account->online_session ? noe_active_account->access_token : String();
 }
 String NoeAccountWorkspace::get_jamila_gateway_url() {
-    return noe_active_account && noe_active_account->online_session && noe_active_account->_is_https_url(noe_active_account->auth_base)
-        ? noe_active_account->auth_base.trim_suffix("/") + "/api/jamila/plan" : String();
+    if (!noe_active_account || !noe_active_account->online_session ||
+            !noe_active_account->_is_https_url(noe_active_account->auth_base)) return String();
+    String url = noe_active_account->auth_base;
+    while (url.ends_with("/")) url = url.substr(0, url.length() - 1);
+    return url + "/api/jamila/plan";
 }
 
 NoeAccountWorkspace *NoeAccountWorkspace::install(Control *parent, HBoxContainer *toolbar) {
