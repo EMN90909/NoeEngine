@@ -1,0 +1,24 @@
+name: NoeCore policy tests
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  noecore:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 8
+    steps:
+      - name: Check out NoeEngine
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Compile policy with strict warnings
+        run: c++ -std=c++17 -Wall -Wextra -Werror -I . tests/noe_core_policy_test.cpp -o /tmp/noecore-test
+      - name: Test hardware selection and cache guards
+        run: /tmp/noecore-test
+      - name: Assert settings and session safeguards
+        run: python3 -m unittest discover -s tests/python_build -p 'test_noecore_regressions.py' -v

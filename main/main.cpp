@@ -31,6 +31,7 @@
 #include "drivers/register_driver_types.h"
 #include "main/app_icon.gen.h"
 #include "main/main_timer_sync.h"
+#include "main/noe_core_integration.h"
 #include "main/noe_render_quality.h"
 #include "main/noe_render_gpu_probe.h"
 #include "main/performance.h"
@@ -657,6 +658,7 @@ int Main::test_entrypoint(int argc, char *argv[], bool &tests_need_run) {
  */
 
 Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_phase) {
+	NoeRender::GpuCapabilities noe_core_gpu; // Declared before any goto error paths.
 	OS::get_singleton()->initialize();
 
 	engine = memnew(Engine);
@@ -1658,6 +1660,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	const bool allow_fallback = GLOBAL_DEF_BASIC("rendering/noe_render/backend/allow_fallback", true);
 	if (!noe_render_cli_override && allow_fallback && rendering_driver == "vulkan") {
 		const NoeRender::GpuCapabilities caps = NoeRender::probe_vulkan();
+		noe_core_gpu = caps;
 		print_line("NoeRender Vulkan probe: " + caps.reason +
 				(caps.render_device_candidate ? " | " + caps.device_name : ""));
 #ifdef GLES3_ENABLED
@@ -1670,6 +1673,9 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	}
 
 	}
+
+	// Advisory NoeCore profile + opt-in budgets. Never rewrites the quality preset.
+	NoeCore::initialize(noe_core_gpu);
 
 	// Resolve NoeRender game graphics quality while preserving legacy renderer IDs.
 	// SceneTree subsequently consumes the resulting settings at initialization.

@@ -14,6 +14,7 @@
 #include "editor/editor_paths.h"
 #include "editor/editor_scale.h"
 #include "editor/editor_settings.h"
+#include "main/noe_core_policy.h"
 
 bool EditorResourcePreviewGenerator::handles(const String &p_type) const {
 	bool success = false;
@@ -97,21 +98,43 @@ void EditorResourcePreview::_preview_ready(const String &p_str, const Ref<Textur
 		item.modified_time = modified_time;
 
 		cache[path] = item;
-		// Bounded LRU thumbnail cache only in opt-in low-resource editor mode.
-		// Evicting decoded previews is safe: file thumbnails can be regenerated,
-		// and this does not touch the user's project resources or save state.
-		if (bool(EDITOR_GET("interface/noe_render/low_resource_mode"))) {
-			const int limit = CLAMP(int(EDITOR_GET("interface/noe_render/preview_cache_limit")), 32, 1024);
-			if (cache.size() > uint32_t(limit)) {
-				String oldest_path;
-				uint64_t oldest_order = UINT64_MAX;
+		// Evict only decoded editor thumbnails, never scene assets. RefCounted
+		// textures survive the removal of a cache entry while used elsewhere.
+		const bool low_resource = bool(EDITOR_GET("interface/noe_render/low_resource_mode"));
+		const uint64_t byte_limit = uint64_t(CLAMP(int(EDITOR_GET("interface/noecore/preview_cache_budget_mb")), 0, 1024)) * 1024ULL * 1024ULL;
+		const uint32_t entry_limit = low_resource ? uint32_t(CLAMP(int(EDITOR_GET("interface/noe_render/preview_cache_limit")), 32, 1024)) : UINT32_MAX;
+		if (byte_limit || low_resource) {
+			// Bounded scan. Avoid doing unbounded cleanup work on the preview thread.
+			for (int attempts = 0; attempts < 32; ++attempts) {
+				NoeCore::MemoryBudget preview_budget(byte_limit);
 				for (const KeyValue<String, Item> &entry : cache) {
-					if (entry.value.order < oldest_order) {
-						oldest_order = entry.value.order;
+					if (entry.value.preview.is_valid()) {
+						preview_budget.account(uint64_t(entry.value.preview->get_width()) * uint64_t(entry.value.preview->get_height()) * 4ULL);
+					}
+					if (entry.value.small_preview.is_valid()) {
+						preview_budget.account(uint64_t(entry.value.small_preview->get_width()) * uint64_t(entry.value.small_preview->get_height()) * 4ULL);
+					}
+				}
+				if (cache.size() <= entry_limit && !preview_budget.over_budget()) {
+					break;
+				}
+				String oldest_path;
+				int oldest_order = INT32_MAX;
+				for (const KeyValue<String, Item> &entry : cache) {
+					const Item &candidate = entry.value;
+					if ((candidate.preview.is_valid() && candidate.preview->get_reference_count() > 1) ||
+							(candidate.small_preview.is_valid() && candidate.small_preview->get_reference_count() > 1)) {
+						continue;
+					}
+					if (candidate.order < oldest_order) {
+						oldest_order = candidate.order;
 						oldest_path = entry.key;
 					}
 				}
-				if (!oldest_path.is_empty()) cache.erase(oldest_path);
+				if (oldest_path.is_empty()) {
+					break; // All cached textures still referenced: favor safety over budget.
+				}
+				cache.erase(oldest_path);
 			}
 		}
 	}

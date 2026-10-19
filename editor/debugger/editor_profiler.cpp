@@ -8,6 +8,7 @@
 #include "core/os/os.h"
 #include "editor/editor_scale.h"
 #include "editor/editor_settings.h"
+#include "main/noe_profiler_analysis.h"
 
 void EditorProfiler::_make_metric_ptrs(Metric &m) {
 	for (int i = 0; i < m.categories.size(); i++) {
@@ -34,10 +35,12 @@ void EditorProfiler::add_frame_metric(const Metric &p_metric, bool p_final) {
 	}
 
 	frame_metrics.write[last_metric] = p_metric;
+	frame_metrics.write[last_metric].is_aggregate = p_final;
 	_make_metric_ptrs(frame_metrics.write[last_metric]);
 
 	updating_frame = true;
 	clear_button->set_disabled(false);
+	next_spike_button->set_disabled(false);
 	cursor_metric_edit->set_editable(true);
 	cursor_metric_edit->set_max(p_metric.frame_number);
 	cursor_metric_edit->set_min(_get_frame_metric(0).frame_number);
@@ -67,6 +70,12 @@ void EditorProfiler::clear() {
 	total_metrics = 0;
 	last_metric = -1;
 	variables->clear();
+	if (spike_summary) {
+		spike_summary->set_text(TTR("NoeProfiler: Start recording to inspect frame-time spikes."));
+	}
+	if (next_spike_button) {
+		next_spike_button->set_disabled(true);
+	}
 	plot_sigs.clear();
 	plot_sigs.insert("physics_frame_time");
 	plot_sigs.insert("category_frame_time");
@@ -299,6 +308,9 @@ void EditorProfiler::_update_plot() {
 }
 
 void EditorProfiler::_update_frame() {
+	if (total_metrics == 0) {
+		return;
+	}
 	int cursor_metric = cursor_metric_edit->get_value() - _get_frame_metric(0).frame_number;
 
 	updating_frame = true;
@@ -306,6 +318,7 @@ void EditorProfiler::_update_frame() {
 
 	TreeItem *root = variables->create_item();
 	const Metric &m = _get_frame_metric(cursor_metric);
+	_update_spike_summary(m);
 
 	int dtime = display_time->get_selected();
 
@@ -369,6 +382,61 @@ void EditorProfiler::_activate_pressed() {
 	}
 
 	emit_signal(SNAME("enable_profiling"), activate->is_pressed());
+}
+
+void EditorProfiler::_update_spike_summary(const Metric &p_metric) {
+	if (!spike_summary) {
+		return;
+	}
+	if (p_metric.is_aggregate) {
+		spike_summary->set_text(TTR("NoeProfiler: Aggregate session totals. Select an individual frame for spike attribution."));
+		return;
+	}
+	float script_seconds = 0.0f;
+	for (const Metric::Category &category : p_metric.categories) {
+		if (category.signature == StringName("script_functions")) {
+			script_seconds = category.total_time;
+			break;
+		}
+	}
+	NoeProfiler::FrameSample sample;
+	sample.frame_seconds = p_metric.frame_time;
+	sample.process_seconds = p_metric.process_time;
+	sample.physics_seconds = p_metric.physics_time;
+	sample.script_seconds = script_seconds;
+	const NoeProfiler::FrameAnalysis analysis = NoeProfiler::analyze(sample, spike_threshold->get_value());
+	spike_summary->set_text(vformat("NoeProfiler | Frame %d: %.2f ms%s | Physics %.2f | Process %.2f | Scripts %.2f (nested) | Other/unknown >= %.2f ms | Largest measured: %s",
+			p_metric.frame_number, analysis.frame_ms, analysis.is_spike ? " SPIKE" : "",
+			analysis.physics_ms, analysis.process_ms, analysis.script_ms, analysis.unattributed_lower_bound_ms,
+			String(NoeProfiler::bottleneck_name(analysis.largest_measured))));
+	spike_summary->set_tooltip_text(TTR("Process and physics may overlap. Scripts are included in process timing. Other/unknown is a lower-bound estimate, not a measured render or asset-loading interval. Use Visual Profiler and Monitors for GPU and resource details."));
+}
+
+void EditorProfiler::_spike_threshold_changed(double p_value) {
+	EditorSettings::get_singleton()->set("debugger/noe_profiler/spike_threshold_ms", p_value);
+	if (total_metrics > 0) {
+		_update_frame();
+	}
+}
+
+void EditorProfiler::_next_spike_pressed() {
+	if (total_metrics == 0) {
+		return;
+	}
+	const int oldest_frame = _get_frame_metric(0).frame_number;
+	const int selected_index = CLAMP(int(cursor_metric_edit->get_value()) - oldest_frame, -1, total_metrics - 1);
+	for (int offset = 1; offset <= total_metrics; offset++) {
+		const int i = (selected_index + offset + total_metrics) % total_metrics;
+		const Metric &m = _get_frame_metric(i);
+		if (m.valid && !m.is_aggregate && NoeProfiler::is_spike(m.frame_time, spike_threshold->get_value())) {
+			seeking = true;
+			cursor_metric_edit->set_value(m.frame_number);
+			_update_frame();
+			graph->queue_redraw();
+			return;
+		}
+	}
+	spike_summary->set_text(TTR("NoeProfiler: No frames exceed the selected spike threshold in the retained history."));
 }
 
 void EditorProfiler::_clear_pressed() {
@@ -522,14 +590,24 @@ Vector<Vector<String>> EditorProfiler::get_data_as_csv() const {
 		}
 	}
 
+	// Include per-frame wall time and attribution alongside the existing category timings.
+	const int fixed_columns = 8;
 	// Generate CSV header and cache indices.
 	HashMap<StringName, int> sig_map;
 	Vector<String> signatures;
-	signatures.resize(possible_signatures.size());
+	signatures.resize(possible_signatures.size() + fixed_columns);
+	signatures.write[0] = "frame_number";
+	signatures.write[1] = "frame_time_s";
+	signatures.write[2] = "process_time_s";
+	signatures.write[3] = "physics_time_s";
+	signatures.write[4] = "physics_frame_time_s";
+	signatures.write[5] = "script_time_s";
+	signatures.write[6] = "spike_over_threshold";
+	signatures.write[7] = "sample_type";
 	int sig_index = 0;
 	for (const StringName &E : possible_signatures) {
-		signatures.write[sig_index] = E;
-		sig_map[E] = sig_index;
+		signatures.write[sig_index + fixed_columns] = E;
+		sig_map[E] = sig_index + fixed_columns;
 		sig_index++;
 	}
 	res.push_back(signatures);
@@ -554,7 +632,20 @@ Vector<Vector<String>> EditorProfiler::get_data_as_csv() const {
 
 		// Don't keep old values since there may be empty cells.
 		values.clear();
-		values.resize(possible_signatures.size());
+		values.resize(possible_signatures.size() + fixed_columns);
+		values.write[0] = itos(m.frame_number);
+		values.write[1] = String::num_real(m.frame_time);
+		values.write[2] = String::num_real(m.process_time);
+		values.write[3] = String::num_real(m.physics_time);
+		values.write[4] = String::num_real(m.physics_frame_time);
+		values.write[6] = (!m.is_aggregate && NoeProfiler::is_spike(m.frame_time, spike_threshold->get_value())) ? "1" : "0";
+		values.write[7] = m.is_aggregate ? "aggregate" : "frame";
+		for (const Metric::Category &category : m.categories) {
+			if (category.signature == StringName("script_functions")) {
+				values.write[5] = String::num_real(category.total_time);
+				break;
+			}
+		}
 
 		for (const KeyValue<StringName, Metric::Category *> &E : m.category_ptrs) {
 			values.write[sig_map[E.key]] = String::num_real(E.value->total_time);
@@ -584,6 +675,23 @@ EditorProfiler::EditorProfiler() {
 	clear_button->connect("pressed", callable_mp(this, &EditorProfiler::_clear_pressed));
 	clear_button->set_disabled(true);
 	hb->add_child(clear_button);
+
+	next_spike_button = memnew(Button);
+	next_spike_button->set_text(TTR("Next Spike"));
+	next_spike_button->set_tooltip_text(TTR("Jump to the next frame exceeding the configured wall-time threshold."));
+	next_spike_button->set_disabled(true);
+	next_spike_button->connect("pressed", callable_mp(this, &EditorProfiler::_next_spike_pressed));
+	hb->add_child(next_spike_button);
+
+	hb->add_child(memnew(Label(TTR("Spike (ms):"))));
+	spike_threshold = memnew(SpinBox);
+	spike_threshold->set_min(1.0);
+	spike_threshold->set_max(1000.0);
+	spike_threshold->set_step(0.1);
+	spike_threshold->set_custom_minimum_size(Size2(85 * EDSCALE, 0));
+	spike_threshold->set_value(double(EDITOR_DEF("debugger/noe_profiler/spike_threshold_ms", 33.3)));
+	spike_threshold->connect("value_changed", callable_mp(this, &EditorProfiler::_spike_threshold_changed));
+	hb->add_child(spike_threshold);
 
 	hb->add_child(memnew(Label(TTR("Measure:"))));
 
@@ -620,6 +728,11 @@ EditorProfiler::EditorProfiler() {
 	cursor_metric_edit->connect("value_changed", callable_mp(this, &EditorProfiler::_cursor_metric_changed));
 
 	hb->add_theme_constant_override("separation", 8 * EDSCALE);
+
+	spike_summary = memnew(Label(TTR("NoeProfiler: Start recording to inspect frame-time spikes.")));
+	spike_summary->set_clip_text(true);
+	spike_summary->set_tooltip_text(TTR("Frame-time attribution uses available CPU profiler samples; GPU timing remains in the Visual Profiler."));
+	add_child(spike_summary);
 
 	h_split = memnew(HSplitContainer);
 	add_child(h_split);

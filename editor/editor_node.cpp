@@ -7,6 +7,7 @@
 #include "editor/noe_account_workspace.h"
 #include "editor/noe_jamila_panel.h"
 #include "editor/noe_update_manager.h"
+#include "editor/noe_session_recovery.h"
 
 #include "core/config/project_settings.h"
 #include "core/input/input.h"
@@ -603,13 +604,15 @@ void EditorNode::_notification(int p_what) {
 				emit_signal(SNAME("project_settings_changed"));
 			}
 
-			ResourceImporterTexture::get_singleton()->update_imports();
-
+			// Import polling already ran earlier this frame.
 			bottom_panel_updating = false;
 		} break;
 
 		case NOTIFICATION_ENTER_TREE: {
 			Engine::get_singleton()->set_editor_hint(true);
+			if (bool(EDITOR_GET("interface/noecore/session_recovery_enabled"))) {
+				NoeSessionRecovery::begin();
+			}
 
 			Window *window = get_window();
 			if (window) {
@@ -639,6 +642,9 @@ void EditorNode::_notification(int p_what) {
 		} break;
 
 		case NOTIFICATION_EXIT_TREE: {
+			if (bool(EDITOR_GET("interface/noecore/session_recovery_enabled"))) {
+				NoeSessionRecovery::finish();
+			}
 			if (progress_dialog) {
 				progress_dialog->queue_free();
 			}
@@ -5117,7 +5123,10 @@ void EditorNode::_save_docks() {
 	_save_open_scenes_to_config(config, "EditorNode");
 	editor_data.get_plugin_window_layout(config);
 
-	config->save(EditorPaths::get_singleton()->get_project_settings_dir().path_join("editor_layout.cfg"));
+	const Error noe_layout_error = NoeSessionRecovery::atomic_save_layout(config);
+	if (noe_layout_error != OK) {
+		WARN_PRINT("NoeCore: Failed to save editor layout atomically; previous layout retained.");
+	}
 }
 
 void EditorNode::_save_docks_to_config(Ref<ConfigFile> p_layout, const String &p_section) {
