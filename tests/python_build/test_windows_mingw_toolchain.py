@@ -15,6 +15,10 @@ class TestWindowsMingwBuild(unittest.TestCase):
                 module.compile_editor("windows", 2)
                 args = execute.call_args.args[0]
                 self.assertIn("use_mingw=yes", args)
+                if host == "windows":
+                    self.assertIn("mingw_prefix=", args)
+                else:
+                    self.assertNotIn("mingw_prefix=", args)
                 self.assertIn("platform=windows", args)
                 self.assertIn("-j2", args)
                 self.assertFalse(any("msvc" in value.lower() for value in args))

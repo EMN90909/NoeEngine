@@ -171,6 +171,10 @@ try {
     $gccBin = Join-Path $msysRoot 'ucrt64\bin'
     $env:PATH = "$gccBin;$env:PATH"
     $env:MSYSTEM = 'UCRT64'
+    # MSYS2's POSIX prefix (/ucrt64) is not a usable filesystem path in a
+    # native Windows Python/SCons process. SCons explicitly gets
+    # mingw_prefix=; clear the inherited prefix for other subprocesses.
+    $env:MINGW_PREFIX = ''
     Write-Host "[NoeEngine] Compiler: $gccBin"
     Invoke-VisibleNative -File (Join-Path $gccBin 'x86_64-w64-mingw32-gcc.exe') -ArgumentList @('--version') -Phase 'Verify GCC compiler' | Out-Null
 

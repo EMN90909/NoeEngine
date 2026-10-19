@@ -151,6 +151,11 @@ def compile_editor(target, jobs, with_tests=False):
         # SCons normally auto-selects MSVC on Windows when it is installed.
         # Force GCC/MinGW-w64 on both native Windows and Linux cross builds.
         args.append("use_mingw=yes")
+        if host == "windows":
+            # MSYS2 exports MINGW_PREFIX=/ucrt64, a Unix path unusable by
+            # Windows-native SCons. Use the prefixed x86_64 compiler executables
+            # from PATH rather than accidentally constructing /ucrt64/bin/...
+            args.append("mingw_prefix=")
     command(args)
 
 
