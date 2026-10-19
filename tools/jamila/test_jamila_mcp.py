@@ -17,7 +17,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from noe_mcp_server import ProjectTools, TOOLS
-from jamila_agent import JamilaService, normalize_plan
+from jamila_agent import JamilaService, normalize_plan, call_model
 
 
 FAKE_ENGINE = r"""#!/usr/bin/env python3
@@ -149,6 +149,27 @@ class JamilaIntegrationTests(unittest.TestCase):
             service.apply({"plan_id":proposal["plan_id"]})
         self.assertEqual(self.scene.read_text(), "user edited this after planning\n")
 
+    def test_cloud_uses_signed_in_desktop_token_not_provider_keys(self):
+        class FakeResponse:
+            def __enter__(self): return self
+            def __exit__(self, *args): return False
+            def read(self, *args):
+                plan={'summary':'safe','actions':[{'tool':'noe_write_asset','arguments':{
+                    'path':'player.gd','content':'extends Node','overwrite':False}}]}
+                return json.dumps({'choices':[{'message':{'content':json.dumps(plan)}}]}).encode()
+        observed=[]
+        def fake_open(req, timeout):
+            observed.append(req)
+            return FakeResponse()
+        with patch('jamila_agent.urllib.request.urlopen', fake_open):
+            out=call_model('https://noeengine-web.onrender.com/api/jamila/plan',
+                           'desktop.'+'x'*56,'google','gameplay','make a player',{})
+        self.assertEqual(out['actions'][0]['arguments']['path'], 'player.gd')
+        data=json.loads(observed[0].data)
+        self.assertEqual(data['provider'],'google')
+        self.assertEqual(data['role'],'gameplay')
+        self.assertNotIn('api_key',data)
+        self.assertIn('Bearer desktop.',observed[0].get_header('Authorization'))
     def test_plan_rejects_unapproved_tools(self):
         with self.assertRaises(ValueError):
             normalize_plan({"summary":"unsafe", "actions":[{"tool":"shell", "arguments":{}}]})
