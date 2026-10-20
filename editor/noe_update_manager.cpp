@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Noethric.
 // SPDX-License-Identifier: LicenseRef-Noethric-Proprietary
 #include "noe_update_manager.h"
+#include "editor/noe_product_version.h"
 
 #include "editor/editor_paths.h"
 #include "editor/editor_scale.h"
@@ -17,7 +18,7 @@
 #include "scene/main/scene_tree.h"
 #include "scene/main/timer.h"
 
-static const char *NOE_PRODUCT_VERSION = "0.1.0-dev";
+// Native product update versions are generated from misc/noe_product_version.txt.
 static const int64_t MAX_NOE_PATCH = 104857600;
 
 bool NoeUpdateManager::_version_newer(const String &next) const {
