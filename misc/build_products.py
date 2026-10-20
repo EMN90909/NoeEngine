@@ -178,8 +178,19 @@ def compile_editor(target, jobs, with_tests=False, fast=False):
     # Compiler wrappers are explicit SCons options, not shell aliases.
     if target == "linux" and shutil.which("ccache") and os.environ.get("NOEENGINE_CCACHE", "1") != "0":
         os.environ.setdefault("CCACHE_BASEDIR", str(ROOT))
-        args.extend(["CC=ccache gcc", "CXX=ccache g++"])
-        print("[NoeEngine] ccache enabled for Linux GCC/G++", flush=True)
+        # SCons probes CXX as an executable path. A value such as "ccache g++"
+        # fails subprocess.check_output([CXX, "--version"]). Use compiler-named
+        # symlinks to ccache so compiler detection, flags and linking stay valid.
+        wrapper_dir = PRODUCTS / ".ccache-toolchain"
+        wrapper_dir.mkdir(parents=True, exist_ok=True)
+        for name in ("gcc", "g++"):
+            link = wrapper_dir / name
+            if link.is_symlink() or link.exists():
+                link.unlink()
+            link.symlink_to(shutil.which("ccache"))
+        args.extend(["CC=" + str(wrapper_dir / "gcc"),
+                     "CXX=" + str(wrapper_dir / "g++")])
+        print("[NoeEngine] ccache enabled (compiler-named wrappers)", flush=True)
     if fast:
         if target != "linux":
             raise RuntimeError("Fast incremental builds currently support Linux only.")
