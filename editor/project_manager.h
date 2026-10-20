@@ -37,6 +37,8 @@ class ProjectManager : public Control {
 
 	LineEdit *search_box = nullptr;
 	Label *loading_label = nullptr;
+	double loading_animation_elapsed = 0.0;
+	int loading_animation_frame = 0;
 	OptionButton *filter_option = nullptr;
 
 	Button *create_btn = nullptr;
