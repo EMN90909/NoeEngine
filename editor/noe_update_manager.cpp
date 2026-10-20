@@ -40,6 +40,25 @@ bool NoeUpdateManager::_valid_download_url(const String &url) {
     return host.ends_with(".supabase.co") &&
             url.contains("/storage/v1/object/public/noeengine-patches/releases/");
 }
+String NoeUpdateManager::_resolve_helper() {
+    const String configured = OS::get_singleton()->get_environment("NOEENGINE_PATCH_HELPER").strip_edges();
+    if (!configured.is_empty()) return configured;
+    // The trusted helper is bundled with the installer, never downloaded from the release feed.
+    const String base = OS::get_singleton()->get_executable_path().get_base_dir();
+#if defined(WINDOWS_ENABLED)
+    return base.path_join("noe-updater.exe");
+#else
+    return base.path_join("noe-updater");
+#endif
+}
+
+String NoeUpdateManager::_resolve_public_key() {
+    const String configured = OS::get_singleton()->get_environment("NOEENGINE_UPDATE_PUBKEY").strip_edges();
+    if (!configured.is_empty()) return configured;
+    const String path = OS::get_singleton()->get_executable_path().get_base_dir().path_join("update-public-key.txt");
+    return FileAccess::exists(path) ? FileAccess::get_file_as_string(path).strip_edges() : String();
+}
+
 void NoeUpdateManager::_read_website() {
     website_url = OS::get_singleton()->get_environment("NOEENGINE_AUTH_URL").strip_edges();
     if (website_url.is_empty() && EditorPaths::get_singleton() && EditorPaths::get_singleton()->are_paths_valid()) {
@@ -240,8 +259,8 @@ void NoeUpdateManager::_on_patch(int result, int status, const PackedStringArray
         DirAccess::remove_absolute(saved_path);
         _show_notice(TTR("Verification failed"), TTR("The package checksum or size did not match. The download was discarded.")); return;
     }
-    trusted_helper = OS::get_singleton()->get_environment("NOEENGINE_PATCH_HELPER").strip_edges();
-    signing_public_key = OS::get_singleton()->get_environment("NOEENGINE_UPDATE_PUBKEY").strip_edges();
+    trusted_helper = _resolve_helper();
+    signing_public_key = _resolve_public_key();
     const bool supported = patch_filename.ends_with(".noepatch") && trusted_helper.is_absolute_path() &&
             FileAccess::exists(trusted_helper) && signing_public_key.length() == 44;
     if (!supported) {
@@ -259,8 +278,8 @@ void NoeUpdateManager::_install_and_restart() {
     if (downloading || !available || saved_path.is_empty() || !FileAccess::exists(saved_path) ||
             patch_filename.get_extension() != "noepatch" || !EditorPaths::get_singleton()) return;
     // The helper is installed with a trusted build, not downloaded from the release server.
-    const String helper = OS::get_singleton()->get_environment("NOEENGINE_PATCH_HELPER").strip_edges();
-    const String pub = OS::get_singleton()->get_environment("NOEENGINE_UPDATE_PUBKEY").strip_edges();
+    const String helper = _resolve_helper();
+    const String pub = _resolve_public_key();
     if (!helper.is_absolute_path() || !FileAccess::exists(helper) || pub.length() != 44) {
         _show_notice(TTR("Trusted installer unavailable"), TTR("Configure a preinstalled signed-patch helper and its public key."));
         return;
