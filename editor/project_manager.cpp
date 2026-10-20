@@ -1966,7 +1966,19 @@ void ProjectList::_bind_methods() {
 ProjectManager *ProjectManager::singleton = nullptr;
 
 void ProjectManager::_notification(int p_what) {
-	switch (p_what) {
+    switch (p_what) {
+        case NOTIFICATION_PROCESS: {
+            if (!loading_label || !loading_label->is_visible()) {
+                set_process(false);
+                break;
+            }
+            loading_animation_elapsed += get_process_delta_time();
+            if (loading_animation_elapsed >= 0.18) {
+                loading_animation_elapsed = 0.0;
+                loading_animation_frame = (loading_animation_frame + 1) % 4;
+                loading_label->set_text(TTR("Opening project") + String(".").repeat(loading_animation_frame));
+            }
+        } break;
 		case NOTIFICATION_TRANSLATION_CHANGED:
 		case NOTIFICATION_LAYOUT_DIRECTION_CHANGED: {
 			settings_hb->set_anchors_and_offsets_preset(Control::PRESET_TOP_RIGHT);
@@ -2228,7 +2240,11 @@ void ProjectManager::_confirm_update_settings() {
 void ProjectManager::_open_selected_projects() {
 	// Show loading text to tell the user that the project manager is busy loading.
 	// This is especially important for the Web project manager.
+	loading_animation_elapsed = 0.0;
+	loading_animation_frame = 0;
+	loading_label->set_text(TTR("Opening project"));
 	loading_label->show();
+	set_process(true);
 
 	const HashSet<String> &selected_list = _project_list->get_selected_project_keys();
 
