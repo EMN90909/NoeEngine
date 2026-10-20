@@ -48,14 +48,20 @@ def check_tool(name):
         raise RuntimeError("Required tool not found: " + name)
 
 
-def find_binary(target):
+def find_binary(target, prefer_dev=False):
     patterns = {
-        "linux": "noeengine.linuxbsd.editor.x86_64*",
+        "linux": "noeengine.linuxbsd.editor*x86_64*",
         "windows": "noeengine.windows.editor.x86_64.exe",
         "macos": "noeengine.macos.editor.*",
     }
     candidates = sorted((ROOT / "bin").glob(patterns[target]))
     candidates = [p for p in candidates if p.is_file() and not p.name.endswith(".console.exe")]
+    if target == "linux":
+        # SCons places the dev marker before the architecture:
+        # noeengine.linuxbsd.editor.dev.x86_64
+        candidates = [p for p in candidates if (".dev." in p.name) == prefer_dev]
+        candidates.sort(key=lambda p: -p.stat().st_mtime)
+
     if target == "macos":
         candidates = [p for p in candidates if p.name.endswith(".universal") or p.name.endswith(".x86_64") or p.name.endswith(".arm64")]
         candidates.sort(key=lambda p: (not p.name.endswith(".universal"), p.name))
@@ -81,6 +87,16 @@ def verify_toolchain(target, package_only=False):
             compatibility.get("release_status") != "development-unreleased"):
         raise RuntimeError("Noqeri compatibility must declare 0.7.0-dev and ABI v2.")
     print("Noqeri 0.7.0-dev (edition 2026, ABI v2): restricted native .nqr bridge.", flush=True)
+    # Fail before a multi-hour native compile if later smoke/package stages
+    # would inevitably fail due to absent distribution files.
+    for required in ("LICENSE.txt", "COPYRIGHT.txt", "NOTICE.md",
+                     "NOETHRIC-PROPRIETARY-LICENSE.txt",
+                     "tools/jamila/jamila_agent.py", "tools/jamila/noe_mcp_server.py"):
+        if not (ROOT / required).is_file():
+            raise RuntimeError("Missing installer asset before compile: " + required)
+    if target == "linux" and not (ROOT / "tests/noqeri_scene/project.godot").is_file():
+        raise RuntimeError("Missing Noqeri smoke test project before compile")
+
     host = host_platform()
     if target == "linux" and host != "linux":
         raise RuntimeError("Linux builds require a Linux host.")
@@ -414,7 +430,7 @@ def main(argv=None):
     if not args.package_only:
         compile_editor(args.platform, args.jobs, with_tests=args.tests, fast=args.fast)
     if args.fast:
-        binary = find_binary("linux")
+        binary = find_binary("linux", prefer_dev=True)
         print("Incremental editor compiled:", binary, flush=True)
         return
     if args.platform == "android":
