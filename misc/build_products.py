@@ -21,6 +21,7 @@ import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
+PRODUCT_VERSION = (ROOT / "misc/noe_product_version.txt").read_text(encoding="ascii").strip()
 PRODUCTS = ROOT / "Products"
 VERSION = "0.1.0-dev"
 NAME = "NoeEngine"
@@ -274,7 +275,7 @@ def write_debian(binary):
             "Exec=noeengine %f\nTerminal=false\nCategories=Development;IDE;\n"
         )
         (control / "control").write_text(
-            "Package: noeengine\nVersion: 0.1.0~dev1\n"
+            "Package: noeengine\nVersion: " + PRODUCT_VERSION.replace("-", "~") + "\n"
             "Section: devel\nPriority: optional\nArchitecture: amd64\n"
             "Maintainer: Local Builder <local@localhost>\n"
             "Description: NoeEngine editor by Noethric (locally built, unsigned)\n"
@@ -340,12 +341,12 @@ def write_macos(binary):
             '<key>CFBundleIdentifier</key><string>xyz.noethric.noeengine</string>'
             '<key>CFBundleName</key><string>NoeEngine</string>'
             '<key>CFBundlePackageType</key><string>APPL</string>'
-            '<key>CFBundleVersion</key><string>0.1.0</string>'
+            '<key>CFBundleVersion</key><string>' + PRODUCT_VERSION.split('-')[0] + '</string>'
             '</dict></plist>\n'
         )
         destination = PRODUCTS / "NoeEngine-setup.pkg"
         command(["pkgbuild", "--component", app, "--install-location", "/Applications",
-                 "--identifier", "xyz.noethric.noeengine", "--version", "0.1.0", destination])
+                 "--identifier", "xyz.noethric.noeengine", "--version", PRODUCT_VERSION.split("-")[0], destination])
     return destination
 
 
