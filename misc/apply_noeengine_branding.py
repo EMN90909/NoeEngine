@@ -168,10 +168,26 @@ def write_splash_assets():
             path.write_bytes(data)
 
 
+def sync_product_version(check):
+    import re
+    value = (ROOT / "misc/noe_product_version.txt").read_text(encoding="ascii").strip()
+    if not re.fullmatch(r"[0-9]+\\.[0-9]+\\.[0-9]+(?:-[a-z0-9.]+)?", value):
+        raise RuntimeError("Invalid native product semantic version")
+    path = ROOT / "editor/noe_product_version.h"
+    expected = ('// Generated from misc/noe_product_version.txt by misc/apply_noeengine_branding.py.\\n'
+                '#ifndef NOE_PRODUCT_VERSION_H\\n#define NOE_PRODUCT_VERSION_H\\n'
+                '#define NOE_PRODUCT_VERSION "' + value + '"\\n#endif\\n')
+    if path.read_text(encoding="utf-8") != expected:
+        if check:
+            raise RuntimeError("Stale native product version header")
+        path.write_text(expected, encoding="utf-8")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true", help="Only check committed text/source branding")
     opts = parser.parse_args()
+    sync_product_version(opts.check)
     changed = apply_sources(opts.check)
     if not opts.check:
         write_splash_assets()
