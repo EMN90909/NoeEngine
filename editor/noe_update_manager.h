@@ -55,6 +55,8 @@ class NoeUpdateManager : public Node {
     void _show_notice(const String &p_title, const String &p_message);
     bool _version_newer(const String &p_version) const;
     static bool _valid_download_url(const String &p_url);
+    static String _resolve_helper();
+    static String _resolve_public_key();
 
 protected:
     void _notification(int p_what);
