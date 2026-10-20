@@ -90,9 +90,10 @@ def png_image(width, height, splash=False):
     import re
     dark = (18, 19, 22)
     pixels = bytearray(bytes(dark) * width * height)
-    icon_size = min(height - (6 if splash else 10), width - 10)
+    # Reserve space for the wordmark without stretching the master SVG.
+    icon_size = min(128, height - 50, width - 10) if splash else min(height - 10, width - 10)
     left = (width - icon_size) // 2
-    top = (height - icon_size) // 2
+    top = 13 if splash else (height - icon_size) // 2
     paths = re.findall(r'<path\b[^>]*\bd="([^"]+)"', VIPER_ICON)
     colors = ((249, 250, 255), (255, 124, 5))
 
@@ -120,6 +121,28 @@ def png_image(width, height, splash=False):
                         pixels[at:at + 3] = bytes((255, int(161 - 68 * tint), int(10 - 5 * tint)))
                     else:
                         pixels[at:at + 3] = bytes(rgb)
+
+    if splash:
+        # Tiny self-contained pixel wordmark. No fonts or external assets required.
+        glyphs = {
+            "N": ("10001", "11001", "10101", "10011", "10001", "10001", "10001"),
+            "O": ("01110", "10001", "10001", "10001", "10001", "10001", "01110"),
+            "E": ("11111", "10000", "10000", "11110", "10000", "10000", "11111"),
+            "G": ("01111", "10000", "10000", "10111", "10001", "10001", "01111"),
+            "I": ("11111", "00100", "00100", "00100", "00100", "00100", "11111"),
+        }
+        word, factor = "NOEENGINE", 3
+        x0 = (width - (len(word) * 6 - 1) * factor) // 2
+        y0 = height - 33
+        for index, letter in enumerate(word):
+            for y, row in enumerate(glyphs[letter]):
+                for x, active in enumerate(row):
+                    if active == "1":
+                        for dy in range(factor):
+                            for dx in range(factor):
+                                at = ((y0 + y * factor + dy) * width + x0
+                                      + (index * 6 + x) * factor + dx) * 3
+                                pixels[at:at + 3] = bytes((255, 240, 218))
 
     raw = b"".join(b"\x00" + pixels[y * width * 3:(y + 1) * width * 3] for y in range(height))
 
