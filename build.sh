@@ -22,11 +22,12 @@ fi
 
 usage() {
   cat <<'USAGE'
-Usage: ./build.sh [linux|windows|macos|android|all|check|patch-tools] [jobs]
+Usage: ./build.sh [fast|linux|windows|macos|android|all|check|patch-tools] [jobs]
                   [--install-deps] [--tests] [--package-only]
 
   ./build.sh                         check, linux 2 --install-deps,
                                      windows 2 --install-deps, android 2 --install-deps
+  ./build.sh fast 2                  Fast incremental Linux editor (no packaging)
   ./build.sh linux 2                 Linux runnable AppDir and .tar.gz (+ .deb if available)
   ./build.sh windows 2               Windows .exe setup using MinGW-w64 and NSIS
   ./build.sh macos 2                 macOS .pkg setup using Xcode on a Mac
@@ -49,7 +50,7 @@ USAGE
 
 target="${1:-linux}"
 if [[ "$target" == -h || "$target" == --help ]]; then usage; exit 0; fi
-case "$target" in linux|windows|macos|android|all|check|patch-tools) ;; *) usage >&2; exit 2 ;; esac
+case "$target" in fast|linux|windows|macos|android|all|check|patch-tools) ;; *) usage >&2; exit 2 ;; esac
 if [[ $# -gt 0 ]]; then shift; fi
 jobs="${JOBS:-2}"
 if [[ $# -gt 0 && "$1" =~ ^[0-9]+$ ]]; then jobs="$1"; shift; fi
@@ -110,6 +111,16 @@ fi
 
 echo "[NoeEngine] Preparing branding"
 python3 misc/apply_noeengine_branding.py
+if [[ "$target" == fast ]]; then
+  [[ "$(uname -s)" == Linux ]] || { echo "Fast mode requires a Linux host" >&2; exit 2; }
+  [[ "$with_tests" == 0 && "$package_only" == 0 && "$install_deps" == 0 ]] || {
+    echo "Fast mode does not package or install dependencies; use linux for release builds" >&2; exit 2;
+  }
+  echo "[NoeEngine] Fast incremental compile with optional ccache; no installers"
+  python3 misc/build_products.py linux --preflight
+  python3 misc/build_products.py linux --fast --jobs "$jobs" 2>&1 | tee Products/build-fast.log
+  exit 0
+fi
 if [[ "$target" == check || "$package_only" == 0 ]]; then
   bash misc/ci_check.sh 2>&1 | tee Products/preflight.log
 fi
