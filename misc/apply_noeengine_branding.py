@@ -39,12 +39,18 @@ REPLACEMENTS = {
 # Keep generated editor icons in sync with the high-resolution source emblem.
 # This intentionally retains upstream Godot identifiers required by the engine.
 VIPER_ICON = (ROOT / "editor/icons/NoeViper.svg").read_text(encoding="utf-8")
+SVG_ICON_SIZES = {
+    "editor/icons/Godot.svg": 24,
+    "editor/icons/Logo.svg": 32,
+    "editor/icons/DefaultProjectIcon.svg": 64,
+    "editor/icons/GodotMonochrome.svg": 24,
+    "editor/icons/GodotFile.svg": 20,
+}
+# The 512px master cannot be used as a toolbar icon: its intrinsic dimensions
+# previously forced the main toolbar to occupy most of the editor viewport.
 SVG_ASSETS = {
-    "editor/icons/Godot.svg": VIPER_ICON,
-    "editor/icons/Logo.svg": VIPER_ICON,
-    "editor/icons/DefaultProjectIcon.svg": VIPER_ICON,
-    "editor/icons/GodotMonochrome.svg": VIPER_ICON,
-    "editor/icons/GodotFile.svg": VIPER_ICON,
+    path: VIPER_ICON.replace('width="512" height="512"', f'width="{size}" height="{size}"')
+    for path, size in SVG_ICON_SIZES.items()
 }
 
 
