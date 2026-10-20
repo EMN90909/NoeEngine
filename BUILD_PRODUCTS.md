@@ -116,7 +116,7 @@ Two compiler jobs (`2`) suit low-RAM machines. Native builds may take hours, ten
 ./build.sh macos 2 --install-deps  # Mac only, requires Xcode already installed
 ```
 
-`--install-deps` authorizes package downloads and potentially sudo actions. On apt-based Linux it uses the configured operating-system repositories for compilers, SCons, MinGW-w64, NSIS, JDK and native headers. For Android, it downloads Google's command-line ZIP **only** from the documented official host and verifies the published SHA-256 before extracting it into a local SDK. `sdkmanager` installs Android platform 35, build tools 35, CMake and NDK r28b, and prompts for license acceptance when required. No downloaded shell scripts are executed.
+`--install-deps` authorizes package downloads and potentially sudo actions. On apt-based Linux it uses the configured operating-system repositories for compilers, SCons, MinGW-w64, NSIS, JDK and native headers. For Android, it downloads Google's command-line ZIP **only** from the documented official host and verifies the published SHA-256 before extracting it into a local SDK. `sdkmanager` installs Android platform 35, build tools 35, CMake and NDK r23c, and prompts for license acceptance when required. No downloaded shell scripts are executed.
 
 If your OS does not support an automatic package setup, `build.sh` reports what needs manual installation. macOS Xcode/SDK must be installed through Apple tooling and cannot be fetched or legally bootstrapped on Linux by this script.
 
