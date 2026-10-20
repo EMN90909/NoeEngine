@@ -174,9 +174,9 @@ def sync_product_version(check):
     if not re.fullmatch(r"[0-9]+\\.[0-9]+\\.[0-9]+(?:-[a-z0-9.]+)?", value):
         raise RuntimeError("Invalid native product semantic version")
     path = ROOT / "editor/noe_product_version.h"
-    expected = ('// Generated from misc/noe_product_version.txt by misc/apply_noeengine_branding.py.\\n'
-                '#ifndef NOE_PRODUCT_VERSION_H\\n#define NOE_PRODUCT_VERSION_H\\n'
-                '#define NOE_PRODUCT_VERSION "' + value + '"\\n#endif\\n')
+    expected = ('// Generated from misc/noe_product_version.txt by misc/apply_noeengine_branding.py.\n'
+                '#ifndef NOE_PRODUCT_VERSION_H\n#define NOE_PRODUCT_VERSION_H\n'
+                '#define NOE_PRODUCT_VERSION "' + value + '"\n#endif\n')
     if path.read_text(encoding="utf-8") != expected:
         if check:
             raise RuntimeError("Stale native product version header")
