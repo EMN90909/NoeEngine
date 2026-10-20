@@ -2774,6 +2774,9 @@ ProjectManager::ProjectManager() {
 		filter_option->connect("item_selected", callable_mp(this, &ProjectManager::_on_order_option_changed));
 		hb->add_child(filter_option);
 
+		// Begin release checks in Project Manager without requiring an open scene.
+		NoeUpdateManager::install(this, hb);
+
 		Vector<String> sort_filter_titles;
 		sort_filter_titles.push_back(TTR("Last Edited"));
 		sort_filter_titles.push_back(TTR("Name"));
