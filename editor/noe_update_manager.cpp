@@ -80,8 +80,8 @@ NoeUpdateManager::NoeUpdateManager() {
     completion_dialog->get_ok_button()->set_text(TTR("Continue"));
     add_child(completion_dialog);
     install_dialog = memnew(ConfirmationDialog);
-    install_dialog->set_title(TTR("Install signed update"));
-    install_dialog->set_ok_button_text(TTR("Install and restart"));
+    install_dialog->set_title(TTR("Update verified - restart to install"));
+    install_dialog->set_ok_button_text(TTR("Restart and install"));
     install_dialog->set_cancel_button_text(TTR("Not now"));
     install_dialog->connect("confirmed", callable_mp(this, &NoeUpdateManager::_install_and_restart));
     add_child(install_dialog);
@@ -120,7 +120,16 @@ void NoeUpdateManager::_show_notice(const String &title, const String &message) 
     completion_dialog->set_text(message);
     completion_dialog->popup_centered(Size2i(560, 270) * EDSCALE);
 }
-void NoeUpdateManager::_manual_check() { quiet_check = false; _check(); }
+void NoeUpdateManager::_manual_check() {
+    // A downloaded patch can be installed later without re-downloading it.
+    if (available && !saved_path.is_empty() && FileAccess::exists(saved_path) &&
+            FileAccess::get_sha256(saved_path).to_lower() == patch_sha256) {
+        _on_patch(HTTPRequest::RESULT_SUCCESS, 200, PackedStringArray(), PackedByteArray());
+        return;
+    }
+    quiet_check = false;
+    _check();
+}
 void NoeUpdateManager::_startup_check() { quiet_check = true; _check(); }
 void NoeUpdateManager::_check() {
     if (downloading || update_button->is_disabled()) return;
@@ -154,7 +163,8 @@ void NoeUpdateManager::_on_manifest(int result, int status, const PackedStringAr
         if (quiet_check) return;
         if (status == 429) _show_notice(TTR("Please try again shortly"), TTR("The update catalogue has temporarily rate-limited requests."));
         else if (status == 503) _show_notice(TTR("Release service not configured"), TTR("The website is reachable but its Supabase release backend is unavailable. Check your website deployment settings and /health."));
-        else if (result != HTTPRequest::RESULT_SUCCESS) _show_notice(TTR("Update network error"), TTR("The editor could not reach its configured account website. Check HTTPS connectivity, DNS and Account > Security."));
+        else if (result != HTTPRequest::RESULT_SUCCESS) _show_notice(TTR("Update network error"),
+                vformat(TTR("Could not reach %s/updates/latest (network code %d, HTTP %d). Check DNS, HTTPS and Account > Security."), website_url, result, status));
         else _show_notice(TTR("Update HTTP error"), vformat(TTR("The release catalogue returned HTTP %d. Verify the trusted NoeEngine website or try again later."), status));
         return;
     }
