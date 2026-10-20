@@ -125,6 +125,7 @@ def linux_build_packages(targets: list[str], *, antix: bool) -> list[str]:
     if "android" in targets:
         packages += ["openjdk-17-jdk", "unzip", "curl"]
     if "linux" in targets:
+        packages += ["ccache"]
         packages += ["libx11-dev", "libxcursor-dev", "libxinerama-dev",
                      "libxrandr-dev", "libxi-dev", "libgl1-mesa-dev", "libasound2-dev",
                      "libpulse-dev"]
