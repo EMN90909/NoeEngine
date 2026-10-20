@@ -120,7 +120,8 @@ def verify_toolchain(target, package_only=False):
         check_tool("xcrun")
 
 
-def compile_editor(target, jobs, with_tests=False):
+def compile_editor(target, jobs, with_tests=False, fast=False):
+    """Build only the requested target; preserve SCons objects for incremental builds."""
     check_tool("scons")
     host = host_platform()
     if target == "android":
@@ -156,6 +157,16 @@ def compile_editor(target, jobs, with_tests=False):
             # Windows-native SCons. Use the prefixed x86_64 compiler executables
             # from PATH rather than accidentally constructing /ucrt64/bin/...
             args.append("mingw_prefix=")
+    # ccache keeps compiler outputs reusable across repeated incremental builds.
+    # Compiler wrappers are explicit SCons options, not shell aliases.
+    if target == "linux" and shutil.which("ccache") and os.environ.get("NOEENGINE_CCACHE", "1") != "0":
+        os.environ.setdefault("CCACHE_BASEDIR", str(ROOT))
+        args.extend(["CC=ccache gcc", "CXX=ccache g++"])
+        print("[NoeEngine] ccache enabled for Linux GCC/G++", flush=True)
+    if fast:
+        if target != "linux":
+            raise RuntimeError("Fast incremental builds currently support Linux only.")
+        args.extend(["dev_build=yes", "production=no", "lto=none"])
     command(args)
 
 
@@ -348,6 +359,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("platform", choices=("linux", "windows", "macos", "android"),
                         help="Target platform for this build")
+    parser.add_argument("--fast", action="store_true",
+                        help="Compile a Linux development editor only; skip slow smoke tests and installers")
     parser.add_argument("--package-only", action="store_true",
                         help="Package a previously compiled editor (without runtime verification)")
     parser.add_argument("--preflight", action="store_true",
@@ -360,13 +373,19 @@ def main(argv=None):
         parser.error("--jobs must be positive")
     if args.tests and (args.platform != "linux" or args.package_only):
         parser.error("--tests requires a fresh native Linux editor build")
+    if args.fast and (args.platform != "linux" or args.package_only or args.tests):
+        parser.error("--fast requires linux and cannot be combined with --tests or --package-only")
     verify_toolchain(args.platform, package_only=args.package_only)
     if args.preflight:
         print("Toolchain preflight passed for", args.platform)
         return
     PRODUCTS.mkdir(exist_ok=True)
     if not args.package_only:
-        compile_editor(args.platform, args.jobs, with_tests=args.tests)
+        compile_editor(args.platform, args.jobs, with_tests=args.tests, fast=args.fast)
+    if args.fast:
+        binary = find_binary("linux")
+        print("Incremental editor compiled:", binary, flush=True)
+        return
     if args.platform == "android":
         source = find_android_editor_apk()
         output = PRODUCTS / "NoeEngine-android-arm64.apk"
