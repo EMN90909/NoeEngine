@@ -37,7 +37,9 @@ protected:
     static void _bind_methods() {}
     void _notification(int what) {
         if (what == NOTIFICATION_ENTER_TREE || what == NOTIFICATION_THEME_CHANGED) {
-            set_icon(get_theme_icon(SNAME("NoeViper"), SNAME("EditorIcons")));
+            // Use the 32px theme icon instead of the 512px master artwork.
+            // An unbounded button icon expands the editor header and crushes the viewport.
+            set_icon(get_theme_icon(SNAME("Logo"), SNAME("EditorIcons")));
         }
     }
 };
