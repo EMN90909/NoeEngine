@@ -243,7 +243,7 @@ def stage_updater(destination):
         if len(decoded) != 32:
             raise RuntimeError("Pinned Ed25519 release key must decode to exactly 32 bytes")
         destination.mkdir(parents=True, exist_ok=True)
-        (destination / "update-public-key.txt").write_text(key + "\\n", encoding="ascii")
+        (destination / "update-public-key.txt").write_text(key + "\n", encoding="ascii")
     if not helper.is_file() or not pubkey.is_file():
         print("[NoeEngine] Signed auto-install not bundled: build patch-tools and provide an independently verified update-public-key.txt before distributing.", flush=True)
 
