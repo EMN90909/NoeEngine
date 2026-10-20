@@ -219,6 +219,34 @@ def stage_jamila(destination):
         shutil.copy2(source_file, destination / name)
 
 
+def stage_updater(destination):
+    """Bundle only a locally prebuilt trusted updater and pinned release public key.
+
+    Publisher private keys must NEVER be bundled. If credentials are not ready,
+    installer packaging remains possible but auto-install will be disabled.
+    """
+    helper = PRODUCTS / "noe-updater"
+    pubkey = PRODUCTS / "update-public-key.txt"
+    if helper.is_file():
+        destination.mkdir(parents=True, exist_ok=True)
+        target = destination / "noe-updater"
+        shutil.copy2(helper, target)
+        target.chmod(0o755)
+    if pubkey.is_file():
+        import base64
+        key = pubkey.read_text(encoding="ascii").strip()
+        try:
+            decoded = base64.b64decode(key, validate=True)
+        except (ValueError, base64.binascii.Error) as exc:
+            raise RuntimeError("Invalid pinned Ed25519 release key") from exc
+        if len(decoded) != 32:
+            raise RuntimeError("Pinned Ed25519 release key must decode to exactly 32 bytes")
+        destination.mkdir(parents=True, exist_ok=True)
+        (destination / "update-public-key.txt").write_text(key + "\\n", encoding="ascii")
+    if not helper.is_file() or not pubkey.is_file():
+        print("[NoeEngine] Signed auto-install not bundled: build patch-tools and provide an independently verified update-public-key.txt before distributing.", flush=True)
+
+
 def write_debian(binary):
     check_tool("dpkg-deb")
     with tempfile.TemporaryDirectory(prefix="noeengine-deb-") as tmp:
@@ -231,6 +259,7 @@ def write_debian(binary):
             directory.mkdir(parents=True, exist_ok=True)
         shutil.copy2(binary, app / "noeengine")
         stage_jamila(app / "Jamila")
+        stage_updater(app)
         (app / "noeengine").chmod(0o755)
         launcher = bindir / "noeengine"
         launcher.write_text('#!/bin/sh\nexec /usr/lib/noeengine/noeengine "$@"\n')
@@ -338,6 +367,7 @@ def write_linux_app(binary):
     exe.parent.mkdir(parents=True)
     shutil.copy2(binary, exe)
     stage_jamila(exe.parent / "Jamila")
+    stage_updater(exe.parent)
     exe.chmod(0o755)
     app_run = app_dir / "AppRun"
     app_run.write_text('#!/bin/sh\nHERE="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"\nexec "$HERE/usr/bin/noeengine" "$@"\n')
